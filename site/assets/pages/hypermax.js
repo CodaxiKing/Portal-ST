@@ -50,13 +50,16 @@
     if (PREP.key === key) return PREP.v;
     const qm = [1, K.item_power_uncommon_mult || 1.25, K.item_power_flawless_mult || 1.5, K.item_power_epic_mult || 2, K.item_power_legd_mult || 3][o.q];
     const ok = (i) => (o.soon || !ST.isUnreleased(i)) && (!acc || ST.account.has(i));
+    const nameToCode = {};
+    Object.entries(d.types || {}).forEach(([code, ty]) => { if (ty && ty.name && !nameToCode[ty.name]) nameToCode[ty.name] = code; });
     // itens equipáveis com atributos já com qualidade e melhorias
     // tudo que cabe num espaço de herói (inclui feitiços, ervas e sobremesas), exceto encantamentos e materiais
     const items = d.items.filter((i) => !['z', 'm', 'ma'].includes(i.type) && ok(i)).map((it) => {
       const steps = [...(o.sf ? it.starforged || [] : []), ...(o.tr ? [...(it.ascension || []), ...(it.transcendence || [])] : [])];
       const s = steps.length ? ST.applySteps(it, steps).stats : it.stats;
       const core = { atk: s.atk * qm, def: s.def * qm, hp: s.hp * qm, eva: s.eva || 0, crit: s.crit || 0 };
-      return { it, core, raw: core.atk * 0.8 + core.def * 1.2 + core.hp * 5 };
+      const codes = [it.type, ...(it.multiType || []).map((n) => nameToCode[n]).filter(Boolean)];
+      return { it, core, codes, raw: core.atk * 0.8 + core.def * 1.2 + core.hp * 5 };
     }).filter((x) => x.raw > 0);
     const ench = d.items.filter((i) => i.type === 'z' && ok(i));
     // habilidades por uid de tier (para espíritos) e famílias
@@ -228,13 +231,11 @@
     const nSlots = o.sk ? (c.skillSlots || []).filter((l) => l <= lv).length : 0;
     const allowed = (tt) => (tt.classes || []).some((x) => x === '*' || x === c.uid || x === c.type);
     const pool = o.sk ? skills.filter((f) => (f.kind === 'hero' || f.kind === 'mastery') && f.tiers.some(allowed)) : [];
-    // candidatos por espaço: os melhores pelo valor bruto + o melhor de cada tipo (para bônus de tipo)
+    // candidatos por espaço: TODOS os itens permitidos (inclusive "conta como"); crítico, evasão e afinidade
+    // podem valer mais que atributos brutos, então não há corte prévio
     const cands = c.slots.map((sl) => {
       const codes = sl.map((x) => x.code);
-      const list = P.items.filter((x) => codes.includes(x.it.type)).sort((a, b) => b.raw - a.raw);
-      const pick = new Set(list.slice(0, 10));
-      codes.forEach((cd) => list.filter((x) => x.it.type === cd).slice(0, 3).forEach((x) => pick.add(x)));
-      return [...pick];
+      return P.items.filter((x) => x.codes.some((cd) => codes.includes(cd))).sort((a, b) => b.raw - a.raw);
     });
     const heroEls = o.en ? P.elements.filter((e) => e.el === c.element).sort((a, b) => b.val - a.val || (b.s.atk + b.s.def) - (a.s.atk + a.s.def)) : [];
     const anyEls = o.en ? P.elements.slice().sort((a, b) => (b.s.atk * 0.8 + b.s.def * 1.2 + b.s.hp * 5) - (a.s.atk * 0.8 + a.s.def * 1.2 + a.s.hp * 5)) : [];
@@ -295,6 +296,41 @@
       if (!changed && round > 0) break;
     }
     gear = bestAll.gear; chosen = bestAll.chosen;
+    // polimento: testa cada espaço com todos os itens/elementos, depois espíritos e habilidades, até nada melhorar
+    for (let pass = 0; pass < 5; pass++) {
+      let improved = false;
+      gear.forEach((g, k) => {
+        if (!g) return;
+        let best = score(), keep = null;
+        for (const x of cands[k]) for (const el of elOptions(x)) {
+          gear[k] = { x, el, sp: g.sp };
+          const sc = score();
+          if (sc > best + 1e-6) { best = sc; keep = { x, el, sp: g.sp }; }
+        }
+        gear[k] = keep || g;
+        if (keep) improved = true;
+        if (o.en) {
+          const cur = gear[k];
+          let bs = score(), ks = cur.sp;
+          for (const sp of spirits) { cur.sp = sp; const sc = score(); if (sc > bs + 1e-6) { bs = sc; ks = sp; improved = true; } }
+          cur.sp = ks;
+        }
+      });
+      if (nSlots) { // troca uma habilidade por vez
+        for (let i = 0; i < chosen.length; i++) {
+          let best = score(), keep = chosen[i];
+          for (const f of pool) {
+            if (chosen.includes(f)) continue;
+            const old = chosen[i]; chosen[i] = f;
+            const sc = score();
+            if (sc > best + 1e-6) { best = sc; keep = f; improved = true; }
+            chosen[i] = old;
+          }
+          chosen[i] = keep;
+        }
+      }
+      if (!improved) break;
+    }
     const r = evaluate(ctx, gear, chosen);
     return { c, lv, gear, chosen, ctx, ...r, heroOnly: evaluate(ctx, gear.map(() => null), []).power };
   }
