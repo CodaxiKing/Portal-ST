@@ -439,7 +439,11 @@ def build_collection(tables, T):
 def build_titles(tables, T):
     titles = []
     for uid, t in tables.get("titles", {}).items():
-        titles.append({"uid": uid, "name": T.get(f"{uid}_name", uid), "desc": clean(T.get(f"{uid}_desc")),
+        fam = t.get("family") or ""
+        desc = clean(T.first(f"{uid}_desc", f"{fam}_title_desc"))
+        if desc and "{0}" in desc:
+            desc = desc.replace("{0}", f"{t.get('threshold') or 0:,}".replace(",", "."))
+        titles.append({"uid": uid, "name": T.first(f"{uid}_name", f"{fam}_title_m_name", default=uid), "desc": desc,
                        "family": t.get("family"), "tier": t.get("tier"), "threshold": t.get("threshold"),
                        "hidden": bool(t.get("isHidden")), "achievement": bool(t.get("isAchievement"))})
     ach = []
@@ -545,11 +549,38 @@ def build_events(tables, T):
                          "monsterHp": q.get("monsterHp"), "dmg": q.get("dmg"), "tdef": q.get("tdef"), "power": q.get("mpwr"),
                          "crit": num(q.get("crit")), "dmgRed": num(q.get("dmgRed")), "accuracy": num(q.get("accuracy")),
                          "element": q.get("element"), "barrier": q.get("barrierPower") or 0, "aoe": q.get("aoe")})
+    info = lambda pre: [[clean(T.get(f"{pre}_info_header{i}")), clean(T.get(f"{pre}_info_body{i}"))]
+                        for i in (1, 2, 3) if T.get(f"{pre}_info_header{i}")]
+    # eventos recorrentes: as datas vêm do servidor da Kabam, os arquivos só têm regras, ícones e recompensas
+    recurring = [
+        {"id": "goldcity", "name": T.first("goldcity_name", "fq_lcog_name", default="Lost City of Gold"), "icon": "icon_quest_goldcity",
+         "route": "cidadeouro", "info": info("goldcity")},
+        {"id": "tower", "name": T.first("titantower_name", default="Titan Tower"), "icon": "icon_quest_titantower",
+         "route": "tumba", "desc": clean(T.get("titantower_description")), "info": info("titantower")},
+        {"id": "dragon", "name": T.first("dragon_invasion_name", default="Dragon Invasion"), "icon": "icon_dragoninvasion_airship",
+         "route": "invasao", "desc": clean(T.get("dragon_invasion_description"))},
+        {"id": "caravan", "name": T.first("caravan_shop_title", "caravan_title", default="Caravan"), "icon": "icon_caravan_emblem",
+         "route": "caravana", "info": info("caravan")},
+    ]
+    community = []
+    for uid, r in tables.get("communityEvents", {}).items():
+        if uid.startswith("sample"):
+            continue
+        community.append({"id": uid, "theme": r.get("theme"), "name": T.first(f"community_event_title_{uid}", default=uid),
+                          "desc": clean(T.get(f"community_event_intro_description_{uid}")),
+                          "progress": clean(T.get(f"community_event_progress_description_{uid}")),
+                          "icon": f"icon_news_header_{uid}_community_event", "min": r.get("minContribution")})
+    ev_icons = {x["icon"] for x in recurring} | {x["icon"] for x in community} | {
+        "icon_lostcityofgold_puregold", "icon_goldcity_endless_event_bronze", "icon_goldcity_endless_event_silver",
+        "icon_goldcity_endless_event_gold", "icon_news_header_goldcity", "icon_quest_goldcity_boss", "icon_global_grand_prize_goldcity_blueprint",
+        "icon_news_header_community_event", "icon_news_header_titantower"}
     return {
+        "recurring": recurring, "community": community,
+        "goldcity": {"info": info("goldcity"), "k": {k: num(v) for k, v in c.items() if re.search(r"goldcity|lcog|pure_?gold", k)}},
         "caravan": {"pools": pools, "days": days, "maps": maps, "shapes": shapes, "k": {x: num(c.get(x)) for x in ck}},
         "tower": {"mods": mods, "tomb": tomb, "curse": {k: c.get(f"tomb_curse_{k}_percentage") for k in ("hp", "atk", "def")},
                   "spiritQuestMult": num(c.get("spirit_quest_restriction_bonus_multiplier")) or 2},
-    }, set()
+    }, ev_icons
 
 
 SECTIONS["events"] = build_events

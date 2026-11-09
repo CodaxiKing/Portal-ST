@@ -861,3 +861,16 @@ a.hm-card2:hover { transform: translateY(-3px); box-shadow: var(--shadow-lift); 
 .cal-rw .ic{width:20px;height:20px}
 .cal-rw em{position:absolute;right:-2px;bottom:-3px;font:600 .58rem var(--mono);font-style:normal;background:var(--card);border-radius:4px;padding:0 2px}
 @media (max-width:860px){.cal-ic{width:16px;height:16px}.cal-ic.ev{width:24px;height:24px}}
+.cal-month{grid-row:span 2}
+
+/* eventos: Cidade Perdida de Ouro e comunidade */
+.ev-hico{display:inline-grid;vertical-align:middle;margin-right:10px}.ev-hico img{width:44px;height:44px;object-fit:contain}
+.ev-info{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:0 0 18px}
+.ev-card{display:flex;gap:12px;align-items:flex-start;padding:14px;border:1px solid var(--line);border-radius:16px;background:var(--card)}
+.ev-card img{width:44px;height:44px;object-fit:contain;flex:none}.ev-card p{margin:4px 0 0;color:var(--muted);font-size:.9rem}
+.ev-tiles{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-bottom:14px}
+.ev-tile{flex:none;width:118px;display:grid;gap:6px;justify-items:center;text-align:center;padding:10px 8px;border:1px solid var(--line);border-radius:14px;background:var(--card);color:inherit;text-decoration:none;font-size:.8rem;transition:transform .25s cubic-bezier(.16,1,.3,1),border-color .25s}
+.ev-tile img{width:64px;height:64px;object-fit:contain}.ev-tile:hover{transform:translateY(-1px)}.ev-tile.on{border-color:var(--accent)}
+.ev-head{display:flex;gap:18px;align-items:flex-start}.ev-head h2{margin:0 0 6px}
+.ev-banner img{width:120px;height:120px;object-fit:contain}
+@media (max-width:640px){.ev-head{flex-direction:column}}
