@@ -256,6 +256,9 @@
     if (key === currentPage && !force) return;
     currentPage = key;
     document.querySelectorAll('[data-nav]').forEach((a) => a.classList.toggle('active', a.dataset.nav === (def.nav || head)));
+    const act = document.querySelector('[data-nav].active');
+    if (act) ST.openNavGroup(+act.closest('.nav-group').dataset.g);
+    else if (!document.querySelector('.nav-group.open')) ST.openNavGroup(0);
     document.title = (def.title ? def.title() + ' · ' : '') + 'Portal Shop Titans';
     el.innerHTML = ST.skeleton();
     try {
@@ -280,10 +283,24 @@
       ['encantamentos', 'enchantPlanner'], ['montador', 'builder'], ['hypermax', 'hypermax'], ['planejador', 'talentPlanner'], ['custos', 'upgradeCosts'], ['lancamentos', 'releases']]],
   ];
   ST.NAV = NAV;
+  ST.openNavGroup = (gi) => {
+    document.querySelectorAll('.nav-group').forEach((g) => {
+      const on = +g.dataset.g === gi;
+      g.classList.toggle('open', on);
+      g.querySelector('.nav-title').setAttribute('aria-expanded', on);
+      g.querySelectorAll('a').forEach((a) => (a.tabIndex = on ? 0 : -1));
+    });
+  };
 
   function shell() {
-    document.getElementById('nav').innerHTML = NAV.map(([g, links]) => `<div class="nav-group"><div class="nav-title">${ST.t(g)}</div>${
-      links.map(([p, k]) => `<a href="#/${p}" data-nav="${p}">${ST.t(k)}</a>`).join('')}</div>`).join('');
+    // menu em sanfona: só um grupo aberto por vez
+    document.getElementById('nav').innerHTML = NAV.map(([g, links], gi) => `<div class="nav-group" data-g="${gi}">
+      <button class="nav-title" type="button" aria-expanded="false" aria-controls="ng${gi}"><span>${ST.t(g)}</span><span class="nav-count">${links.length}</span>${ST.ic('down', 'nav-chev')}</button>
+      <div class="nav-links" id="ng${gi}"><div>${links.map(([p, k]) => `<a href="#/${p}" data-nav="${p}" tabindex="-1">${ST.t(k)}</a>`).join('')}</div></div></div>`).join('');
+    document.getElementById('nav').addEventListener('click', (e) => {
+      const b = e.target.closest('.nav-title');
+      if (b) ST.openNavGroup(+b.parentElement.dataset.g);
+    });
     const sel = document.getElementById('langSel');
     const avail = (ST.meta && ST.meta.langs) || ['pt', 'en'];
     sel.innerHTML = avail.filter((l) => LANG_INFO[l]).map((l) => `<option value="${l}" ${l === lang ? 'selected' : ''}>${LANG_INFO[l][0]}</option>`).join('');
