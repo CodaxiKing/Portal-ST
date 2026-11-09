@@ -1,5 +1,5 @@
 /* Hypermax: o máximo teórico de cada classe — equipamento, encantamentos e habilidades que dão mais poder.
-   Rotas: #/hypermax e #/hypermax/<classe>.
+   Rotas: #/hypermax[/<classe>] e #/tumba[/<classe>] (mesmo motor, com as regras da Tumba dos Titãs).
 
    Modelo (dados e constantes do jogo):
    - item: atributos × qualidade (item_power_*_mult) após Ascensão + Transcendência; bônus "% de itens do tipo X" das habilidades
@@ -83,19 +83,24 @@
     const active = [];
     if (ctx.innate) { const tt = tierOf(ctx.innate); if (tt) active.push({ f: ctx.innate, tt }); }
     chosen.forEach((f) => { const tt = tierOf(f); if (tt) active.push({ f, tt }); });
-    const seenSp = new Set();
-    gear.forEach((g) => {
+    // espíritos: efeito "só no próprio item" (affectItselfOnly) vai para o item; os demais valem uma vez por espírito
+    const seenSp = new Set(), selfPct = gear.map(() => 0);
+    gear.forEach((g, idx) => {
       if (!g || !g.sp || !g.sp.sk) return;
-      if (ST.HM_SPIRIT_UNIQUE && seenSp.has(g.sp.sk.f.family)) return;
+      const tt = g.sp.sk.tt, qm = tt.quest && ctx.tower ? ctx.questMult : 1; // efeito dobrado na Torre/Tumba
+      if (tt.self) { selfPct[idx] += ((tt.mods || {}).item || 0) * qm; active.push({ f: g.sp.sk.f, tt, spirit: true, self: true }); return; }
+      if (seenSp.has(g.sp.sk.f.family)) return;
       seenSp.add(g.sp.sk.f.family);
-      active.push({ f: g.sp.sk.f, tt: g.sp.sk.tt, spirit: true });
+      active.push({ f: g.sp.sk.f, tt, spirit: true, qm });
     });
     // 3) somatórios
     const pct = { atk: 0, def: 0, hp: 0, shieldHp: 0 }, abs = { atk: 0, def: 0, hp: 0 };
     let eva = c.evasion || 0, crit = c.critical || 0, cm = c.critMult || 2, aggro = c.aggro || 0;
     const itemPct = []; // [{types, v}]
-    for (const { tt } of active) {
-      const m = tt.mods || {};
+    for (const a of active) {
+      if (a.self) continue;
+      const tt = a.tt, q = a.qm || (tt.quest && ctx.tower ? ctx.questMult : 1);
+      const m = q === 1 ? (tt.mods || {}) : Object.fromEntries(Object.entries(tt.mods || {}).map(([k, v]) => [k, v * q]));
       pct.atk += m.atk || 0; pct.def += m.def || 0; pct.hp += m.hp || 0; pct.shieldHp += m.shieldHp || 0;
       abs.atk += m.atkAbs || 0; abs.def += m.defAbs || 0; abs.hp += m.hpAbs || 0;
       eva += m.evasion || 0; crit += m.critical || 0; cm += m.critMult || 0; aggro += m.aggro || 0;
@@ -103,12 +108,12 @@
       if (m.item) itemPct.push({ types: tt.itemTypes || [], v: m.item, sec: !!tt.secStat });
     }
     const tot = { atk: base.atk + abs.atk, def: base.def + abs.def, hp: base.hp + abs.hp };
-    gear.forEach((g) => {
+    gear.forEach((g, idx) => {
       if (!g) return;
       const ty = g.x.it.type;
       const hit = (p) => !p.types.length || p.types.includes('*') || p.types.includes(ty);
-      const ip = itemPct.reduce((a, p) => a + (hit(p) ? p.v : 0), 0);
-      const sp = itemPct.reduce((a, p) => a + (hit(p) && p.sec ? p.v : 0), 0); // "affectSecStat": também evasão e crítico do item
+      const ip = itemPct.reduce((a, p) => a + (hit(p) ? p.v : 0), 0) + selfPct[idx];
+      const sp = itemPct.reduce((a, p) => a + (hit(p) && p.sec ? p.v : 0), 0) + selfPct[idx]; // "affectSecStat": também evasão e crítico do item
       for (const k of ['atk', 'def', 'hp']) tot[k] += g.x.core[k] * (1 + ip);
       eva += g.x.core.eva * (1 + sp); crit += g.x.core.crit * (1 + sp);
       for (const en of [g.el, g.sp]) if (en) {
@@ -121,6 +126,9 @@
     const atk = tot.atk * (1 + pct.atk), def = tot.def * (1 + pct.def), hp = tot.hp * (1 + pct.hp);
     const shield = hp * pct.shieldHp;
     eva = Math.min(eva, K.quest_evasion_max || 0.75);
+    // Tumba: modificadores dos monstros reduzem o crítico (Pele Adamantina −70%, etc.); "sem crítico" zera
+    if (ctx.noCrit) crit = 0; else crit = Math.max(0, crit + (ctx.critAdj || 0));
+    cm = Math.max(1, cm + (ctx.critMultAdj || 0));
     const cr = Math.min(crit, 1);
     const power = atk * (K.adventurer_power_attack_mult || 0.8) * (1 + cr * (cm - 1)) + def * (K.adventurer_power_defense_mult || 1.2) +
       hp * (K.adventurer_power_hp_mult || 5) + shield * (K.adventurer_power_shieldhp_mult || 3) +
@@ -136,7 +144,8 @@
     const rankPairs = parsePairs(K.hero_element_rank_and_value);
     const ctx = { c, K, base, rankEl: ST.HM_RANK_EL ? (rankPairs.length ? rankPairs[rankPairs.length - 1][1] : 0) : 0, aff: K.affinity_stat_bonus || 1.5,
       affAll: K.affinity_all_bonus_mult || 0.5, elBonus: parsePairs(K.affinity_element_bonus),
-      innate: o.sk && c.innate ? skills.find((f) => f.family === c.innate.uid) : null };
+      innate: o.sk && c.innate ? skills.find((f) => f.family === c.innate.uid) : null,
+      tower: !!o.tower, questMult: o.questMult || 2, noCrit: !!o.noCrit, critAdj: o.critAdj || 0, critMultAdj: o.critMultAdj || 0 };
     const nSlots = o.sk ? (c.skillSlots || []).filter((l) => l <= lv).length : 0;
     const allowed = (tt) => (tt.classes || []).some((x) => x === '*' || x === c.uid || x === c.type);
     const pool = o.sk ? skills.filter((f) => (f.kind === 'hero' || f.kind === 'mastery') && f.tiers.some(allowed)) : [];
@@ -227,7 +236,27 @@
       <span class="hm-encs">${g.el ? `<span class="hm-rune" title="${esc(g.el.e.name)}">${img(g.el.e.uid)}<em>${elIcon(g.el.el)}</em></span>` : ''}${g.sp ? `<span title="${esc(g.sp.e.name)}">${img(g.sp.e.uid)}</span>` : ''}</span></span>`
     : '<span class="hm-it empty"></span>');
 
+  // regras de crítico na Tumba (modificadores de monstro dos dados do jogo)
+  const CRIT_RULES = {
+    off: { pt: 'Sem crítico (a Tumba anula)', en: 'No crit (the Tomb negates it)', noCrit: true },
+    adam: { pt: 'Pele Adamantina (−70% crítico)', en: 'Adamantine Skin (−70% crit)', critAdj: -0.7 },
+    noweak: { pt: 'Sem Fraquezas (−30% crítico)', en: 'No Weakness (−30% crit)', critAdj: -0.3 },
+    fort: { pt: 'Fortificado (−20% crítico)', en: 'Fortified (−20% crit)', critAdj: -0.2 },
+    heavy: { pt: 'Armado e Protegido (−0,5 dano crítico)', en: 'Heavy Armored (−0.5 crit dmg)', critMultAdj: -0.5 },
+    none: { pt: 'Sem modificador', en: 'No modifier' },
+  };
+  const withMode = (o, mode) => {
+    o.route = mode === 'tomb' ? 'tumba' : 'hypermax';
+    if (mode === 'tomb') {
+      const r = CRIT_RULES[o.cr] || CRIT_RULES.off;
+      Object.assign(o, { tower: true, noCrit: !!r.noCrit, critAdj: r.critAdj || 0, critMultAdj: r.critMultAdj || 0 });
+    }
+    return o;
+  };
+
   const controls = (o) => `<div class="form-row hm-ctl">
+      ${o.tower ? `<label class="field">${tr('Regra de crítico', 'Crit rule')}<select class="inp" data-o="cr" data-str>${Object.entries(CRIT_RULES).map(([k, r]) =>
+        `<option value="${k}" ${k === (o.cr || 'off') ? 'selected' : ''}>${tr(r.pt, r.en)}</option>`).join('')}</select></label>` : ''}
       <label class="field">${tr('Qualidade', 'Quality')}<select class="inp" data-o="q">${QN.map((n, k) => `<option value="${k}" ${k === o.q ? 'selected' : ''}>${tr(...n)}</option>`).join('')}</select></label>
       <label class="field">${t('level')}<select class="inp" data-o="lv">${LEVELS.map((l) => `<option value="${l}" ${o.lv === l ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
       <label class="check"><input type="checkbox" data-o="sk" ${o.sk ? 'checked' : ''}> ${tr('Habilidades', 'Skills')}</label>
@@ -236,14 +265,15 @@
       <label class="check"><input type="checkbox" data-o="tr" ${o.tr ? 'checked' : ''}> ${tr('Ascensão + Transcendência', 'Ascension + Transcendence')}</label>
       <label class="check"><input type="checkbox" data-o="soon" ${o.soon ? 'checked' : ''}> ${tr('Itens em breve', 'Upcoming items')}</label></div>`;
   const bindControls = (el, o, base) => el.querySelectorAll('[data-o]').forEach((n) => n.addEventListener('change', () => {
-    o[n.dataset.o] = n.type === 'checkbox' ? n.checked : +n.value;
-    location.hash = base + optQuery(o, { ty: o.ty });
+    o[n.dataset.o] = n.type === 'checkbox' ? n.checked : n.hasAttribute('data-str') ? n.value : +n.value;
+    location.hash = base + optQuery(o, { ty: o.ty, cr: o.tower && o.cr !== 'off' ? o.cr : '' });
   }));
-  const NOTE = () => tr('Estimativa a partir dos dados do jogo, calibrada com o titansdb: atributos × qualidade (constantes item_power), Forjado nas Estrelas (atributos base +25%), Ascensão + Transcendência, encantamentos com afinidade, habilidade inata + habilidades dos espaços liberados pelo nível (tier liberado pelo elemento do herói, que soma os encantamentos do mesmo elemento), bônus de tipo de item (também em evasão/crítico quando o jogo indica), ATQ por ponto de elemento (Geomancia) e habilidades dos espíritos (espíritos iguais acumulam). Poder = ATQ×0,8×(1 + crítico×(dano crítico−1)) + DEF×1,2 + PV×5 + escudo×3 + ameaça×(DEF×0,008 + PV×0,025). Não entram: campeões, sementes, boosters e efeitos condicionais.',
-    'Estimate from the game data, calibrated against titansdb: stats × quality (item_power constants), Starforged (base stats +25%), Ascension + Transcendence, enchantments with affinity, innate skill + skills for the slots unlocked by level (tier unlocked by hero element, the sum of same-element enchantments), item-type bonuses (also on evasion/crit when the game says so), ATK per element point (Geomancy) and spirit skills (identical spirits stack). Power = ATK×0.8×(1 + crit×(crit dmg−1)) + DEF×1.2 + HP×5 + shield×3 + threat×(DEF×0.008 + HP×0.025). Not included: champions, seeds, boosters and conditional effects.');
+  const NOTE = () => tr('Estimativa a partir dos dados do jogo, calibrada com o titansdb: atributos × qualidade (constantes item_power), Forjado nas Estrelas (atributos base +25%), Ascensão + Transcendência, encantamentos com afinidade, habilidade inata + habilidades dos espaços liberados pelo nível (tier liberado pelo elemento do herói, que soma os encantamentos do mesmo elemento), bônus de tipo de item (também em evasão/crítico quando o jogo indica), ATQ por ponto de elemento (Geomancia) e habilidades dos espíritos (efeitos "só no próprio item" valem por item). Poder = ATQ×0,8×(1 + crítico×(dano crítico−1)) + DEF×1,2 + PV×5 + escudo×3 + ameaça×(DEF×0,008 + PV×0,025). Não entram: campeões, sementes, boosters e efeitos condicionais.',
+    'Estimate from the game data, calibrated against titansdb: stats × quality (item_power constants), Starforged (base stats +25%), Ascension + Transcendence, enchantments with affinity, innate skill + skills for the slots unlocked by level (tier unlocked by hero element, the sum of same-element enchantments), item-type bonuses (also on evasion/crit when the game says so), ATK per element point (Geomancy) and spirit skills ("this item only" effects apply per item). Power = ATK×0.8×(1 + crit×(crit dmg−1)) + DEF×1.2 + HP×5 + shield×3 + threat×(DEF×0.008 + HP×0.025). Not included: champions, seeds, boosters and conditional effects.');
+  const qExtra = (o) => (o.tower && o.cr && o.cr !== 'off' ? { cr: o.cr } : {});
 
   function card(b, rank, o) {
-    return `<a class="hm-card2" href="#/hypermax/${b.c.uid}${optQuery(o)}">
+    return `<a class="hm-card2" href="#/${o.route}/${b.c.uid}${optQuery(o, qExtra(o))}">
       <div class="hm-h"><div class="hm-cls">${img(b.c.icon)}</div><div class="hm-hn"><b>${esc(b.c.name)}</b>
         <span class="hm-pw2">${ST.ic('star')} ${nf(Math.round(b.power))}</span></div>
         <div class="hm-side"><span class="hm-rk">#${rank}</span><span class="hm-el">${nf(Math.round(b.E))} ${elIcon(b.c.element)}</span></div></div>
@@ -253,25 +283,69 @@
 
   ST.hmDebug = { evaluate, optimize, prepare };
 
-  ST.page('hypermax', {
-    nav: 'hypermax', title: () => t('hypermax'),
-    async render(el, [uid], query) {
+  // ---------------------------------------------------------------- Tumba: informações do evento
+  const pct = (v) => `${v > 0 ? '+' : ''}${Math.round(v * 100)}%`;
+  const EFF = {
+    critical: ['Crítico dos heróis', 'Hero crit'], critMult: ['Dano crítico dos heróis', 'Hero crit dmg'], atk: ['Dano dos heróis', 'Hero damage'],
+    def: ['Defesa dos heróis', 'Hero defense'], hp: ['PV dos heróis', 'Hero HP'], evasion: ['Evasão dos heróis', 'Hero evasion'], aggro: ['Ameaça', 'Threat'],
+    regen: ['Cura', 'Healing'], mHp: ['PV do monstro', 'Monster HP'], mDmg: ['Dano do monstro', 'Monster damage'], mCrit: ['Crítico do monstro', 'Monster crit'],
+    mCritMult: ['Dano crítico do monstro', 'Monster crit dmg'], mEva: ['Evasão do monstro', 'Monster evasion'], mAoe: ['Dano em área', 'AoE damage'],
+    mAoeOdds: ['Chance de área', 'AoE chance'], mDmgPerRound: ['Dano por rodada', 'Damage per round'], barrierPowerExtra: ['Barreira elemental', 'Elemental barrier'],
+  };
+  function tombInfo(ev, builds) {
+    const T = ev.tower;
+    const curseRows = (() => {
+      const parse = (s) => String(s || '').split(';').map((p) => p.split(',').map(Number));
+      const hp = parse(T.curse.hp), atk = parse(T.curse.atk), df = parse(T.curse.def);
+      const depths = [...new Set([...hp, ...atk, ...df].map((p) => p[0]))].sort((a, b) => a - b);
+      const at = (arr, d) => arr.reduce((a, [k, v]) => (d >= k ? v : a), 0);
+      return depths.map((dp) => ({ dp, hp: at(hp, dp), atk: at(atk, dp), def: at(df, dp) }));
+    })();
+    const top4 = builds.slice(0, 4), party = top4.reduce((a, b) => a + b.power, 0);
+    const critMods = T.mods.filter((m) => m.eff.critical || m.eff.critMult);
+    const others = T.mods.filter((m) => !(m.eff.critical || m.eff.critMult));
+    const modRow = (m) => `<div class="row"><div class="grow"><b>${esc(m.name)}</b> <span class="muted small">${m.minTier ? `${tr('a partir do tier', 'from tier')} ${m.minTier}` : tr('todos os tiers', 'all tiers')}${m.minFloor ? ` · ${tr('andar', 'floor')} ${m.minFloor}+` : ''}${m.classes.length ? ' · ' + esc(m.classes.join(', ')) : ''}</span>
+      <div class="small">${esc(m.desc || '')}</div></div><div class="r">${Object.entries(m.eff).map(([k, v]) => `${tr(...(EFF[k] || [k, k]))} ${k === 'regen' || k === 'aggro' ? (v > 0 ? '+' : '') + v : pct(v)}`).join(' · ')}</div></div>`;
+    return `<div class="two-col">
+      ${ST.sec(tr('Níveis da Tumba', 'Tomb tiers'), ST.table(T.tomb, [
+        { key: 'name', label: tr('Tumba', 'Tomb') },
+        { key: 'power', label: tr('Poder recomendado', 'Recommended power'), num: true, fmt: (r) => nf(r.power) },
+        { key: 'party', label: tr('Grupo', 'Party'), num: true },
+        { key: 'monsterHp', label: tr('PV do chefe', 'Boss HP'), num: true, fmt: (r) => short(r.monsterHp) },
+        { key: 'dmg', label: tr('Dano', 'Damage'), num: true, fmt: (r) => nf(r.dmg) },
+        { key: 'ok', label: tr('Top 4 daqui', 'Top 4 here'), num: true, fmt: (r) => (party >= r.power * r.party ? `<span class="ok">${ST.ic('check')}</span>` : '—'), sort: (r) => r.power }]),
+        tr(`Os 4 melhores desta página somam ${nf(Math.round(party))} de poder. "Top 4" compara com poder recomendado × tamanho do grupo.`, `The top 4 on this page add up to ${nf(Math.round(party))} power. "Top 4" compares with recommended power × party size.`))}
+      ${ST.sec(tr('Maldição da Tumba (chefes)', 'Tomb\'s Curse (bosses)'), ST.table(curseRows, [
+        { key: 'dp', label: tr('A partir da profundidade', 'From depth'), num: true },
+        { key: 'hp', label: tr('PV', 'HP'), num: true, fmt: (r) => `+${r.hp}%` }, { key: 'def', label: tr('Defesa', 'Defense'), num: true, fmt: (r) => `+${r.def}%` },
+        { key: 'atk', label: tr('Ataque', 'Attack'), num: true, fmt: (r) => `+${r.atk}%` }]), tr('Os itens “Maldição da Tumba” reduzem esses bônus em 30%, 50% ou 90%.', 'Tomb\'s Curse items reduce these bonuses by 30%, 50% or 90%.'))}
+    </div>
+    ${ST.sec(tr('Modificadores que cortam o crítico', 'Modifiers that cut crit'), `<div class="list">${critMods.map(modRow).join('')}</div>`, tr('Por isso o ranking desta página ignora o crítico por padrão. Troque a regra acima para simular um modificador específico.', 'That is why this page ignores crit by default. Change the rule above to simulate a specific modifier.'))}
+    <details class="sec"><summary><b>${tr('Outros modificadores dos andares', 'Other floor modifiers')} (${others.length})</b></summary><div class="list" style="margin-top:8px">${others.map(modRow).join('')}</div></details>`;
+  }
+
+  // ---------------------------------------------------------------- páginas (Hypermax e Tumba usam o mesmo motor)
+  function hmPage(mode) {
+    return async (el, [uid], query) => {
       const [classes, skills, prog] = await ST.need('classes', 'skills', 'progression');
+      const ev = mode === 'tomb' ? (await ST.need('events'))[0] : null;
       const { d } = await ST.itemsIndex();
-      const o = readOpts(query);
+      const o = withMode(readOpts(query), mode);
+      if (mode === 'tomb') { o.cr = query.get('cr') || 'off'; withMode(o, mode); o.questMult = ev.tower.spiritQuestMult || 2; }
       const K = prog.constants || {};
       const P = prepare(d, skills, K, o);
-      const list = uid ? classes.filter((c) => c.uid === uid) : classes.filter((c) => !o.ty || c.type === o.ty);
-      if (uid && !list.length) { el.innerHTML = ST.notFound(); return; }
-      // ranking geral precisa de todas as classes; cache por opções
-      const ck = JSON.stringify([o.q, o.lv, o.tr, o.sf, o.en, o.sk, o.soon]);
-      if (!ST._hmCache || ST._hmCache.k !== ck) {
+      if (uid && !classes.some((c) => c.uid === uid)) { el.innerHTML = ST.notFound(); return; }
+      const ck = JSON.stringify([mode, o.cr, o.q, o.lv, o.tr, o.sf, o.en, o.sk, o.soon]);
+      ST._hmCaches = ST._hmCaches || {};
+      if (!ST._hmCaches[ck]) {
         el.innerHTML = ST.skeleton();
         await new Promise((r) => setTimeout(r, 20));
-        ST._hmCache = { k: ck, builds: classes.map((c) => optimize(c, P, skills, K, o)).sort((a, b) => b.power - a.power) };
+        ST._hmCaches[ck] = classes.map((c) => optimize(c, P, skills, K, o)).sort((a, b) => b.power - a.power);
       }
-      const builds = ST._hmCache.builds;
+      const builds = ST._hmCaches[ck];
+      ST._hmCache = { k: ck, builds };
       const rankOf = (b) => builds.indexOf(b) + 1;
+      const base = '#/' + o.route, title = mode === 'tomb' ? tr('Tumba dos Titãs', 'Tomb of Titans') : t('hypermax');
 
       if (uid) {
         const b = builds.find((x) => x.c.uid === uid);
@@ -279,11 +353,16 @@
           <span class="small muted">T${g.x.it.tier} · ${esc(b.c.slots[k].map((x) => x.name).join(' / '))}</span></span></a></td>
           <td>${g.el ? `<a class="cell-item" href="#/item/${g.el.e.uid}"><span class="hm-rune lg">${img(g.el.e.uid)}<em>${elIcon(g.el.el)}</em></span><span>${esc(g.el.e.name)} <span class="small muted">+${g.el.val}</span></span></a>` : '—'}</td>
           <td>${g.sp ? `<a class="cell-item" href="#/item/${g.sp.e.uid}">${img(g.sp.e.uid)}<span>${esc(g.sp.e.name)}</span></a>` : '—'}</td></tr>` : '')).join('');
-        const skillRows = b.active.map((a) => `<div class="row">${img(a.f.icon)}<div class="grow"><b>${esc(a.tt.name || a.f.name)}</b>
-          <span class="muted small">${a.spirit ? tr('espírito', 'spirit') : a.f.kind === 'innate' ? tr('inata', 'innate') : a.f.kind === 'mastery' ? tr('maestria', 'mastery') : tr('herói', 'hero')}${a.tt.tier ? ' · T' + a.tt.tier : ''}${a.tt.req ? ` · ${nf(a.tt.req)} ${tr('de elemento', 'element')}` : ''}</span>
-          <div class="small">${esc((a.tt.effects || []).join(' · '))}</div></div></div>`).join('');
+        const seen = new Set();
+        const skillRows = b.active.filter((a) => { const k = a.f.family; if (a.spirit && seen.has(k)) return false; seen.add(k); return true; }).map((a) => {
+          const n = a.spirit ? b.active.filter((x) => x.f.family === a.f.family).length : 1;
+          const doubled = a.tt.quest && o.tower;
+          return `<div class="row">${img(a.f.icon)}<div class="grow"><b>${esc(a.tt.name || a.f.name)}</b>${n > 1 ? ` <span class="badge">×${n}</span>` : ''}${doubled ? ` <span class="badge">${tr('dobrado na Tumba', 'doubled in Tomb')}</span>` : ''}
+          <span class="muted small">${a.spirit ? tr('espírito', 'spirit') : a.f.kind === 'innate' ? tr('inata', 'innate') : a.f.kind === 'mastery' ? tr('maestria', 'mastery') : tr('herói', 'hero')}${a.tt.tier ? ' · T' + a.tt.tier : ''}${a.tt.req ? ` · ${nf(a.tt.req)} ${tr('de elemento', 'element')}` : ''}${a.self ? ' · ' + tr('só no próprio item', 'this item only') : ''}</span>
+          <div class="small">${esc((a.tt.effects || []).join(' · '))}</div></div></div>`;
+        }).join('');
         const builder = `#/montador?c=${b.c.uid}&lv=${Math.min(b.lv, ST.maxLevel(b.c))}&` + b.gear.map((g, k) => (g ? `s${k}=${g.x.it.uid}:${o.q}` : '')).filter(Boolean).join('&');
-        el.innerHTML = `<a class="crumb" href="#/hypermax${optQuery(o)}">${ST.ic('left')} ${t('hypermax')}</a>
+        el.innerHTML = `<a class="crumb" href="${base}${optQuery(o, qExtra(o))}">${ST.ic('left')} ${title}</a>
           ${controls(o)}
           <div class="hm-detail">${card(b, rankOf(b), o)}
             <div>${ST.sec(tr('Habilidades', 'Skills'), skillRows ? `<div class="list">${skillRows}</div>` : `<p class="muted">${t('none')}</p>`)}
@@ -291,17 +370,26 @@
               ${ST.stats([ST.stat(tr('Herói sem nada', 'Bare hero'), nf(Math.round(b.heroOnly))), ST.stat(tr('Elemento do herói', 'Hero element'), `${nf(Math.round(b.E))} ${elIcon(b.c.element)}`), ST.stat(t('level'), b.lv)])}
               <div class="tags" style="margin-top:12px"><a class="chip" href="${builder}">${ST.ic('swords')} ${tr('Abrir no montador', 'Open in builder')}</a><a class="chip" href="#/classes/${b.c.uid}">${ST.ic('info')} ${esc(b.c.name)}</a></div></div></div>
           <p class="note">${NOTE()}</p>`;
-        bindControls(el, o, '#/hypermax/' + b.c.uid);
+        bindControls(el, o, base + '/' + b.c.uid);
         return;
       }
       const types = [...new Map(classes.map((c) => [c.type, c.typeName])).entries()];
       const shown = builds.filter((b) => !o.ty || b.c.type === o.ty);
-      el.innerHTML = ST.pageHead(t('hypermax'), tr('O máximo teórico de cada classe: equipamento, encantamentos e habilidades que dão mais poder. Clique numa classe para ver os detalhes.',
-        'The theoretical maximum for each class: the gear, enchantments and skills that give the most power. Click a class for details.')) +
+      const ex = qExtra(o);
+      el.innerHTML = ST.pageHead(title, mode === 'tomb'
+        ? tr('Os melhores heróis para a Tumba dos Titãs. Os monstros da Tumba anulam o crítico (Pele Adamantina, Sem Fraquezas, Fortificado), então o ranking usa poder sem crítico, e o espírito “Malevolência Nascida da Tumba” vale em dobro aqui.',
+          'The best heroes for the Tomb of Titans. Tomb monsters negate crit (Adamantine Skin, No Weakness, Fortified), so the ranking uses power without crit, and the “Tomb-Born Malevolence” spirit counts double here.')
+        : tr('O máximo teórico de cada classe: equipamento, encantamentos e habilidades que dão mais poder. Clique numa classe para ver os detalhes.',
+          'The theoretical maximum for each class: the gear, enchantments and skills that give the most power. Click a class for details.')) +
         controls(o) +
-        ST.tabs([['#/hypermax' + optQuery(o), t('all')], ...types.map(([k, n]) => ['#/hypermax' + optQuery(o, { ty: k }), esc(n)])], '#/hypermax' + optQuery(o, { ty: o.ty })) +
+        (mode === 'tomb' ? tombInfo(ev, builds) + `<h2 class="group-title">${tr('Ranking de heróis para a Tumba', 'Hero ranking for the Tomb')}</h2>` : '') +
+        ST.tabs([[base + optQuery(o, ex), t('all')], ...types.map(([k, n]) => [base + optQuery(o, { ...ex, ty: k }), esc(n)])], base + optQuery(o, { ...ex, ty: o.ty })) +
         `<div class="hm-grid">${shown.map((b) => card(b, rankOf(b), o)).join('')}</div><p class="note">${NOTE()}</p>`;
-      bindControls(el, o, '#/hypermax');
-    },
-  });
+      bindControls(el, o, base);
+    };
+  }
+
+  ST.page('hypermax', { nav: 'hypermax', title: () => t('hypermax'), render: hmPage('hyper') });
+  ST.addI18n({ pt: { tomb: 'Tumba dos Titãs' }, en: { tomb: 'Tomb of Titans' } });
+  ST.page('tumba', { nav: 'tumba', title: () => t('tomb'), render: hmPage('tomb') });
 })();

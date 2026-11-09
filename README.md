@@ -11,6 +11,11 @@ traduzida em português e inglês, e os demais idiomas usam a interface em ingl�
 Talentos (árvore, pesquisa avançada, estandarte) · Mascotes · Coleção · Títulos e conquistas · Guilda ·
 Progressão · Novidades (diferenças entre extrações + notas de atualização)
 
+**Eventos:**
+- **Caravana de Pharoway**: para cada tema/dia, os itens que mais rendem em cada categoria procurada, com formato na grade.
+- **Invasão Dracônica**: itens mais fortes para abastecer as tropas da Aeronave, no geral e por categoria.
+- **Tumba dos Titãs**: ranking de heróis sem crítico (os monstros anulam), espírito da Tumba dobrado, níveis, maldição e modificadores.
+
 **Ferramentas:**
 - **Busca global** (Ctrl+K ou `/`): itens, classes, campeões, habilidades, missões, baús, móveis, mascotes e talentos.
 - **Calculadora de fabricação**: árvore completa de materiais, com marcos, Forjado nas Estrelas e ascensão.
@@ -98,10 +103,12 @@ passa a mostrar itens novos, removidos e alterados.
 
 - Atributos dos itens são valores base (qualidade Normal). Os multiplicadores de qualidade (1 / 1,25 / 1,5 / 2 / 3)
   vêm das constantes do jogo (`item_power_*_mult`).
-- Hypermax é uma estimativa calibrada com o titansdb (Astromante: 1,85 mi aqui x 1,75 mi lá): Forjado nas Estrelas,
-  Ascensão + Transcendência, encantamentos (espíritos iguais acumulam; elemento do herói = soma dos encantamentos do
-  mesmo elemento), habilidades no maior tier liberado pelo elemento, bônus percentuais somados, poder com crítico e
-  ameaça. Campeões, sementes, boosters e efeitos condicionais não entram.
+- Hypermax é uma estimativa: Forjado nas Estrelas, Ascensão + Transcendência, encantamentos (elemento do herói = soma
+  dos encantamentos do mesmo elemento; efeitos de espírito "só no próprio item" valem por item), habilidades no maior tier
+  liberado pelo elemento, poder com crítico e ameaça. Crítico e dano crítico batem com o titansdb; o ATQ ainda fica abaixo
+  (Astromante: 1,17 mi aqui x 1,75 mi lá). Campeões, sementes, boosters e efeitos condicionais não entram.
+- Caravana: a pontuação mostrada é relativa (valor × qualidade × bônus de procurado); a conversão exata em Vales não está
+  nos arquivos.
 - O montador interpola os atributos da classe entre os níveis 1, 40, 50 e 100 e não considera habilidades,
   encantamentos nem elementos.
 - Prateleiras, mesas, balcões e baús de loja são modelos 3D sem ícone 2D no jogo.

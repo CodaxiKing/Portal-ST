@@ -1,9 +1,9 @@
 /* Service worker do Portal Shop Titans: funciona offline depois da primeira visita.
    - interface (html/css/js): rede primeiro, cache como reserva
    - dados, ícones e imagens: cache primeiro (os arquivos de dados têm ?v=<data da extração>) */
-const CACHE = 'st-v2';
+const CACHE = 'st-v3';
 const SHELL = ['./', './index.html', './assets/style.css', './assets/core.js', './assets/search.js', './assets/pages/home.js',
-  './assets/pages/items.js', './assets/pages/db.js', './assets/pages/tools.js', './assets/pages/tools2.js', './assets/pages/hypermax.js', './manifest.webmanifest',
+  './assets/pages/items.js', './assets/pages/db.js', './assets/pages/tools.js', './assets/pages/tools2.js', './assets/pages/hypermax.js', './assets/pages/events.js', './manifest.webmanifest',
   './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', (e) => {

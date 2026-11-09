@@ -689,3 +689,20 @@ a.hm-card2:hover { transform: translateY(-3px); box-shadow: var(--shadow-lift); 
 .hm-it > span { z-index: 2; }
 @keyframes glow-pulse { 0%, 100% { opacity: .75; transform: scale(.94); } 50% { opacity: 1; transform: scale(1.04); } }
 @keyframes glow-spin { to { transform: translate(-50%, -50%) rotate(360deg); } }
+
+/* ---------------------------------------------------------------- eventos */
+.cv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 14px; }
+.cv-cat { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px; box-shadow: var(--shadow); min-width: 0; }
+.cv-h { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; font-size: 14.5px; font-weight: 650; }
+.cv-h img, .cv-h .ph { width: 26px; height: 26px; object-fit: contain; }
+.cv-h .muted { margin-left: auto; font-weight: 500; }
+.cv-cat .list { border: 0; background: none; }
+.cv-cat .row { padding: 6px 4px; }
+.cv-rank { width: 20px; text-align: center; font: 600 12px var(--mono); color: var(--muted); flex: none; }
+.cv-r { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.15; }
+.cv-r b { font: 650 13px var(--mono); color: var(--accent-2); }
+.cv-r span { font-size: 10.5px; }
+.cv-shape { display: grid; grid-template-columns: repeat(var(--w), 6px); gap: 1px; flex: none; }
+.cv-shape i { width: 6px; height: 6px; border-radius: 1.5px; background: transparent; }
+.cv-shape i.on { background: color-mix(in srgb, var(--accent) 65%, transparent); }
+.cv-type .cv-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }

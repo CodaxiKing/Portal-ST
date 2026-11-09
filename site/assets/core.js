@@ -275,6 +275,7 @@
       ['missoes', 'quests'], ['baus', 'chests'], ['trabalhadores', 'workers'], ['moveis', 'furniture'],
       ['talentos', 'talents'], ['mascotes', 'pets'], ['colecao', 'collection'], ['titulos', 'titles'],
       ['guilda', 'guild'], ['progressao', 'progression'], ['novidades', 'updates']]],
+    ['eventsNav', [['caravana', 'caravan'], ['invasao', 'airship'], ['tumba', 'tomb']]],
     ['tools', [['calculadora', 'calculator'], ['lista', 'craftList'], ['comparar', 'compare'], ['lucro', 'profit'], ['onde', 'whereToGet'],
       ['encantamentos', 'enchantPlanner'], ['montador', 'builder'], ['hypermax', 'hypermax'], ['planejador', 'talentPlanner'], ['custos', 'upgradeCosts'], ['lancamentos', 'releases']]],
   ];

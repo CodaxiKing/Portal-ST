@@ -108,7 +108,7 @@ def build_classes(tables, T):
 
 
 # ------------------------------------------------------------------ habilidades
-SKILL_MODS = ("atk", "def", "hp", "shieldHp", "atkAbs", "defAbs", "hpAbs", "evasion", "critical", "critMult", "aggro",
+SKILL_MODS = ("airshipDonationPowerMultiplier", "characterAirshipPowerMultiplier", "atk", "def", "hp", "shieldHp", "atkAbs", "defAbs", "hpAbs", "evasion", "critical", "critMult", "aggro",
              "item", "eleAtk", "championStatBonusMultiplier", "elementalItemCoreStatMultiplier")
 SKILL_KIND = {"p": "hero", "s": "mastery", "c": "innate", "i": "spirit", "a": "artifact", "q": "item"}
 
@@ -131,7 +131,8 @@ def build_skills(tables, T):
                            "name": T.get(f"skill_{uid}_name"), "effects": stat_effects(s, T),
                            # números usados pelo Hypermax: % (0.6 = +60%), valores fixos (*Abs), elemento exigido, tipos de item
                            "mods": mods, "req": num(s.get("elements")), "classes": split(s.get("classes")),
-                           "itemTypes": split(s.get("itemTypes")), "secStat": bool(s.get("affectSecStat"))})
+                           "itemTypes": split(s.get("itemTypes")), "secStat": bool(s.get("affectSecStat")),
+                           "self": bool(s.get("affectItselfOnly")), "quest": s.get("questRestriction") or None})
     out = []
     for f in fams.values():
         f["tiers"].sort(key=lambda x: x["tier"] or 0)
@@ -484,3 +485,46 @@ SECTIONS = {
     "pets": build_pets, "collection": build_collection, "titles": build_titles, "city": build_city,
     "progression": build_progression, "updates": build_updates,
 }
+
+
+# ------------------------------------------------------------------ eventos: caravana, torre/tumba
+def build_events(tables, T):
+    c = tables.get("constants", {})
+    cells = lambda m: str(m or "").split(",").count("1")
+    shapes = {}
+    for uid, r in tables.get("caravanItems", {}).items():
+        shapes[uid] = {"w": num(r.get("width")), "l": num(r.get("length")), "n": cells(r.get("map")), "map": r.get("map")}
+    pools = [{"id": r["uid"], "name": T.get(f"caravan_title_theme_{r['uid']}", r["uid"]),
+              "wanted": split(r.get("pool"))} for r in tables.get("caravanWantedItemPools", {}).values()]
+    days = [{"uid": r["uid"], "day": r.get("day"), "family": r.get("family"), "theme": r.get("theme"), "map": r.get("map"),
+             "maxStack": r.get("maxItemStack"), "maxItems": r.get("maxItems")} for r in tables.get("caravanDays", {}).values()]
+    maps = {r["uid"]: {"w": num(r.get("width")), "l": num(r.get("length")), "n": cells(r.get("map")), "map": r.get("map")}
+            for r in tables.get("caravanMaps", {}).values()}
+    ck = ["caravan_wanted_item_multiplier", "caravan_per_square_bonus", "caravan_all_wanted_item_match",
+          "caravan_dividing_points_ratio", "caravan_minimum_item_points", "item_price_uncommon_mult", "item_price_flawless_mult",
+          "item_price_epic_mult", "item_price_legd_mult", "quest_event_dragon_donate_power_mult"]
+    mods = []
+    for uid, r in tables.get("qmodifiers", {}).items():
+        if not r.get("isTower"):
+            continue
+        eff = {k: num(r.get(k)) for k in ("atk", "def", "hp", "evasion", "critical", "critMult", "aggro", "regen", "mHp", "mDmg",
+                                          "mCrit", "mCritMult", "mEva", "mAoe", "mAoeOdds", "mDmgPerRound", "barrierPowerExtra") if num(r.get(k))}
+        mods.append({"uid": uid, "family": r.get("family"), "name": T.get(f"{uid}_name", uid), "desc": clean(T.get(f"{uid}_desc")),
+                     "weight": num(r.get("weight")), "minTier": r.get("minTowerTier") or 0, "minFloor": r.get("minTowerFloor") or 0,
+                     "classes": split(r.get("classes")), "eff": eff})
+    tomb = []
+    for uid, q in tables.get("quests", {}).items():
+        if q.get("family") == "titantower" and "tomb" in uid:
+            tier = uid.split("_")[-1]
+            tomb.append({"uid": uid, "tier": tier, "name": T.get(f"quest_event_tower_tier_{tier}_tomb", tier), "party": q.get("party"),
+                         "monsterHp": q.get("monsterHp"), "dmg": q.get("dmg"), "tdef": q.get("tdef"), "power": q.get("mpwr"),
+                         "crit": num(q.get("crit")), "dmgRed": num(q.get("dmgRed")), "accuracy": num(q.get("accuracy")),
+                         "element": q.get("element"), "barrier": q.get("barrierPower") or 0, "aoe": q.get("aoe")})
+    return {
+        "caravan": {"pools": pools, "days": days, "maps": maps, "shapes": shapes, "k": {x: num(c.get(x)) for x in ck}},
+        "tower": {"mods": mods, "tomb": tomb, "curse": {k: c.get(f"tomb_curse_{k}_percentage") for k in ("hp", "atk", "def")},
+                  "spiritQuestMult": num(c.get("spirit_quest_restriction_bonus_multiplier")) or 2},
+    }, set()
+
+
+SECTIONS["events"] = build_events
