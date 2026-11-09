@@ -666,3 +666,26 @@ a.hm-card2:hover { transform: translateY(-3px); box-shadow: var(--shadow-lift); 
 .hm-rune.lg img { width: 30px; height: 30px; }
 .hm-rune.lg em { width: 15px; height: 15px; left: -4px; top: -4px; }
 .hm-rune.lg em .hm-elic { width: 12px; height: 12px; }
+
+/* brilho atrás do item conforme a qualidade (raridade) */
+.hm-it { --glow: 150, 150, 160; isolation: isolate; }
+.hm-it.q0 { --glow: 170, 170, 180; }
+.hm-it.q1 { --glow: 92, 196, 110; }
+.hm-it.q2 { --glow: 80, 170, 235; }
+.hm-it.q3 { --glow: 176, 110, 240; }
+.hm-it.q4 { --glow: 245, 184, 70; }
+.hm-it, .hm-it.q3, .hm-it.q4 { background: var(--bg-2); box-shadow: inset 0 0 0 1.5px rgba(var(--glow), .55); }
+.hm-it::before { content: ""; position: absolute; inset: 8%; z-index: -1; border-radius: 50%;
+  background: radial-gradient(circle, rgba(var(--glow), .75) 0%, rgba(var(--glow), .32) 38%, transparent 70%);
+  filter: blur(6px); animation: glow-pulse 3.2s ease-in-out infinite; }
+.hm-it::after { content: ""; position: absolute; left: 50%; top: 50%; width: 150%; aspect-ratio: 1; z-index: -1; pointer-events: none;
+  background: repeating-conic-gradient(from 0deg, rgba(var(--glow), .22) 0deg 9deg, transparent 9deg 30deg);
+  -webkit-mask: radial-gradient(circle, #000 18%, transparent 60%); mask: radial-gradient(circle, #000 18%, transparent 60%);
+  transform: translate(-50%, -50%); animation: glow-spin 18s linear infinite; }
+.hm-it.q0::after, .hm-it.q1::after { opacity: .45; }
+.hm-it.q4::after { opacity: 1; }
+.hm-it.empty::before, .hm-it.empty::after { display: none; }
+.hm-it > .hm-itimg { position: relative; z-index: 1; filter: drop-shadow(0 4px 10px rgba(var(--glow), .45)) drop-shadow(0 2px 4px rgba(0, 0, 0, .4)); }
+.hm-it > span { z-index: 2; }
+@keyframes glow-pulse { 0%, 100% { opacity: .75; transform: scale(.94); } 50% { opacity: 1; transform: scale(1.04); } }
+@keyframes glow-spin { to { transform: translate(-50%, -50%) rotate(360deg); } }
