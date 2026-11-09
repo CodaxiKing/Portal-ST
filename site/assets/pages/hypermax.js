@@ -1,10 +1,10 @@
 /* Hypermax: o máximo teórico de cada classe — equipamento, encantamentos e habilidades que dão mais poder.
    Rotas: #/hypermax[/<classe>] e #/tumba[/<classe>] (mesmo motor, com as regras da Tumba dos Titãs).
 
-   Modelo (dados e constantes do jogo):
+   Modelo (somente dados e constantes do jogo):
    - item: atributos × qualidade (item_power_*_mult) após Ascensão + Transcendência; bônus "% de itens do tipo X" das habilidades
    - encantamento de elemento e de espírito; afinidade × affinity_stat_bonus ("Todos": metade do bônus)
-   - elemento do herói = elementos encantados do mesmo elemento (+ bônus de afinidade); o rank não soma (calibrado com o titansdb)
+   - elemento do herói = elemento próprio dos itens + elementos encantados do mesmo elemento (+ bônus de afinidade)
    - habilidades: inata + espaços liberados pelo nível; cada uma no maior tier cujo elemento exigido foi atingido;
      espíritos no equipamento somam suas habilidades (iguais acumulam)
    - poder = ATQ×0,8×(1 + crítico×(dano crítico − 1)) + DEF×1,2 + PV×5 + escudo×3 + ameaça×(DEF×0,008 + PV×0,025) + escudo×evasão×0,025 */
@@ -20,6 +20,7 @@
       lv: +(q.get('lv') || 50),
       tr: q.get('tr') !== '0',
       sf: q.get('sf') !== '0', // projeto Forjado nas Estrelas (marcos extras, ex.: atributos base +25%)
+      col: q.get('col') !== '0', // Livro de Coleção: cartas da classe aumentam ATQ/DEF/PV (melhor valor)
       en: q.get('en') !== '0',
       sk: q.get('sk') !== '0',
       soon: q.get('soon') === '1',
@@ -32,6 +33,7 @@
     if (o.lv !== 50) p.set('lv', o.lv);
     if (!o.tr) p.set('tr', '0');
     if (!o.sf) p.set('sf', '0');
+    if (!o.col) p.set('col', '0');
     if (!o.en) p.set('en', '0');
     if (!o.sk) p.set('sk', '0');
     if (o.soon) p.set('soon', '1');
@@ -74,6 +76,9 @@
     const { c, K, base, rankEl, aff, affAll, elBonus } = ctx;
     // 1) elemento do herói
     let E = rankEl;
+    gear.forEach((g) => { // elemento próprio do item (ex.: armas com "Fogo +35") também conta
+      if (g) (g.x.it.elements || []).forEach((x) => { if (x.id === c.element || x.id === 'all') E += x.value || 0; });
+    });
     gear.forEach((g) => {
       if (!g || !g.el || (g.el.el !== c.element && g.el.el !== 'all')) return;
       const hasAff = g.x.it.elementAffinity.some((a) => a.id === g.el.el || a.id === 'all');
@@ -124,7 +129,8 @@
         for (const k of ['atk', 'def', 'hp']) tot[k] += en.s[k] * am;
       }
     });
-    const atk = tot.atk * (1 + pct.atk), def = tot.def * (1 + pct.def), hp = tot.hp * (1 + pct.hp);
+    const cb = ctx.colMult || 1; // Livro de Coleção (HeroStatsIncrease)
+    const atk = tot.atk * (1 + pct.atk) * cb, def = tot.def * (1 + pct.def) * cb, hp = tot.hp * (1 + pct.hp) * cb;
     const shield = hp * pct.shieldHp;
     eva = Math.min(eva, K.quest_evasion_max || 0.75);
     // Tumba: modificadores dos monstros reduzem o crítico (Pele Adamantina −70%, etc.); "sem crítico" zera
@@ -146,6 +152,7 @@
     const ctx = { c, K, base, rankEl: ST.HM_RANK_EL ? (rankPairs.length ? rankPairs[rankPairs.length - 1][1] : 0) : 0, aff: K.affinity_stat_bonus || 1.5,
       affAll: K.affinity_all_bonus_mult || 0.5, elBonus: parsePairs(K.affinity_element_bonus),
       innate: o.sk && c.innate ? skills.find((f) => f.family === c.innate.uid) : null,
+      colMult: o.col && c.cardBonus && c.cardBonus.length ? Math.max(...c.cardBonus) : 1,
       tower: !!o.tower, questMult: o.questMult || 2, noCrit: !!o.noCrit, critAdj: o.critAdj || 0, critMultAdj: o.critMultAdj || 0 };
     const nSlots = o.sk ? (c.skillSlots || []).filter((l) => l <= lv).length : 0;
     const allowed = (tt) => (tt.classes || []).some((x) => x === '*' || x === c.uid || x === c.type);
@@ -264,14 +271,15 @@
       <label class="check"><input type="checkbox" data-o="en" ${o.en ? 'checked' : ''}> ${tr('Encantamentos', 'Enchantments')}</label>
       <label class="check"><input type="checkbox" data-o="sf" ${o.sf ? 'checked' : ''}> ${tr('Forjado nas Estrelas', 'Starforged')}</label>
       <label class="check"><input type="checkbox" data-o="tr" ${o.tr ? 'checked' : ''}> ${tr('Ascensão + Transcendência', 'Ascension + Transcendence')}</label>
+      <label class="check"><input type="checkbox" data-o="col" ${o.col ? 'checked' : ''}> ${tr('Livro de Coleção completo', 'Full Collection book')}</label>
       <label class="check"><input type="checkbox" data-o="soon" ${o.soon ? 'checked' : ''}> ${tr('Itens em breve', 'Upcoming items')}</label>
       ${ST.accountToggle ? ST.accountToggle(ST.account.active()) : ''}</div>`;
   const bindControls = (el, o, base) => (ST.bindAccountToggle && ST.bindAccountToggle(el), el.querySelectorAll('[data-o]')).forEach((n) => n.addEventListener('change', () => {
     o[n.dataset.o] = n.type === 'checkbox' ? n.checked : n.hasAttribute('data-str') ? n.value : +n.value;
     location.hash = base + optQuery(o, { ty: o.ty, cr: o.tower && o.cr !== 'off' ? o.cr : '' });
   }));
-  const NOTE = () => tr('Estimativa a partir dos dados do jogo, calibrada com o titansdb: atributos × qualidade (constantes item_power), Forjado nas Estrelas (atributos base +25%), Ascensão + Transcendência, encantamentos com afinidade, habilidade inata + habilidades dos espaços liberados pelo nível (tier liberado pelo elemento do herói, que soma os encantamentos do mesmo elemento), bônus de tipo de item (também em evasão/crítico quando o jogo indica), ATQ por ponto de elemento (Geomancia) e habilidades dos espíritos (efeitos "só no próprio item" valem por item). Poder = ATQ×0,8×(1 + crítico×(dano crítico−1)) + DEF×1,2 + PV×5 + escudo×3 + ameaça×(DEF×0,008 + PV×0,025). Não entram: campeões, sementes, boosters e efeitos condicionais.',
-    'Estimate from the game data, calibrated against titansdb: stats × quality (item_power constants), Starforged (base stats +25%), Ascension + Transcendence, enchantments with affinity, innate skill + skills for the slots unlocked by level (tier unlocked by hero element, the sum of same-element enchantments), item-type bonuses (also on evasion/crit when the game says so), ATK per element point (Geomancy) and spirit skills ("this item only" effects apply per item). Power = ATK×0.8×(1 + crit×(crit dmg−1)) + DEF×1.2 + HP×5 + shield×3 + threat×(DEF×0.008 + HP×0.025). Not included: champions, seeds, boosters and conditional effects.');
+  const NOTE = () => tr('Calculado só com os dados do jogo: atributos × qualidade (constantes item_power), Forjado nas Estrelas, Ascensão + Transcendência, encantamentos com afinidade (affinity_stat_bonus), elemento do herói (encantamentos e elemento próprio dos itens do mesmo elemento) liberando o tier das habilidades, habilidade inata + habilidades dos espaços do nível, bônus por tipo de item (inclusive em evasão/crítico quando a habilidade afeta atributos secundários), ATQ por ponto de elemento, espíritos (efeitos “só no próprio item” por item) e Livro de Coleção (melhor carta da classe). Poder = ATQ×0,8×(1 + crítico×(dano crítico−1)) + DEF×1,2 + PV×5 + escudo×3 + ameaça×(DEF×0,008 + PV×0,025). Não entram: campeões, sementes e boosters, que dependem da missão.',
+    'Computed only from game data: stats × quality (item_power constants), Starforged, Ascension + Transcendence, enchantments with affinity (affinity_stat_bonus), hero element (enchantments and the items’ own element of the same element) unlocking skill tiers, innate skill + level-unlocked skill slots, item-type bonuses (also on evasion/crit when the skill affects secondary stats), ATK per element point, spirits ("this item only" effects per item) and Collection book (best class card). Power = ATK×0.8×(1 + crit×(crit dmg−1)) + DEF×1.2 + HP×5 + shield×3 + threat×(DEF×0.008 + HP×0.025). Not included: champions, seeds and boosters, which depend on the quest.');
   const qExtra = (o) => (o.tower && o.cr && o.cr !== 'off' ? { cr: o.cr } : {});
 
   function card(b, rank, o) {
@@ -337,7 +345,7 @@
       const K = prog.constants || {};
       const P = prepare(d, skills, K, o);
       if (uid && !classes.some((c) => c.uid === uid)) { el.innerHTML = ST.notFound(); return; }
-      const ck = JSON.stringify([mode, o.cr, o.q, o.lv, o.tr, o.sf, o.en, o.sk, o.soon, ST.account && ST.account.active() ? JSON.stringify(ST.account.get()) : '']);
+      const ck = JSON.stringify([mode, o.cr, o.q, o.lv, o.tr, o.sf, o.col, o.en, o.sk, o.soon, ST.account && ST.account.active() ? JSON.stringify(ST.account.get()) : '']);
       ST._hmCaches = ST._hmCaches || {};
       if (!ST._hmCaches[ck]) {
         el.innerHTML = ST.skeleton();

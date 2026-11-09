@@ -72,6 +72,29 @@ def build_champions(tables, T):
 
 
 # ------------------------------------------------------------------ classes
+_CARD_CACHE = {}
+
+
+def _card_bonus(tables):
+    if "v" in _CARD_CACHE:
+        return _CARD_CACHE["v"]
+    out = {}
+    for n in tables.get("skillTreeNodes", {}).values():
+        if n.get("mods") != "HeroStatsIncrease":
+            continue
+        val = num(n.get("modsValues"))
+        for f in split(n.get("modsFilters")):
+            parts = f.split(":")
+            if len(parts) == 3:
+                lst = out.setdefault(parts[1], [])
+                if val not in lst:
+                    lst.append(val)
+    for v in out.values():
+        v.sort()
+    _CARD_CACHE["v"] = out
+    return out
+
+
 def build_classes(tables, T):
     classes = tables.get("classes", {})
     promoted_from = {c["titanClass"]: uid for uid, c in classes.items() if c.get("titanClass")}
@@ -98,6 +121,8 @@ def build_classes(tables, T):
                      "isHire": c.get("isHire")},
             "promotesTo": c.get("titanClass"), "promotedFrom": promoted_from.get(uid),
             "skillSlots": [c.get(f"skl{k}Lv") for k in range(1, 6) if c.get(f"skl{k}Lv")],
+            # Livro de Coleção: cartas da classe aumentam ATQ/DEF/PV (o jogo usa o melhor valor desbloqueado)
+            "cardBonus": _card_bonus(tables).get(uid, []),
             "slots": slots,
             "startItems": [{"id": x, "name": item_name(T, x)} for x in split(c.get("hireItems"))],
             "icon": f"icon_global_class_{uid}_128", "card": f"cc_{uid}",

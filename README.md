@@ -125,10 +125,11 @@ passa a mostrar itens novos, removidos e alterados.
 
 - Atributos dos itens são valores base (qualidade Normal). Os multiplicadores de qualidade (1 / 1,25 / 1,5 / 2 / 3)
   vêm das constantes do jogo (`item_power_*_mult`).
-- Hypermax é uma estimativa: Forjado nas Estrelas, Ascensão + Transcendência, encantamentos (elemento do herói = soma
-  dos encantamentos do mesmo elemento; efeitos de espírito "só no próprio item" valem por item), habilidades no maior tier
-  liberado pelo elemento, poder com crítico e ameaça. Crítico e dano crítico batem com o titansdb; o ATQ ainda fica abaixo
-  (Astromante: 1,17 mi aqui x 1,75 mi lá). Campeões, sementes, boosters e efeitos condicionais não entram.
+- Hypermax é calculado só com os dados do jogo: Forjado nas Estrelas, Ascensão + Transcendência, encantamentos com afinidade,
+  elemento do herói (encantamentos + elemento próprio dos itens) liberando o tier das habilidades, Livro de Coleção (melhor carta
+  da classe) e poder com crítico e ameaça. Campeões, sementes e boosters não entram (dependem da missão). As fórmulas exatas
+  ficam no código compilado do jogo; os nomes dos métodos (CalculateAttackPower, CalculateCriticalRatePower...) confirmam os
+  componentes usados, mas os pesos de crítico e evasão são estimados.
 - Caravana: a pontuação mostrada é relativa (valor × qualidade × bônus de procurado); a conversão exata em Vales não está
   nos arquivos.
 - O montador interpola os atributos da classe entre os níveis 1, 40, 50 e 100 e não considera habilidades,
