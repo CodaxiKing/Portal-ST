@@ -71,52 +71,61 @@
   };
 
   /* ---------------------------------------------------------------- página */
+  /* Build a partir dos parâmetros do link (#/montador?c=&lv=&s0=uid:q:runa:espírito&sk=...). Usado pelo montador,
+     pelo comparador e pela ficha pública. */
+  ST.buildFromQuery = async function (query) {
+    const [classes, skills, prog, zones] = await ST.need('classes', 'skills', 'progression', 'quests');
+    const { d } = await ST.itemsIndex();
+    const K = prog.constants || {};
+    const c = classes.find((x) => x.uid === query.get('c')) || classes.find((x) => x.uid === 'astramancer') || classes[0];
+    const o = { q: 4, lv: Math.min(+(query.get('lv') || 50), 100), tr: query.get('tr') !== '0', sf: query.get('sf') !== '0', col: query.get('col') !== '0',
+      en: true, sk: true, soon: query.get('soon') === '1' };
+    const E = ST.hmDebug;
+    const P = E.prepare(d, skills, K, o); // runas e espíritos na qualidade Lendária; ajustados por espaço abaixo
+    const QM = [1, K.item_power_uncommon_mult || 1.25, K.item_power_flawless_mult || 1.5, K.item_power_epic_mult || 2, K.item_power_legd_mult || 3];
+    const { lv, ctx } = E.makeCtx(c, skills, K, o);
+    const nSlots = (c.skillSlots || []).filter((l) => l <= lv).length;
+    const allowed = (tt) => (tt.classes || []).some((x) => x === '*' || x === c.uid || x === c.type);
+    const pool = skills.filter((f) => (f.kind === 'hero' || f.kind === 'mastery') && f.tiers.some(allowed)).sort((a, b) => a.name.localeCompare(b.name));
+    const byFam = new Map(skills.map((f) => [f.family, f]));
+    const elems = P.elements.slice().sort((a, b) => b.e.tier - a.e.tier || a.e.name.localeCompare(b.e.name));
+    const spirits = P.spirits.slice().sort((a, b) => (b.e.tier || 0) - (a.e.tier || 0) || a.e.name.localeCompare(b.e.name));
+    const itemOf = (uid, q) => { // item com melhorias e a qualidade deste espaço
+      const it = d.items.find((i) => i.uid === uid); if (!it) return null;
+      const base = P.items.find((x) => x.it.uid === uid);
+      const steps = [...(o.sf ? it.starforged || [] : []), ...(o.tr ? [...(it.ascension || []), ...(it.transcendence || [])] : [])];
+      const s = steps.length ? ST.applySteps(it, steps).stats : it.stats;
+      const m = QM[q];
+      return { it, codes: base ? base.codes : [it.type], core: { atk: s.atk * m, def: s.def * m, hp: s.hp * m, eva: s.eva || 0, crit: s.crit || 0 } };
+    };
+    const scaleEnch = (e, q) => e && { ...e, s: { atk: e.s.atk / P.qm * QM[q], def: e.s.def / P.qm * QM[q], hp: e.s.hp / P.qm * QM[q] } };
+    // escolhas vindas do link
+    const picks = c.slots.map((sl, k) => {
+      const [uid, q, ru, sp] = (query.get('s' + k) || '').split(':');
+      return { uid: uid || '', q: Math.min(4, Math.max(0, q === undefined || q === '' ? 4 : +q)), ru: ru || '', sp: sp || '' };
+    });
+    const chosenF = (query.get('sk') || '').split(',').filter((f) => byFam.has(f)).slice(0, nSlots);
+    const gear = picks.map((p) => {
+      const x = p.uid ? itemOf(p.uid, p.q) : null;
+      if (!x) return null;
+      return { x, q: p.q, qm: QM[p.q], el: scaleEnch(P.elements.find((e) => e.e.uid === p.ru), p.q) || null, sp: scaleEnch(P.spirits.find((s) => s.e.uid === p.sp), p.q) || null };
+    });
+    const b = E.finish(c, lv, ctx, gear, chosenF.map((f) => byFam.get(f)));
+    return { classes, skills, prog, zones, d, K, c, o, E, P, lv, nSlots, pool, byFam, elems, spirits, picks, chosenF, b };
+  };
+
   ST.page('montador', {
     nav: 'montador', title: () => t('builder'),
     async render(el, args, query) {
-      const [classes, skills, prog, zones] = await ST.need('classes', 'skills', 'progression', 'quests');
-      const { d } = await ST.itemsIndex();
-      const K = prog.constants || {};
-      const c = classes.find((x) => x.uid === query.get('c')) || classes.find((x) => x.uid === 'astramancer') || classes[0];
-      const o = { q: 4, lv: Math.min(+(query.get('lv') || 50), 100), tr: query.get('tr') !== '0', sf: query.get('sf') !== '0', col: query.get('col') !== '0',
-        en: true, sk: true, soon: query.get('soon') === '1' };
-      const E = ST.hmDebug;
-      const P = E.prepare(d, skills, K, o); // runas e espíritos na qualidade Lendária; ajustados por espaço abaixo
-      const QM = [1, K.item_power_uncommon_mult || 1.25, K.item_power_flawless_mult || 1.5, K.item_power_epic_mult || 2, K.item_power_legd_mult || 3];
-      const { lv, ctx } = E.makeCtx(c, skills, K, o);
-      const nSlots = (c.skillSlots || []).filter((l) => l <= lv).length;
-      const allowed = (tt) => (tt.classes || []).some((x) => x === '*' || x === c.uid || x === c.type);
-      const pool = skills.filter((f) => (f.kind === 'hero' || f.kind === 'mastery') && f.tiers.some(allowed)).sort((a, b) => a.name.localeCompare(b.name));
-      const byFam = new Map(skills.map((f) => [f.family, f]));
-      const elems = P.elements.slice().sort((a, b) => b.e.tier - a.e.tier || a.e.name.localeCompare(b.e.name));
-      const spirits = P.spirits.slice().sort((a, b) => (b.e.tier || 0) - (a.e.tier || 0) || a.e.name.localeCompare(b.e.name));
-      const itemOf = (uid, q) => { // item com melhorias e a qualidade deste espaço
-        const it = d.items.find((i) => i.uid === uid); if (!it) return null;
-        const base = P.items.find((x) => x.it.uid === uid);
-        const steps = [...(o.sf ? it.starforged || [] : []), ...(o.tr ? [...(it.ascension || []), ...(it.transcendence || [])] : [])];
-        const s = steps.length ? ST.applySteps(it, steps).stats : it.stats;
-        const m = QM[q];
-        return { it, codes: base ? base.codes : [it.type], core: { atk: s.atk * m, def: s.def * m, hp: s.hp * m, eva: s.eva || 0, crit: s.crit || 0 } };
-      };
-      const scaleEnch = (e, q) => e && { ...e, s: { atk: e.s.atk / P.qm * QM[q], def: e.s.def / P.qm * QM[q], hp: e.s.hp / P.qm * QM[q] } };
-      // escolhas vindas do link
-      const picks = c.slots.map((sl, k) => {
-        const [uid, q, ru, sp] = (query.get('s' + k) || '').split(':');
-        return { uid: uid || '', q: Math.min(4, Math.max(0, q === undefined || q === '' ? 4 : +q)), ru: ru || '', sp: sp || '' };
-      });
-      let chosenF = (query.get('sk') || '').split(',').filter((f) => byFam.has(f)).slice(0, nSlots);
-      const gear = picks.map((p) => {
-        const x = p.uid ? itemOf(p.uid, p.q) : null;
-        if (!x) return null;
-        return { x, q: p.q, qm: QM[p.q], el: scaleEnch(P.elements.find((e) => e.e.uid === p.ru), p.q) || null, sp: scaleEnch(P.spirits.find((s) => s.e.uid === p.sp), p.q) || null };
-      });
-      const b = E.finish(c, lv, ctx, gear, chosenF.map((f) => byFam.get(f)));
+      const R0 = await ST.buildFromQuery(query);
+      const { classes, zones, c, o, E, P, lv, nSlots, pool, elems, spirits, picks, b, skills, K } = R0;
+      let chosenF = R0.chosenF.slice();
       const share = () => {
         const q = new URLSearchParams({ c: c.uid, lv: String(lv) });
         if (!o.tr) q.set('tr', '0'); if (!o.sf) q.set('sf', '0'); if (!o.col) q.set('col', '0');
         picks.forEach((p, k) => { if (p.uid) q.set('s' + k, [p.uid, p.q, p.ru, p.sp].join(':')); });
         if (chosenF.length) q.set('sk', chosenF.join(','));
-        return location.href.split('#')[0] + '#/montador?' + q.toString();
+        return location.href.split('#')[0] + '#/build?' + q.toString(); // ficha pública (tem botão para editar)
       };
       const slotHTML = c.slots.map((sl, k) => {
         const codes = sl.map((x) => x.code);

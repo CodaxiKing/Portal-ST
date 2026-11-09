@@ -285,7 +285,7 @@
     ['eventsNav', [['calendario', 'calendar'], ['cidadeouro', 'goldcity'], ['comunidade-eventos', 'commEvents'], ['caravana', 'caravan'], ['invasao', 'airship'], ['tumba', 'tomb']]],
     ['communityNav', [['hypermax', 'hypermax'], ['guildas', 'guilds'], ['players', 'players']]],
     ['tools', [['conta', 'account'], ['simulador', 'simulator'], ['qualidade', 'qualityCalc'], ['calculadora', 'calculator'], ['lista', 'craftList'], ['comparar', 'compare'], ['lucro', 'profit'], ['onde', 'whereToGet'],
-      ['encantamentos', 'enchantPlanner'], ['montador', 'builder'], ['planejador', 'talentPlanner'], ['custos', 'upgradeCosts'], ['lancamentos', 'releases']]],
+      ['encantamentos', 'enchantPlanner'], ['montador', 'builder'], ['comparar-builds', 'buildCompare'], ['grupos', 'partyByArea'], ['plano', 'craftPlan'], ['melhorias', 'upgradeCalc'], ['planejador', 'talentPlanner'], ['custos', 'upgradeCosts'], ['lancamentos', 'releases']]],
   ];
   ST.NAV = NAV;
   ST.openNavGroup = (gi) => {

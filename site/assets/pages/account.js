@@ -126,6 +126,7 @@
     }
     return ST._hmCaches[ck];
   }
+  ST.hmBuildsCached = hmBuilds;
   const heroStats = (b) => ({ id: b.c.uid, name: b.c.name, icon: b.c.icon, atk: b.atk, def: b.def, hp: b.hp, eva: b.eva, crit: b.crit, cm: b.cm, aggro: b.aggro || 1 });
 
   ST.page('simulador', {
