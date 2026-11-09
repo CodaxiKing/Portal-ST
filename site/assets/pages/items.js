@@ -78,7 +78,9 @@
           `<button data-cat="${k}" class="${k === state.cat ? 'active' : ''}">${esc(v)}</button>`).join('')}
           <button data-cat="${SOON}" class="cat-soon ${state.cat === SOON ? 'active' : ''}">${tr('Em breve', 'Coming soon')} <span class="cnt-pill">${d.items.filter(ST.isUnreleased).length}</span></button></nav>
         <p class="note" id="soonNote" ${state.cat === SOON ? '' : 'hidden'}>${tr('Itens que já estão nos arquivos do jogo, mas cuja data de lançamento ainda não chegou. Eles não aparecem nas outras abas.',
-          'Items already in the game files whose release date has not arrived yet. They are left out of the other tabs.')}</p>
+          'Items already in the game files whose release date has not arrived yet. They are left out of the other tabs.')}
+          <button class="chip" id="soonIcs" type="button">${ST.ic('calendar')} ${tr('Adicionar as datas ao calendário (.ics)', 'Add the dates to your calendar (.ics)')}</button>
+          <a class="chip" href="#/calendario">${tr('Ver calendário', 'Open calendar')}</a></p>
         <section class="toolbar">
           <input id="q" type="search" placeholder="${tr('Buscar item, recurso, componente…', 'Search item, resource, component…')}" value="${esc(state.q)}" autocomplete="off">
           <select id="type"></select>
@@ -145,6 +147,10 @@
         ST.setQuery({ q: state.q, cat: state.cat, type: state.type, tmin: state.tmin !== tiers[0] ? state.tmin : '', tmax: state.tmax !== tiers[tiers.length - 1] ? state.tmax : '' });
         render(true);
       };
+      $('#soonIcs').addEventListener('click', () => { // datas definidas (2099 = sem data) das próximas novidades
+        const list = d.items.filter((i) => ST.isUnreleased(i) && String(i.releaseAt) < '2090').map((i) => ({ d: String(i.releaseAt).slice(0, 10), k: 'item', n: i.name }));
+        if (ST.icsFile) ST.icsFile(ST.icsFromEntries(list, 'soon'), 'shop-titans-em-breve.ics');
+      });
       $('#cats').addEventListener('click', (e) => {
         const b = e.target.closest('button'); if (!b) return;
         state.cat = b.dataset.cat; state.type = '';

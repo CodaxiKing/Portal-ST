@@ -1,0 +1,149 @@
+/* Calendário de eventos: datas que estão nos arquivos do jogo (lançamento de itens, móveis, skins, decorações,
+   visuais, mascotes e eventos de login), em grade do mês + lista, com exportação .ics.
+   Rota: #/calendario?m=2026-11&k=item,furniture  (k vazio = todos os tipos) */
+(() => {
+  const { t, tr, esc, nf, img } = ST;
+  ST.addI18n({ pt: { calendar: 'Calendário' }, en: { calendar: 'Calendar' }, es: { calendar: 'Calendario' }, fr: { calendar: 'Calendrier' },
+    de: { calendar: 'Kalender' }, it: { calendar: 'Calendario' } });
+
+  /* ---------------------------------------------------------------- .ics (iCalendar, eventos de dia inteiro) */
+  const icsEsc = (s) => String(s || '').replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+  const fold = (line) => { // linhas de no máximo 75 caracteres (RFC 5545)
+    const out = [];
+    for (let i = 0; i < line.length; i += 74) out.push((i ? ' ' : '') + line.slice(i, i + 74));
+    return out.join('\r\n');
+  };
+  const ymd = (d) => d.replace(/-/g, '');
+  const nextDay = (d) => { const x = new Date(d + 'T12:00:00Z'); x.setUTCDate(x.getUTCDate() + 1); return x.toISOString().slice(0, 10); };
+  ST.icsFile = function (events, name) {
+    const stamp = new Date().toISOString().replace(/[-:]/g, '').slice(0, 15) + 'Z';
+    const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Portal Shop Titans//PT', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'X-WR-CALNAME:Shop Titans'];
+    for (const e of events) {
+      lines.push('BEGIN:VEVENT', `UID:${e.uid}@portal-shoptitans`, `DTSTAMP:${stamp}`, `DTSTART;VALUE=DATE:${ymd(e.date)}`, `DTEND;VALUE=DATE:${ymd(nextDay(e.date))}`,
+        fold('SUMMARY:' + icsEsc(e.title)), ...(e.desc ? [fold('DESCRIPTION:' + icsEsc(e.desc))] : []), 'TRANSP:TRANSPARENT', 'END:VEVENT');
+    }
+    lines.push('END:VCALENDAR');
+    const blob = new Blob([lines.join('\r\n') + '\r\n'], { type: 'text/calendar;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = name || 'shop-titans.ics'; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  };
+  /* Um evento por dia, juntando o que sai naquele dia. */
+  ST.icsFromEntries = (entries, label) => {
+    const byDay = new Map();
+    entries.forEach((e) => { if (!byDay.has(e.d)) byDay.set(e.d, []); byDay.get(e.d).push(e); });
+    return [...byDay.entries()].map(([d, list]) => ({
+      uid: `${label || 'st'}-${d}`, date: d,
+      title: `Shop Titans: ${list.length === 1 ? list[0].n : `${list.length} ${tr('novidades', 'new things')}`}`,
+      desc: list.map((e) => `${KIND[e.k] ? tr(...KIND[e.k]) : e.k}: ${e.n}`).join('\n'),
+    }));
+  };
+
+  const KIND = {
+    item: ['Item', 'Item'], furniture: ['Móvel', 'Furniture'], skin: ['Skin de item', 'Item skin'], fskin: ['Skin de móvel', 'Furniture skin'],
+    deco: ['Decoração', 'Decoration'], look: ['Visual de herói', 'Hero look'], pet: ['Mascote', 'Pet'], login: ['Evento de login', 'Login event'],
+  };
+  const KIND_IC = { item: 'swords', furniture: 'box', skin: 'star', fskin: 'star', deco: 'star', look: 'star', pet: 'star', login: 'calendar' };
+  const noDate = (d) => !d || d >= '2090';
+  const fmtDate = (d, opt) => new Date(d + 'T12:00').toLocaleDateString(ST.locale, opt || { day: '2-digit', month: 'short', year: 'numeric' });
+
+  ST.page('calendario', {
+    nav: 'calendario', title: () => t('calendar'),
+    async render(el, args, query) {
+      const [furniture, misc, cal] = await ST.need('furniture', 'misc', 'calendar');
+      const { d } = await ST.itemsIndex();
+      // tudo vira {d, k, u, n, href?}
+      const all = [];
+      d.items.forEach((i) => { if (i.releaseAt) all.push({ d: String(i.releaseAt).slice(0, 10), k: 'item', u: i.uid, n: i.name, href: '#/item/' + i.uid, tier: i.tier }); });
+      furniture.forEach((f) => { if (f.releaseAt) all.push({ d: String(f.releaseAt).slice(0, 10), k: 'furniture', u: f.icon, n: f.name, href: '#/moveis' }); });
+      (misc.skins.hero || []).forEach((s) => { if (s.release && s.n) all.push({ d: s.release.slice(0, 10), k: 'skin', u: s.id, n: s.n, href: '#/skins' }); });
+      (misc.skins.furniture || []).forEach((s) => { if (s.release && s.n) all.push({ d: s.release.slice(0, 10), k: 'fskin', u: s.id, n: s.n, href: '#/skins' }); });
+      cal.releases.forEach((r) => all.push({ ...r }));
+      cal.logins.forEach((g) => all.push({ d: g.d, k: 'login', u: g.id, n: g.n, login: g }));
+      const dated = all.filter((e) => !noDate(e.d)), undated = all.length - dated.length;
+      const today = ST.today();
+      const kinds = Object.keys(KIND).filter((k) => dated.some((e) => e.k === k));
+      const sel = new Set((query.get('k') || '').split(',').filter((k) => KIND[k]));
+      const on = (e) => !sel.size || sel.has(e.k);
+      // mês mostrado: ?m=, senão o mês atual
+      const m0 = /^\d{4}-\d{2}$/.test(query.get('m') || '') ? query.get('m') : today.slice(0, 7);
+      const [Y, M] = m0.split('-').map(Number);
+      const monthKey = (y, m) => `${y}-${String(m).padStart(2, '0')}`;
+      const prev = M === 1 ? monthKey(Y - 1, 12) : monthKey(Y, M - 1), next = M === 12 ? monthKey(Y + 1, 1) : monthKey(Y, M + 1);
+      const inMonth = dated.filter((e) => e.d.startsWith(m0) && on(e));
+      const byDay = new Map();
+      inMonth.forEach((e) => { const k = +e.d.slice(8, 10); if (!byDay.has(k)) byDay.set(k, []); byDay.get(k).push(e); });
+      const days = new Date(Y, M, 0).getDate(), first = (new Date(Y, M - 1, 1).getDay() + 6) % 7; // semana começa na segunda
+      const wd = Array.from({ length: 7 }, (_, i) => new Date(2024, 0, 1 + i).toLocaleDateString(ST.locale, { weekday: 'short' }));
+      const cells = [];
+      for (let i = 0; i < first; i++) cells.push('<div class="cal-cell empty"></div>');
+      for (let dd = 1; dd <= days; dd++) {
+        const list = byDay.get(dd) || [], key = monthKey(Y, M) + '-' + String(dd).padStart(2, '0');
+        const cnt = {};
+        list.forEach((e) => (cnt[e.k] = (cnt[e.k] || 0) + 1));
+        cells.push(`<${list.length ? `a href="#cal-${key}"` : 'div'} class="cal-cell ${key === today ? 'today' : ''} ${list.length ? 'has' : ''} ${key > today ? 'future' : ''}">
+          <span class="cal-n">${dd}</span>${Object.entries(cnt).map(([k, n]) => `<span class="cal-dot k-${k}" title="${esc(tr(...KIND[k]))}">${n}</span>`).join('')}</${list.length ? 'a' : 'div'}>`);
+      }
+      const q = (extra) => {
+        const p = new URLSearchParams({ m: m0 });
+        if (sel.size) p.set('k', [...sel].join(','));
+        for (const [k, v] of Object.entries(extra)) if (v === '') p.delete(k); else p.set(k, v);
+        return '#/calendario?' + p.toString();
+      };
+      const entryHTML = (e) => {
+        const icon = ST.icon(e.u) ? img(e.u) : `<span class="cal-ph">${ST.ic(KIND_IC[e.k] || 'star')}</span>`;
+        const extra = e.login ? `<div class="small muted">${e.login.days.length} ${tr('dias', 'days')} · ${tr('data de criação nos arquivos; o evento costuma começar depois', 'creation date in the files; the event usually starts later')}</div>` : '';
+        const inner = `${icon}<div class="grow"><b>${esc(e.n)}</b> <span class="badge k-${e.k}">${esc(tr(...KIND[e.k]))}</span>${e.tier ? ` <span class="small muted">T${e.tier}</span>` : ''}${extra}</div>`;
+        return e.href ? `<a class="row" href="${e.href}">${inner}</a>` : `<div class="row">${inner}</div>`;
+      };
+      const dayList = [...byDay.entries()].sort((a, b) => a[0] - b[0]).map(([dd, list]) => {
+        const key = monthKey(Y, M) + '-' + String(dd).padStart(2, '0');
+        return `<div class="cal-day" id="cal-${key}"><h4>${esc(fmtDate(key, { weekday: 'long', day: 'numeric', month: 'long' }))}${key > today ? ` <span class="badge soon">${tr('em breve', 'upcoming')}</span>` : ''}</h4>
+          <div class="list">${list.slice(0, 60).map(entryHTML).join('')}${list.length > 60 ? `<p class="muted small">+${list.length - 60}</p>` : ''}</div></div>`;
+      }).join('');
+      const upcoming = dated.filter((e) => e.d > today && on(e)).sort((a, b) => a.d.localeCompare(b.d));
+      const upDays = [...new Set(upcoming.map((e) => e.d))];
+      const monthName = new Date(Y, M - 1, 15).toLocaleDateString(ST.locale, { month: 'long', year: 'numeric' });
+      el.innerHTML = ST.pageHead(t('calendar'), tr('Datas que estão nos arquivos do jogo: lançamentos de itens, móveis, skins, decorações, visuais e mascotes, e os eventos de login. Datas futuras são as programadas pelo jogo e podem mudar.',
+        'Dates found in the game files: releases of items, furniture, skins, decorations, looks and pets, plus login events. Future dates are scheduled by the game and may change.')) + `
+        <div class="tags" style="margin-bottom:10px">${[['', t('all')], ...kinds.map((k) => [k, tr(...KIND[k])])].map(([k, label]) => {
+          const active = k ? sel.has(k) : !sel.size;
+          const nextSel = k ? (sel.has(k) ? [...sel].filter((x) => x !== k) : [...sel, k]) : [];
+          return `<a class="chip ${active ? 'primary' : ''}" href="${q({ k: nextSel.join(',') })}">${esc(label)}</a>`;
+        }).join('')}</div>
+        <div class="cal-wrap">
+          <section class="sec cal-month">
+            <div class="cal-head"><a class="chip" href="${q({ m: prev })}" aria-label="${tr('Mês anterior', 'Previous month')}">${ST.ic('left')}</a>
+              <h3>${esc(monthName)}</h3>
+              <a class="chip" href="${q({ m: next })}" aria-label="${tr('Próximo mês', 'Next month')}">${ST.ic('right')}</a>
+              ${m0 !== today.slice(0, 7) ? `<a class="chip" href="${q({ m: today.slice(0, 7) })}">${tr('Hoje', 'Today')}</a>` : ''}</div>
+            <div class="cal-grid">${wd.map((w) => `<div class="cal-wd">${esc(w)}</div>`).join('')}${cells.join('')}</div>
+            <div class="tags" style="margin-top:12px"><button class="chip" id="icsMonth" ${inMonth.length ? '' : 'disabled'}>${ST.ic('calendar')} ${tr('Exportar este mês (.ics)', 'Export this month (.ics)')}</button>
+              <button class="chip" id="icsNext" ${upcoming.length ? '' : 'disabled'}>${ST.ic('calendar')} ${tr('Exportar próximos lançamentos (.ics)', 'Export upcoming releases (.ics)')}</button></div>
+            <p class="note">${tr('O arquivo .ics abre no Google Agenda, Outlook e no calendário do celular (um evento de dia inteiro por data).', 'The .ics file opens in Google Calendar, Outlook and phone calendars (one all-day event per date).')}
+              ${undated ? ` ${nf(undated)} ${tr('registros nos arquivos ainda não têm data definida (2099) e ficam fora do calendário.', 'entries in the files have no set date yet (2099) and are left out.')}` : ''}</p>
+          </section>
+          <section class="sec cal-next"><h3>${tr('Próximos lançamentos', 'Upcoming releases')}</h3>
+            ${upDays.length ? `<div class="list">${upDays.slice(0, 12).map((dd) => {
+              const list = upcoming.filter((e) => e.d === dd), cnt = {};
+              list.forEach((e) => (cnt[e.k] = (cnt[e.k] || 0) + 1));
+              return `<a class="row" href="${q({ m: dd.slice(0, 7), d: dd })}"><div class="cal-date"><b>${esc(fmtDate(dd, { day: '2-digit' }))}</b><span>${esc(fmtDate(dd, { month: 'short' }))}</span></div>
+                <div class="grow">${list.slice(0, 3).map((e) => esc(e.n)).join(' · ')}${list.length > 3 ? ` <span class="muted">+${list.length - 3}</span>` : ''}
+                <div class="small muted">${Object.entries(cnt).map(([k, n]) => `${n} ${esc(tr(...KIND[k]).toLowerCase())}`).join(' · ')}</div></div></a>`;
+            }).join('')}</div>` : `<p class="muted">${tr('Nenhuma data futura nos arquivos atuais.', 'No future dates in the current files.')}</p>`}
+          </section>
+        </div>
+        ${dayList ? ST.sec(esc(monthName), dayList) : `<p class="muted">${tr('Nada neste mês com os filtros atuais.', 'Nothing this month with the current filters.')}</p>`}`;
+      el.querySelector('#icsMonth').addEventListener('click', () => ST.icsFile(ST.icsFromEntries(inMonth, 'm' + m0), `shop-titans-${m0}.ics`));
+      el.querySelector('#icsNext').addEventListener('click', () => ST.icsFile(ST.icsFromEntries(upcoming, 'next'), 'shop-titans-proximos.ics'));
+      // link #cal-AAAA-MM-DD dentro da página (o roteador usa o hash, então rola manualmente)
+      el.querySelectorAll('a[href^="#cal-"]').forEach((a) => a.addEventListener('click', (ev) => {
+        ev.preventDefault();
+        const tgt = el.querySelector(a.getAttribute('href'));
+        if (tgt) tgt.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }));
+      const jump = /^\d{4}-\d{2}-\d{2}$/.test(query.get('d') || '') ? query.get('d') : '';
+      if (jump) setTimeout(() => { const tgt = el.querySelector('#cal-' + jump); if (tgt) tgt.scrollIntoView({ block: 'start' }); }, 50);
+    },
+  });
+})();

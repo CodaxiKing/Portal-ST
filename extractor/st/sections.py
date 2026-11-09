@@ -554,9 +554,10 @@ def build_events(tables, T):
 
 SECTIONS["events"] = build_events
 
-from .extras import build_eventrewards, build_misc, build_passes, build_stories  # noqa: E402
+from .extras import build_calendar, build_eventrewards, build_misc, build_passes, build_stories  # noqa: E402
 
 SECTIONS["passes"] = build_passes
 SECTIONS["eventrewards"] = build_eventrewards
 SECTIONS["misc"] = build_misc
 SECTIONS["stories"] = build_stories
+SECTIONS["calendar"] = build_calendar

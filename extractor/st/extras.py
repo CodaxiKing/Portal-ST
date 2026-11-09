@@ -167,3 +167,35 @@ def build_stories(tables, T):
         out.append({"id": f, "name": T.first(f"{f}_name", default=f), "chapters": chs})
     out.sort(key=lambda x: x["name"])
     return out, {f"icon_global_{x['id']}" for x in out} | {f"cc_{x['id']}" for x in out}
+
+
+# ------------------------------------------------------------------ calendário (datas que estão nos arquivos)
+def build_calendar(tables, T):
+    """Datas de lançamento que não estão em outras seções (decorações, visuais de herói, mascotes)
+    e os eventos de login (data de criação + recompensas por dia). Itens, móveis e skins vêm das próprias seções."""
+    rel = []
+    for kind in ("wall", "floor", "beam"):
+        for r in table_rows(tables, f"{kind}Decorations"):
+            if r.get("releaseAt") and not r.get("prohibited"):
+                rel.append({"d": r["releaseAt"][:10], "k": "deco", "u": r["uid"],
+                            "n": T.first(f"decoration_{kind}_{r['uid']}_name", default=r["uid"])})
+    for r in table_rows(tables, "customizations"):
+        if r.get("releaseAt") and not r.get("prohibited") and not str(r.get("type", "")).startswith("item"):
+            rel.append({"d": r["releaseAt"][:10], "k": "look", "u": r["uid"],
+                        "n": T.first(f"customization_{str(r.get('type', '')).lower()}_{r['uid']}", f"customization_{r['uid']}", default=r["uid"])})
+    for uid, p in tables.get("pet", {}).items():
+        if p.get("releaseAt") and not p.get("prohibited"):
+            rel.append({"d": p["releaseAt"][:10], "k": "pet", "u": uid, "n": T.get(f"pet_family_{uid}", uid.capitalize())})
+    fams = {}
+    for r in tables.get("loginEvents", {}).values():
+        f = r.get("family") or ""
+        if f.startswith("test") or r.get("isPersonal"):
+            continue
+        g = fams.setdefault(f, {"id": f, "d": (r.get("dateCreated") or "")[:10], "n": T.first(f"login_event_{f}_title", default=f), "days": []})
+        typ, _, rest = str(r.get("reward") or "").partition(":")
+        rid, _, qty = rest.partition(",")
+        g["days"].append({"n": r.get("rewardNum"), "t": typ, "id": rid, "q": num(qty) if qty else 1, "sp": bool(r.get("rewardSpecial"))})
+    for g in fams.values():
+        g["days"].sort(key=lambda x: x["n"] or 0)
+    rel.sort(key=lambda x: (x["d"], x["k"], x["n"]))
+    return {"releases": rel, "logins": sorted(fams.values(), key=lambda g: g["d"])}, set()
