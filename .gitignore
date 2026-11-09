@@ -1,0 +1,11 @@
+# ambiente Python local
+extractor/.venv/
+__pycache__/
+*.pyc
+# logs do atualizador
+extractor/update.log
+# editor / sistema
+.vscode/
+.DS_Store
+Thumbs.db
+.claude/

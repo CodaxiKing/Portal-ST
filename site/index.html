@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Portal Shop Titans</title>
+  <meta name="description" content="Banco de dados e ferramentas do Shop Titans: itens, campeões, classes, missões, baús, talentos e calculadoras.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400..700&family=Geist+Mono:wght@400..600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/style.css?v=13">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#101012">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <meta property="og:title" content="Portal Shop Titans">
+  <meta property="og:description" content="Banco de dados e ferramentas do Shop Titans, extraídos dos arquivos do jogo.">
+  <meta property="og:image" content="og/default.jpg">
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <button class="icon-btn menu-btn" id="menuBtn" aria-label="Menu"><i class="ic ic-menu"></i></button>
+      <a class="brand" href="#/">
+        <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 2.8 20 7v6.2c0 4.2-3.4 7-8 8-4.6-1-8-3.8-8-8V7z"/><path d="M12 7.5v9M8.5 11h7"/></svg></span>
+        <span>Portal <b>Shop Titans</b></span>
+      </a>
+      <div class="top-actions">
+        <span class="ver-pill" id="verPill" hidden><span class="pulse"></span><span id="verTxt"></span></span>
+        <button class="search-btn" id="searchBtn" aria-label="Buscar"><i class="ic ic-search"></i><span class="sb-txt">Buscar</span><kbd>Ctrl K</kbd></button>
+        <select class="lang-sel" id="langSel" aria-label="Idioma"></select>
+        <button class="icon-btn" id="themeBtn" aria-label="Tema"><i class="ic ic-moon theme-ic-light"></i><i class="ic ic-sun theme-ic-dark"></i></button>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <nav class="sidenav" id="nav" aria-label="Seções"></nav>
+    <main class="content" id="view"></main>
+  </div>
+
+  <div class="drawer-backdrop" id="backdrop" hidden></div>
+  <aside class="drawer" id="drawer" aria-hidden="true" role="dialog">
+    <button class="icon-btn close" id="closeBtn" aria-label="Fechar"><i class="ic ic-close"></i></button>
+    <div id="detail"></div>
+  </aside>
+
+  <footer class="foot" id="foot"></footer>
+
+  <script src="assets/core.js?v=13"></script>
+  <script src="assets/pages/home.js?v=13"></script>
+  <script src="assets/pages/items.js?v=13"></script>
+  <script src="assets/pages/db.js?v=13"></script>
+  <script src="assets/pages/tools.js?v=13"></script>
+  <script src="assets/pages/tools2.js?v=13"></script>
+  <script src="assets/search.js?v=13"></script>
+  <script>
+    ST.start();
+    // app instalável e cache offline (só funciona servido por http/https)
+    if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+      addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+    }
+  </script>
+</body>
+</html>
