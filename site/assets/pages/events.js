@@ -25,8 +25,9 @@
     <label class="field">${tr('Qualidade', 'Quality')}<select class="inp" data-o="q">${QN.map((n, k) => `<option value="${k}" ${k === o.q ? 'selected' : ''}>${tr(...n)}</option>`).join('')}</select></label>
     <label class="field">Tier<span style="display:flex;gap:6px;align-items:center"><select class="inp" data-o="tmin">${tiers.map((x) => `<option ${x === o.tmin ? 'selected' : ''}>${x}</option>`).join('')}</select>–<select class="inp" data-o="tmax">${tiers.map((x) => `<option ${x === o.tmax ? 'selected' : ''}>${x}</option>`).join('')}</select></span></label>
     ${upLabel ? `<label class="check"><input type="checkbox" data-o="up" ${o.up ? 'checked' : ''}> ${upLabel}</label>` : ''}
-    <label class="check"><input type="checkbox" data-o="soon" ${o.soon ? 'checked' : ''}> ${tr('Itens em breve', 'Upcoming items')}</label>${extraHTML}</div>`;
-  const bind = (el, o, base, extra) => el.querySelectorAll('[data-o]').forEach((n) => n.addEventListener('change', () => {
+    <label class="check"><input type="checkbox" data-o="soon" ${o.soon ? 'checked' : ''}> ${tr('Itens em breve', 'Upcoming items')}</label>${extraHTML}
+    ${ST.accountToggle ? ST.accountToggle(ST.account.active()) : ''}</div>`;
+  const bind = (el, o, base, extra) => (ST.bindAccountToggle && ST.bindAccountToggle(el), el.querySelectorAll('[data-o]')).forEach((n) => n.addEventListener('change', () => {
     o[n.dataset.o] = n.type === 'checkbox' ? n.checked : +n.value;
     location.hash = base + qs(o, extra());
   }));
@@ -44,7 +45,8 @@
       const priceMult = [1, K.item_price_uncommon_mult || 1.25, K.item_price_flawless_mult || 2, K.item_price_epic_mult || 3, K.item_price_legd_mult || 5][o.q];
       const wantedBonus = K.caravan_wanted_item_multiplier || 0.5;
       const shape = (i) => C.shapes[i.uid] || C.shapes[i.type] || { n: 1, w: 1, l: 1, map: '1' };
-      const pool = d.items.filter((i) => SELLABLE(i) && i.value > 0 && i.tier >= o.tmin && i.tier <= o.tmax && (o.soon || !ST.isUnreleased(i)));
+      const acc = ST.account && ST.account.active();
+      const pool = d.items.filter((i) => SELLABLE(i) && i.value > 0 && i.tier >= o.tmin && i.tier <= o.tmax && (o.soon || !ST.isUnreleased(i)) && (!acc || ST.account.has(i)));
       const matches = (i, cat) => (cat === 'spirit' ? i.spiritAffinity.length > 0 : ELN[cat] ? i.elementAffinity.some((a) => a.id === cat) : i.type === cat || i.multiType.includes(cat));
       const catName = (cat) => (cat === 'spirit' ? tr('Afinidade com espírito', 'Spirit affinity') : ELN[cat] ? `${tr('Afinidade', 'Affinity')}: ${tr(...ELN[cat])}` : ST.typeName(cat));
       const catIcon = (cat) => (cat === 'spirit' ? img('wolf') : ELN[cat] ? img('icon_global_element_' + cat) : img((pool.filter((i) => i.type === cat).sort((a, b) => b.tier - a.tier)[0] || {}).uid));
@@ -97,7 +99,8 @@
       const skillMods = new Map();
       skills.forEach((f) => f.tiers.forEach((tt) => skillMods.set(tt.uid, tt.mods || {})));
       const cat = query.get('c') || 'all';
-      const rows = d.items.filter((i) => ['weapon', 'armor', 'accessory'].includes(i.cat) && i.tier >= o.tmin && i.tier <= o.tmax && (o.soon || !ST.isUnreleased(i))).map((i) => {
+      const acc = ST.account && ST.account.active();
+      const rows = d.items.filter((i) => ['weapon', 'armor', 'accessory'].includes(i.cat) && i.tier >= o.tmin && i.tier <= o.tmax && (o.soon || !ST.isUnreleased(i)) && (!acc || ST.account.has(i))).map((i) => {
         const steps = o.up ? [...(i.starforged || []), ...(i.ascension || []), ...(i.transcendence || [])] : [];
         const s = steps.length ? ST.applySteps(i, steps).stats : i.stats;
         let air = 1; // melhorias "Poder da Aeronave" do projeto

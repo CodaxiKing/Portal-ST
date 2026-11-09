@@ -67,12 +67,14 @@ def game_version(game):
     except OSError:
         pass
     build = None
-    manifest = os.path.join(game, "..", "..", "appmanifest_1258080.acf")
-    try:
-        m = re.search(r'"buildid"\s+"(\d+)"', open(manifest, encoding="utf-8").read())
-        build = m.group(1) if m else None
-    except OSError:
-        pass
+    # Steam (Windows): steamapps/common/ShopTitan/../../appmanifest; SteamCMD (+force_install_dir): <dir>/steamapps/appmanifest
+    for manifest in (os.path.join(game, "..", "..", "appmanifest_1258080.acf"), os.path.join(game, "steamapps", "appmanifest_1258080.acf")):
+        try:
+            m = re.search(r'"buildid"\s+"(\d+)"', open(manifest, encoding="utf-8").read())
+            build = m.group(1) if m else None
+            break
+        except OSError:
+            continue
     if ver and build:
         return f"{ver} (build {build})"
     return ver or (f"build {build}" if build else None)

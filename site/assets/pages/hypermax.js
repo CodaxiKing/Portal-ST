@@ -43,10 +43,11 @@
   // ---------------------------------------------------------------- preparação (uma vez por conjunto de opções)
   let PREP = { key: '', v: null };
   function prepare(d, skills, K, o) {
-    const key = [o.q, o.tr, o.sf, o.en, o.soon].join('|');
+    const acc = ST.account && ST.account.active() ? JSON.stringify(ST.account.get()) : '';
+    const key = [o.q, o.tr, o.sf, o.en, o.soon, acc].join('|');
     if (PREP.key === key) return PREP.v;
     const qm = [1, K.item_power_uncommon_mult || 1.25, K.item_power_flawless_mult || 1.5, K.item_power_epic_mult || 2, K.item_power_legd_mult || 3][o.q];
-    const ok = (i) => o.soon || !ST.isUnreleased(i);
+    const ok = (i) => (o.soon || !ST.isUnreleased(i)) && (!acc || ST.account.has(i));
     // itens equipáveis com atributos já com qualidade e melhorias
     // tudo que cabe num espaço de herói (inclui feitiços, ervas e sobremesas), exceto encantamentos e materiais
     const items = d.items.filter((i) => !['z', 'm', 'ma'].includes(i.type) && ok(i)).map((it) => {
@@ -263,8 +264,9 @@
       <label class="check"><input type="checkbox" data-o="en" ${o.en ? 'checked' : ''}> ${tr('Encantamentos', 'Enchantments')}</label>
       <label class="check"><input type="checkbox" data-o="sf" ${o.sf ? 'checked' : ''}> ${tr('Forjado nas Estrelas', 'Starforged')}</label>
       <label class="check"><input type="checkbox" data-o="tr" ${o.tr ? 'checked' : ''}> ${tr('Ascensão + Transcendência', 'Ascension + Transcendence')}</label>
-      <label class="check"><input type="checkbox" data-o="soon" ${o.soon ? 'checked' : ''}> ${tr('Itens em breve', 'Upcoming items')}</label></div>`;
-  const bindControls = (el, o, base) => el.querySelectorAll('[data-o]').forEach((n) => n.addEventListener('change', () => {
+      <label class="check"><input type="checkbox" data-o="soon" ${o.soon ? 'checked' : ''}> ${tr('Itens em breve', 'Upcoming items')}</label>
+      ${ST.accountToggle ? ST.accountToggle(ST.account.active()) : ''}</div>`;
+  const bindControls = (el, o, base) => (ST.bindAccountToggle && ST.bindAccountToggle(el), el.querySelectorAll('[data-o]')).forEach((n) => n.addEventListener('change', () => {
     o[n.dataset.o] = n.type === 'checkbox' ? n.checked : n.hasAttribute('data-str') ? n.value : +n.value;
     location.hash = base + optQuery(o, { ty: o.ty, cr: o.tower && o.cr !== 'off' ? o.cr : '' });
   }));
@@ -335,7 +337,7 @@
       const K = prog.constants || {};
       const P = prepare(d, skills, K, o);
       if (uid && !classes.some((c) => c.uid === uid)) { el.innerHTML = ST.notFound(); return; }
-      const ck = JSON.stringify([mode, o.cr, o.q, o.lv, o.tr, o.sf, o.en, o.sk, o.soon]);
+      const ck = JSON.stringify([mode, o.cr, o.q, o.lv, o.tr, o.sf, o.en, o.sk, o.soon, ST.account && ST.account.active() ? JSON.stringify(ST.account.get()) : '']);
       ST._hmCaches = ST._hmCaches || {};
       if (!ST._hmCaches[ck]) {
         el.innerHTML = ST.skeleton();

@@ -1,0 +1,12 @@
+[Unit]
+Description=Portal Shop Titans - atualizar dados do jogo
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=shoptitans
+EnvironmentFile=-/etc/default/shoptitans
+ExecStart=/opt/shoptitans/portal/extractor/update.sh
+Nice=10
+TimeoutStartSec=2h

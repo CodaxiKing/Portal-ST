@@ -7,7 +7,7 @@
     mascotes: 'doghouse', colecao: 'img_collectionbook_book_quality_epic_big', titulos: 'img_player_titles_01', guilda: 'icon_global_upgrade_rareresregen',
     progressao: 'icon_achievements_gold04', novidades: 'icon_event_reward_dialog', calculadora: 'custom_handheld_wallacehammer',
     lucro: 'img_shop_item_sitems_gold1', montador: 'icon_global_class_swordmaster_128', lista: 'goldshell', comparar: 'icon_global_quality_legendary',
-    onde: 'elvenwood', encantamentos: 't14fire', planejador: 'crystalegg', hypermax: 'cc_sundragon', caravana: 'caravanbanner', guildas: 'icon_global_upgrade_rareresregen', players: 'img_player_titles_01', invasao: 'airshipcannon', tumba: 'chest_tomb', custos: 'timecrystal', lancamentos: 'wolf',
+    onde: 'elvenwood', encantamentos: 't14fire', planejador: 'crystalegg', hypermax: 'cc_sundragon', caravana: 'caravanbanner', conta: 'img_player_titles_01', simulador: 'forest_boss', qualidade: 'icon_global_quality_legendary', passes: 'zephyrbow', recompensas: 'chest_goldcity', quadro: 'icon_achievements_gold04', loja: 'img_shop_item_sitems_gold1', expansoes: 'vertrack1', sorte: 'greatermoon', historias: 'cc_argon', skins: 'totempole01', guildas: 'icon_global_upgrade_rareresregen', players: 'img_player_titles_01', invasao: 'airshipcannon', tumba: 'chest_tomb', custos: 'timecrystal', lancamentos: 'wolf',
   };
   const DESC = {
     lista: ['Junte vários itens e veja todos os materiais somados.', 'Combine several items and see every material added up.'],
@@ -16,6 +16,17 @@
     encantamentos: ['Elementos e espíritos com bônus de afinidade.', 'Elements and spirits with affinity bonuses.'],
     guildas: ['Pesquise guildas, membros e investimentos.', 'Search guilds, members and investments.'],
     players: ['Jogadores, nível, investimento e histórico.', 'Players, level, investment and history.'],
+    passes: ['Recompensas e tarefas de cada passe.', 'Rewards and tasks of every pass.'],
+    recompensas: ['Recompensas por pontos dos eventos de missão.', 'Points rewards of quest events.'],
+    quadro: ['Tarefas, metas e troféus do quadro.', 'Bounty tasks, goals and trophies.'],
+    loja: ['Gemas por dólar e pacotes.', 'Gems per dollar and packs.'],
+    expansoes: ['Custo de cada expansão, somado.', 'Every expansion cost, added up.'],
+    sorte: ['Lua Cheia, roleta e recompensas aleatórias.', 'Full Moon, spin wheel and random rewards.'],
+    historias: ['Os diálogos de cada campeão.', 'Every champion’s dialogue.'],
+    skins: ['Visuais de heróis, móveis e mascotes.', 'Hero, furniture and pet cosmetics.'],
+    conta: ['Seus projetos e trabalhadores, usados por todas as ferramentas.', 'Your blueprints and workers, used by every tool.'],
+    simulador: ['Chance de sucesso de um grupo numa missão ou na Tumba.', 'Success chance of a party in a quest or the Tomb.'],
+    qualidade: ['Chance de cada qualidade por fabricação.', 'Chance of each quality per craft.'],
     caravana: ['Itens que mais rendem em cada categoria pedida por Stahl.', 'Best-paying items for each category Stahl asks for.'],
     invasao: ['Itens mais fortes para abastecer as tropas da Aeronave.', 'Strongest items to supply the Airship troops.'],
     tumba: ['Melhores heróis para a Tumba dos Titãs, sem crítico.', 'Best heroes for the Tomb of Titans, without crit.'],
@@ -45,7 +56,7 @@
     montador: ['Classe, nível e equipamento: veja os atributos finais, o poder e quais missões o grupo alcança.',
       'Class, level and gear: see final stats, power and which quests the party can reach.'],
   };
-  const FEATURED = ['calculadora', 'lista', 'montador'];
+  const FEATURED = ['conta', 'simulador', 'calculadora'];
   // ícones do mosaico (os que não existirem são ignorados)
   const MOSAIC = ['aegiraxe', 'cc_sundragon', 'anubisstaff', 'celestialhelm', 'arcadesword', 'aegirshield', 'blossombow', 'castlestaff',
     'berserkerhelm', 'cc_moondragon', 'artifactsword', 'battleaxe', 'chest_forest', 'shortsword', 'beeshield', 'christmasstaff'];
@@ -68,6 +79,7 @@
       }).join('');
       const NAVK = Object.fromEntries(ST.NAV.map((g) => [g[0], g]));
       const db = NAVK.db, events = NAVK.eventsNav, comm = NAVK.communityNav, tools = NAVK.tools;
+      const rew = NAVK.rewardsNav;
       const mosaic = MOSAIC.filter((n) => ST.icon(n)).slice(0, 16);
 
       el.innerHTML = `<section class="home-hero">
@@ -93,6 +105,8 @@
         <div class="bento">${tiles(db[1])}</div>
         <div class="home-sec-head"><h2>${t(events[0])}</h2><span>${events[1].length} ${tr('eventos', 'events')}</span></div>
         <div class="tiles">${events[1].map(([p, k]) => `<a class="tile home-tile" href="#/${p}"><div class="thumb">${img(ICON[p])}</div><div class="tile-body"><div class="tile-title">${esc(t(k))}</div><div class="tile-sub">${esc(tr(...(DESC[p] || ['', ''])))}</div></div></a>`).join('')}</div>
+        <div class="home-sec-head"><h2>${t(rew[0])}</h2><span>${rew[1].length} ${tr('seções', 'sections')}</span></div>
+        <div class="tiles">${rew[1].map(([p, k]) => `<a class="tile home-tile" href="#/${p}"><div class="thumb">${img(ICON[p])}</div><div class="tile-body"><div class="tile-title">${esc(t(k))}</div><div class="tile-sub">${esc(tr(...(DESC[p] || ['', ''])))}</div></div></a>`).join('')}</div>
         <div class="home-sec-head"><h2>${t(comm[0])}</h2><span>${tr('cadastrado por você', 'entered by you')}</span></div>
         <div class="tiles">${comm[1].map(([p, k]) => `<a class="tile home-tile" href="#/${p}"><div class="thumb">${img(ICON[p])}</div><div class="tile-body"><div class="tile-title">${esc(t(k))}</div><div class="tile-sub">${esc(tr(...(DESC[p] || ['', ''])))}</div></div></a>`).join('')}</div>
         <div class="home-sec-head"><h2>${t(tools[0])}</h2><span>${tools[1].length} ${tr('ferramentas', 'tools')}</span></div>

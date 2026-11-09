@@ -11,6 +11,11 @@ traduzida em português e inglês, e os demais idiomas usam a interface em ingl�
 Talentos (árvore, pesquisa avançada, estandarte) · Mascotes · Coleção · Títulos e conquistas · Guilda ·
 Progressão · Novidades (diferenças entre extrações + notas de atualização)
 
+**Recompensas e loja:** Passes de conteúdo (recompensas grátis/completas e tarefas) · Recompensas dos eventos de missão
+(Torre, Cidade Dourada, Reinhold, Invasão; com VIP) · Eventos de comunidade · Quadro de recompensas · Loja de gemas
+(gemas por dólar) · Expansões (loja, vertical, porão) · Sorte (Lua Cheia, roleta, recompensas aleatórias).
+Também no banco de dados: **Histórias** dos campeões (diálogos) e **Skins** (heróis, móveis, mascotes).
+
 **Eventos:**
 - **Caravana de Pharoway**: para cada tema/dia, os itens que mais rendem em cada categoria procurada, com formato na grade.
 - **Invasão Dracônica**: itens mais fortes para abastecer as tropas da Aeronave, no geral e por categoria.
@@ -23,6 +28,11 @@ Progressão · Novidades (diferenças entre extrações + notas de atualização
   Jogadores e guildas não existem nos arquivos do jogo; ficam nos servidores da Kabam.
 
 **Ferramentas:**
+- **Minha conta**: projetos (até o tier X + exceções) e nível dos trabalhadores; lucro, Caravana, Invasão, Hypermax, Tumba e
+  simulador passam a usar só o que você tem (com um botão para desligar). Salvo no navegador.
+- **Simulador de missão**: 400 simulações do grupo contra uma área ou andar da Tumba (com a maldição da profundidade):
+  chance de sucesso, chance de morte e nota SSS–D; “Melhor grupo” testa combinações dos heróis mais fortes. Modelo aproximado.
+- **Calculadora de qualidade**: chance de cada qualidade por fabricação (constantes do jogo + bônus do projeto e extras).
 - **Busca global** (Ctrl+K ou `/`): itens, classes, campeões, habilidades, missões, baús, móveis, mascotes e talentos.
 - **Calculadora de fabricação**: árvore completa de materiais, com marcos, Forjado nas Estrelas e ascensão.
 - **Lista de fabricação**: vários itens somados; salva no navegador e compartilhável por link.
@@ -70,6 +80,12 @@ shoptitans-portal/
 O workflow `.github/workflows/pages.yml` publica a pasta `site/` a cada push na `main`.
 Defina o endereço público em `extractor/config.json` (`"baseUrl": "https://usuario.github.io/shoptitans-portal/"`)
 para gerar `sitemap.xml`, `robots.txt` e links absolutos nas prévias.
+
+## VPS (Linux) e aviso no Discord
+
+Veja `deploy/README.md`: SteamCMD baixa o jogo, `extractor/update.sh` extrai quando o build muda e publica
+(cópia para o servidor web e/ou push), com timer do systemd a cada 6 h. Com `"discordWebhook"` em `extractor/config.json`,
+cada patch com mudanças gera um resumo no Discord (uma vez por patch).
 
 ## Atualização automática
 

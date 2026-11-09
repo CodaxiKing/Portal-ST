@@ -277,10 +277,11 @@
     ['db', [['itens', 'items'], ['campeoes', 'champions'], ['classes', 'classes'], ['habilidades', 'skills'],
       ['missoes', 'quests'], ['baus', 'chests'], ['trabalhadores', 'workers'], ['moveis', 'furniture'],
       ['talentos', 'talents'], ['mascotes', 'pets'], ['colecao', 'collection'], ['titulos', 'titles'],
-      ['guilda', 'guild'], ['progressao', 'progression'], ['novidades', 'updates']]],
+      ['guilda', 'guild'], ['progressao', 'progression'], ['historias', 'stories'], ['skins', 'skins'], ['novidades', 'updates']]],
+    ['rewardsNav', [['passes', 'passes'], ['recompensas', 'evRewards'], ['quadro', 'bounties'], ['loja', 'store'], ['expansoes', 'expansions'], ['sorte', 'luck']]],
     ['eventsNav', [['caravana', 'caravan'], ['invasao', 'airship'], ['tumba', 'tomb']]],
     ['communityNav', [['guildas', 'guilds'], ['players', 'players']]],
-    ['tools', [['calculadora', 'calculator'], ['lista', 'craftList'], ['comparar', 'compare'], ['lucro', 'profit'], ['onde', 'whereToGet'],
+    ['tools', [['conta', 'account'], ['simulador', 'simulator'], ['qualidade', 'quality'], ['calculadora', 'calculator'], ['lista', 'craftList'], ['comparar', 'compare'], ['lucro', 'profit'], ['onde', 'whereToGet'],
       ['encantamentos', 'enchantPlanner'], ['montador', 'builder'], ['hypermax', 'hypermax'], ['planejador', 'talentPlanner'], ['custos', 'upgradeCosts'], ['lancamentos', 'releases']]],
   ];
   ST.NAV = NAV;

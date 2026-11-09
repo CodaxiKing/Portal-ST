@@ -103,10 +103,16 @@
       const wl = w.wlevels.find((x) => x.level === lvl) || w.wlevels[0];
       const opt = { ms: query.get('ms') !== '0', sf: query.get('sf') === '1', tmax: +(query.get('tmax') || 99), cat: query.get('cat') || '', worker: query.get('w') || '' };
       const tiers = [...new Set(d.items.map((i) => i.tier))].sort((a, b) => a - b);
-      const rows = d.items.filter((i) => !i.nonCraftable && !(ST.isUnreleased && ST.isUnreleased(i)) && i.time > 0 && i.tier <= opt.tmax && (!opt.cat || i.cat === opt.cat) &&
+      const acc = ST.account && ST.account.active();
+      const wmult = (i) => { // conta ativa: média do multiplicador de tempo dos trabalhadores do item no nível de cada um
+        if (!acc) return wl.craftingTime / 100;
+        const ms = i.workers.map((x) => { const lv = ST.account.workerLevel(x.id); const r = lv && w.wlevels.find((y) => y.level === lv); return (r || wl).craftingTime / 100; });
+        return ms.length ? ms.reduce((a, b) => a + b, 0) / ms.length : wl.craftingTime / 100;
+      };
+      const rows = d.items.filter((i) => !i.nonCraftable && !(ST.isUnreleased && ST.isUnreleased(i)) && (!acc || ST.account.has(i)) && i.time > 0 && i.tier <= opt.tmax && (!opt.cat || i.cat === opt.cat) &&
         (!opt.worker || i.workers.some((x) => x.id === opt.worker))).map((i) => {
         const e = effective(i, opt);
-        const time = e.time * wl.craftingTime / 100;
+        const time = e.time * wmult(i);
         const resTotal = e.res.reduce((a, r) => a + r.qty, 0);
         return { i, value: e.value, time, gph: e.value / time * 3600, xph: i.xp / time * 3600, vpr: resTotal ? e.value / resTotal : null, favor: i.favor };
       });
@@ -118,6 +124,7 @@
           <label class="field">${tr('Trabalhador', 'Worker')}<select id="w"><option value="">${t('all')}</option>${w.workers.map((x) => `<option value="${x.uid}" ${x.uid === opt.worker ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select></label>
           <label class="check"><input type="checkbox" id="ms" ${opt.ms ? 'checked' : ''}> ${tr('Marcos do projeto', 'Milestones')}</label>
           <label class="check"><input type="checkbox" id="sf" ${opt.sf ? 'checked' : ''}> ${tr('Forjado nas Estrelas', 'Starforged')}</label>
+          ${ST.accountToggle ? ST.accountToggle(acc) : ''}
         </div>
         <p class="count">${nf(rows.length)} ${t('results')}</p>
         ${ST.table(rows, [
@@ -131,7 +138,8 @@
           { key: 'favor', label: tr('Graça', 'Favor'), num: true, fmt: (r) => nf(r.favor) },
         ], { sortKey: 'gph', sortDir: -1 })}
         <p class="note">${tr('Tempo ajustado pelo nível do trabalhador (tabela do jogo). Não considera fabricação múltipla, bônus de talentos, eventos nem o preço dos componentes.', 'Time adjusted by worker level (game table). Does not account for multicraft, talent bonuses, events or component prices.')}</p>`;
-      el.querySelectorAll('select,input').forEach((n) => n.addEventListener('change', () => {
+      if (ST.bindAccountToggle) ST.bindAccountToggle(el);
+      el.querySelectorAll('select,input:not([data-acc])').forEach((n) => n.addEventListener('change', () => {
         ST.setQuery({ wl: el.querySelector('#wl').value === '1' ? '' : el.querySelector('#wl').value, tmax: el.querySelector('#tmax').value, cat: el.querySelector('#cat').value,
           w: el.querySelector('#w').value, ms: el.querySelector('#ms').checked ? '' : '0', sf: el.querySelector('#sf').checked ? '1' : '' });
         ST.rerender();

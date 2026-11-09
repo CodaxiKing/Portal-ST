@@ -764,3 +764,39 @@ a.hm-card2:hover { transform: translateY(-3px); box-shadow: var(--shadow-lift); 
 .cm-sparks span { display: inline-flex; align-items: center; gap: 8px; }
 .cm-spark { width: 120px; height: 28px; color: var(--accent); }
 @media (max-width: 640px) { .cm-row { grid-template-columns: 1fr; } .cm-upd { width: 100%; } }
+
+/* ---------------------------------------------------------------- extras: recompensas, histórias */
+.chip-item.rw { padding: 2px 9px 2px 3px; }
+.chip-item.rw .ic { width: 18px; height: 18px; margin-left: 4px; }
+.chip-item.rw.prem { border-color: color-mix(in srgb, var(--accent) 55%, transparent); background: var(--accent-soft); }
+.st-chs { display: flex; gap: 6px; flex-wrap: wrap; margin: 14px 0; }
+.st-dlg { display: flex; flex-direction: column; gap: 10px; max-width: 760px; }
+.st-line { align-self: flex-start; max-width: 85%; background: var(--card); border: 1px solid var(--line); border-radius: 16px 16px 16px 4px; padding: 10px 14px; }
+.st-line.me { align-self: flex-end; border-radius: 16px 16px 4px 16px; background: var(--accent-soft); border-color: color-mix(in srgb, var(--accent) 35%, transparent); }
+.st-line p { margin: 2px 0 0; line-height: 1.55; }
+.st-actor { font: 600 10.5px var(--mono); text-transform: uppercase; letter-spacing: .1em; color: var(--muted); }
+
+/* ---------------------------------------------------------------- minha conta, simulador */
+.acc-tg { padding: 6px 10px; border-radius: 10px; background: var(--accent-soft); border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); }
+.acc-form { display: flex; flex-direction: column; gap: 8px; }
+.acc-workers { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; }
+.acc-wk { display: flex; align-items: center; gap: 6px; color: var(--text); font-weight: 500; }
+.acc-wk img, .acc-wk .ph { width: 22px; height: 22px; object-fit: contain; }
+.acc-x { border: 0; background: none; cursor: pointer; color: var(--muted); display: inline-grid; place-items: center; padding: 0 0 0 2px; }
+.acc-x .ic { width: 12px; height: 12px; }
+.acc-no { opacity: .75; text-decoration: line-through; }
+.sim-top { display: grid; grid-template-columns: minmax(220px, 280px) minmax(0, 1fr); gap: 14px; align-items: stretch; margin: 6px 0 4px; }
+.sim-res { position: relative; display: flex; flex-direction: column; justify-content: center; gap: 2px; padding: 18px 20px; border-radius: var(--radius-lg);
+  background: var(--card); border: 1px solid var(--line); box-shadow: var(--shadow); overflow: hidden; }
+.sim-res b { font: 650 40px var(--mono); letter-spacing: -.05em; line-height: 1; }
+.sim-grade { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); font: 800 44px var(--sans); letter-spacing: -.04em; opacity: .9; }
+.sim-res.r-sss .sim-grade, .sim-res.r-s .sim-grade { color: var(--hp); }
+.sim-res.r-a .sim-grade { color: var(--def); }
+.sim-res.r-b .sim-grade { color: var(--accent); }
+.sim-res.r-c .sim-grade, .sim-res.r-d .sim-grade { color: var(--atk); }
+.sim-top .stat-grid { grid-template-columns: repeat(2, 1fr); }
+.sim-party { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+.sim-slot { display: grid; grid-template-columns: 48px 1fr; gap: 6px 10px; align-items: center; padding: 10px; border-radius: 12px; background: var(--card); border: 1px solid var(--line); }
+.sim-slot .thumb { width: 48px; height: 48px; grid-row: span 2; }
+.sim-slot select { width: 100%; }
+@media (max-width: 640px) { .sim-top { grid-template-columns: 1fr; } }

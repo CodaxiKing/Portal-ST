@@ -30,6 +30,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from st.common import DEFAULT_GAME, LANGS, Texts, game_version, load_tables, log, write_js
 from st.icons import export_icons
+from st.notify import notify_patch
 from st.items import build_items
 from st.search import build_search
 from st.sections import SECTIONS
@@ -44,7 +45,7 @@ ICONS = os.path.join(SITE, "img", "items")
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--game", default=DEFAULT_GAME)
+    ap.add_argument("--game", default=os.environ.get("ST_GAME", DEFAULT_GAME))
     ap.add_argument("--no-icons", action="store_true")
     ap.add_argument("--force-icons", action="store_true", help="reexporta mesmo os ícones já existentes")
     ap.add_argument("--icon-size", type=int, default=128)
@@ -85,6 +86,7 @@ def main():
 
     diff = save_and_diff(os.path.join(HERE, "snapshots"), items_by_lang, version)
     write_js(os.path.join(DATA, "diff.js"), "diff", diff)
+    notify_patch(HERE, cfg, diff, version, items_by_lang.get("pt"))
 
     # ícones usados na página inicial
     wanted |= {"img_collectionbook_book_quality_epic_big", "img_player_titles_01", "icon_global_upgrade_rareresregen",
