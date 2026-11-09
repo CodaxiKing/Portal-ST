@@ -49,4 +49,24 @@
     if ((a.extra || []).includes(i.uid)) return true;
     return i.tier <= (a.maxTier || 0) && (!a.merchant || !i.level || i.level <= a.merchant + 5);
   };
+
+  /* iCalendar (RFC 5545) com eventos de dia inteiro: [{uid, date: 'AAAA-MM-DD', title, desc}] */
+  const icsEsc = (s) => String(s || '').replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+  const fold = (line) => { // linhas de no máximo 75 caracteres
+    const out = [];
+    for (let i = 0; i < line.length; i += 74) out.push((i ? ' ' : '') + line.slice(i, i + 74));
+    return out.join('\r\n');
+  };
+  const ymd = (d) => d.replace(/-/g, '');
+  const nextDay = (d) => { const x = new Date(d + 'T12:00:00Z'); x.setUTCDate(x.getUTCDate() + 1); return x.toISOString().slice(0, 10); };
+  ST.icsText = function (events, now) {
+    const stamp = (now || new Date()).toISOString().replace(/[-:]/g, '').slice(0, 15) + 'Z';
+    const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Portal Shop Titans//PT', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'X-WR-CALNAME:Shop Titans'];
+    for (const e of events) {
+      lines.push('BEGIN:VEVENT', `UID:${e.uid}@portal-shoptitans`, `DTSTAMP:${stamp}`, `DTSTART;VALUE=DATE:${ymd(e.date)}`, `DTEND;VALUE=DATE:${ymd(nextDay(e.date))}`,
+        fold('SUMMARY:' + icsEsc(e.title)), ...(e.desc ? [fold('DESCRIPTION:' + icsEsc(e.desc))] : []), 'TRANSP:TRANSPARENT', 'END:VEVENT');
+    }
+    lines.push('END:VCALENDAR');
+    return lines.join('\r\n') + '\r\n';
+  };
 })(typeof self !== 'undefined' ? self : globalThis);

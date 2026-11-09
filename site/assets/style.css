@@ -882,3 +882,8 @@ a.hm-card2:hover { transform: translateY(-3px); box-shadow: var(--shadow-lift); 
 @media (max-width:860px){.bc-wrap{grid-template-columns:1fr}}
 .notes textarea{width:100%;resize:vertical;font:inherit;min-height:72px}
 .note-pub{border-left:3px solid var(--accent);padding:6px 12px;margin-bottom:10px;background:var(--bg-2);border-radius:0 10px 10px 0}.note-pub p{margin:4px 0 0}
+
+/* modo leve */
+.lite *,.lite *::before,.lite *::after{animation:none!important;transition:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+.lite .glow,.lite [class*="glow"]::before,.lite [class*="glow"]::after{display:none!important}
+.linkish{background:none;border:0;padding:0;color:inherit;text-decoration:underline;cursor:pointer;font:inherit}

@@ -30,6 +30,15 @@
   ST.locale = LANG_INFO[lang][1];
   document.documentElement.lang = ST.locale;
 
+  // modo leve: menos animação e brilho, lotes menores. Liga sozinho com "economia de dados" ou conexão 2G/3G;
+  // o botão no rodapé força ligado/desligado (localStorage st_lite)
+  ST.lite = (() => {
+    try { const v = localStorage.getItem('st_lite'); if (v === '1' || v === '0') return v === '1'; } catch (e) { /* ignora */ }
+    const c = navigator.connection || {};
+    return !!(c.saveData || /(^|-)2g|3g/.test(c.effectiveType || ''));
+  })();
+  if (ST.lite) document.documentElement.classList.add('lite');
+
   const I18N = {
     pt: {
       home: 'Início', db: 'Banco de dados', tools: 'Ferramentas', items: 'Itens', champions: 'Campeões', classes: 'Classes',
@@ -68,7 +77,10 @@
   };
   ST.addI18n = (dict) => { for (const [l, v] of Object.entries(dict)) Object.assign((I18N[l] = I18N[l] || {}), v); };
   // texto por idioma inline: ST.tr('Olá', 'Hello')
-  ST.tr = (pt, en) => (ui === 'pt' ? pt : en);
+  // textos das páginas em outros idiomas: assets/i18n/<lang>.js registra {texto em inglês: tradução}
+  const TRX = {};
+  ST.addTr = (l, dict) => Object.assign((TRX[l] = TRX[l] || {}), dict);
+  ST.tr = (pt, en) => (ui === 'pt' ? pt : (TRX[lang] && TRX[lang][en]) || en);
 
   // ---------------------------------------------------------------- formatação
   const locale = ST.locale;
@@ -346,7 +358,12 @@
       document.getElementById('verPill').title = m.gameVersion;
     }
     document.getElementById('foot').innerHTML = `${ST.t('footer')} · ${ST.t('version')}: ${ST.esc(m.gameVersion || '?')} · ${
-      m.generatedAt ? new Date(m.generatedAt).toLocaleString(locale) : ''} · ${ST.t('fan')}`;
+      m.generatedAt ? new Date(m.generatedAt).toLocaleString(locale) : ''} · ${ST.t('fan')} · <button class="linkish" id="liteBtn" type="button">${
+      ST.tr('Modo leve', 'Lite mode')}: ${ST.lite ? ST.tr('ligado', 'on') : ST.tr('desligado', 'off')}</button>`;
+    document.getElementById('liteBtn').addEventListener('click', () => {
+      try { localStorage.setItem('st_lite', ST.lite ? '0' : '1'); } catch (e) { /* sem armazenamento */ }
+      location.reload();
+    });
   }
 
   ST.start = async () => {

@@ -74,3 +74,11 @@ ST.addI18n({
     account: 'Il mio account', simulator: 'Simulatore di missioni',
   },
 });
+
+/* Textos longos das páginas: carregados só para o idioma escolhido (antes das páginas, por isso document.write). */
+(() => {
+  if (!['es', 'fr', 'de', 'it'].includes(ST.lang)) return;
+  const me = document.currentScript && document.currentScript.getAttribute('src');
+  const v = me && me.includes('?v=') ? me.split('?v=')[1] : '';
+  document.write(`<script src="assets/i18n/${ST.lang}.js?v=${v}"><\/script>`);
+})();

@@ -6,24 +6,9 @@
   ST.addI18n({ pt: { calendar: 'Calendário' }, en: { calendar: 'Calendar' }, es: { calendar: 'Calendario' }, fr: { calendar: 'Calendrier' },
     de: { calendar: 'Kalender' }, it: { calendar: 'Calendario' } });
 
-  /* ---------------------------------------------------------------- .ics (iCalendar, eventos de dia inteiro) */
-  const icsEsc = (s) => String(s || '').replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
-  const fold = (line) => { // linhas de no máximo 75 caracteres (RFC 5545)
-    const out = [];
-    for (let i = 0; i < line.length; i += 74) out.push((i ? ' ' : '') + line.slice(i, i + 74));
-    return out.join('\r\n');
-  };
-  const ymd = (d) => d.replace(/-/g, '');
-  const nextDay = (d) => { const x = new Date(d + 'T12:00:00Z'); x.setUTCDate(x.getUTCDate() + 1); return x.toISOString().slice(0, 10); };
+  /* ---------------------------------------------------------------- .ics: texto gerado por ST.icsText (st-pure.js) */
   ST.icsFile = function (events, name) {
-    const stamp = new Date().toISOString().replace(/[-:]/g, '').slice(0, 15) + 'Z';
-    const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Portal Shop Titans//PT', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'X-WR-CALNAME:Shop Titans'];
-    for (const e of events) {
-      lines.push('BEGIN:VEVENT', `UID:${e.uid}@portal-shoptitans`, `DTSTAMP:${stamp}`, `DTSTART;VALUE=DATE:${ymd(e.date)}`, `DTEND;VALUE=DATE:${ymd(nextDay(e.date))}`,
-        fold('SUMMARY:' + icsEsc(e.title)), ...(e.desc ? [fold('DESCRIPTION:' + icsEsc(e.desc))] : []), 'TRANSP:TRANSPARENT', 'END:VEVENT');
-    }
-    lines.push('END:VCALENDAR');
-    const blob = new Blob([lines.join('\r\n') + '\r\n'], { type: 'text/calendar;charset=utf-8' });
+    const blob = new Blob([ST.icsText(events)], { type: 'text/calendar;charset=utf-8' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob); a.download = name || 'shop-titans.ics'; a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 2000);

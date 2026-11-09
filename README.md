@@ -20,9 +20,14 @@ Também no banco de dados: **Histórias** dos campeões (diálogos) e **Skins** 
 - **Caravana de Pharoway**: para cada tema/dia, os itens que mais rendem em cada categoria procurada, com formato na grade.
 - **Invasão Dracônica**: itens mais fortes para abastecer as tropas da Aeronave, no geral e por categoria.
 - **Tumba dos Titãs**: ranking de heróis sem crítico (os monstros anulam), espírito da Tumba dobrado, níveis, maldição e modificadores.
+- **Cidade Perdida de Ouro**: os 26 níveis da masmorra (poder, poder por herói, Ouro Puro, chefes), o melhor grupo pelo motor
+  do Hypermax, baús, títulos e as trilhas de recompensa da guilda.
+- **Eventos de comunidade**: banner, descrição, tarefas que dão pontos e metas com recompensas; liga ao evento de login do mesmo tema.
 - **Calendário**: grade do mês e próximos lançamentos com as datas dos arquivos (itens, móveis, skins, decorações, visuais,
   mascotes e eventos de login). Exporta o mês ou os próximos lançamentos em `.ics` (Google Agenda, Outlook, celular); a aba
-  "Em breve" dos itens também exporta. Eventos de login usam a data de criação gravada nos arquivos (o início real costuma ser depois).
+  "Em breve" dos itens também exporta. Eventos de login usam a data de criação gravada nos arquivos (o início real costuma ser depois),
+  com o ícone do evento e as recompensas de cada dia. Eventos de comunidade do mesmo tema aparecem na mesma data (aproximada);
+  Cidade Perdida de Ouro, Torre dos Titãs, Invasão Dracônica e Caravana ficam em "Eventos recorrentes" (sem data nos arquivos).
 
 **Comunidade (cadastrada no portal):**
 - **Guildas**: busca, membros, cargos, investimento total e por membro, níveis das construções da cidade, histórico e card de última atualização.
@@ -49,6 +54,12 @@ Também no banco de dados: **Histórias** dos campeões (diálogos) e **Skins** 
   a tabela de cálculo e as missões ao alcance. “Carregar build Hypermax” preenche o melhor build da classe. O build fica no
   link e pode ser compartilhado como imagem (PNG gerado no navegador); o Hypermax também tem os dois botões.
 - **Hypermax** (em Comunidade; calculado num Web Worker, sem travar a página): ficha de herói por classe com o equipamento, os encantamentos (elemento + espírito) e as habilidades (inata, espaços por nível, espíritos) de maior poder; ranking das 42 classes com HP, ATQ, DEF, escudo, evasão, crítico, dano crítico, ameaça e elemento.
+- **Comparar builds**: dois links do montador lado a lado, com a diferença de cada atributo e as peças trocadas.
+- **Grupos por área**: para cada área de missão, até que nível o grupo mais forte (Hypermax ou só os seus itens) chega.
+- **Plano de fabricação**: horas fora + espaços de fabricação → a fila que mais rende ouro ou XP, com limite opcional de recursos.
+- **Custo de melhorias**: vários itens com a meta de Ascensão, Transcendência e Forjado → Estilhaços, Selos, fabricações e atributos.
+- **Ficha de build** (`#/build?...`): versão limpa do build para mandar a alguém, com imagem e botão para editar.
+- **Notas por item**: na ficha do item; ficam no navegador e podem ser exportadas para `site/data/notes.js` (notas da guilda).
 - **Planejador de talentos**: pontos por árvore, custo total e bônus; o plano fica no link.
 - **Custos de melhoria**: soma de vários níveis de móveis, construções, guilda e pontos de talento.
 - **Lançamentos**: itens e móveis com data de lançamento, incluindo os que ainda vão sair.
@@ -57,7 +68,11 @@ Também no banco de dados: **Histórias** dos campeões (diálogos) e **Skins** 
 - Uma página estática por item, classe, campeão e área (`site/p/pt|en/...`), indexável por buscadores. As páginas de
   classe trazem o build Hypermax (posição no ranking, poder, atributos, itens com runa e espírito, habilidades), calculado
   pelo mesmo motor do site via Node (`extractor/hm_static.js`; sem Node a seção é omitida).
-- Interface em português e inglês; menu e rótulos comuns também em espanhol, francês, alemão e italiano (`assets/i18n.js`).
+- Interface completa em português, inglês, espanhol, francês, alemão e italiano (`assets/i18n.js` para o menu e
+  `assets/i18n/<idioma>.js` para os textos das páginas, carregado só no idioma escolhido). Textos com números montados na hora
+  (poucos) ficam em inglês nesses idiomas; `node tests/site.test.js` lista o que estiver sem tradução.
+- **Modo leve** (rodapé): sem animações e brilhos, lotes menores na lista de itens. Liga sozinho com economia de dados ou 2G/3G.
+- **Aviso no Discord** também para eventos de login novos e itens "Em breve" que apareçam num patch (estado em `extractor/.seen_events.json`).
   Nomes do jogo vêm traduzidos dos arquivos nos 13 idiomas.
 - Imagem de prévia 1200×630 por item (`site/og/`), usada no Discord, WhatsApp etc.
 - App instalável e com cache offline (PWA: `manifest.webmanifest` + `sw.js`, só quando servido por http/https).
@@ -115,6 +130,8 @@ egister-task.ps1 -Remove  # remover
 ```bash
 node tests/engine.test.js
 ```
+
+`node tests/site.test.js`: .ics, montador = Hypermax, dados do calendário e dos eventos, busca e cobertura das traduções.
 
 Seis testes do motor com números conferidos no jogo (fórmula de poder, Livro de Coleção, crítico/dano crítico/elemento do
 build real, melhor build do Astromante, Astromante em 1º, nenhuma troca de item/runa/espírito que melhore alguma classe).

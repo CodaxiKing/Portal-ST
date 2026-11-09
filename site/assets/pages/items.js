@@ -32,7 +32,7 @@
   };
 
   // ---------------------------------------------------------------- lista
-  const PAGE = 120;
+  const PAGE = ST.lite ? 40 : 120; // modo leve: lotes menores
   const SOON = '__soon';
   // já existe nos arquivos, mas a data de lançamento ainda não chegou (2099 = sem data definida)
   const today = ST.today; // ST.isUnreleased vem de st-pure.js
