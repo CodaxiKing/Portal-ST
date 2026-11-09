@@ -98,8 +98,10 @@ passa a mostrar itens novos, removidos e alterados.
 
 - Atributos dos itens são valores base (qualidade Normal). Os multiplicadores de qualidade (1 / 1,25 / 1,5 / 2 / 3)
   vêm das constantes do jogo (`item_power_*_mult`).
-- Hypermax é uma estimativa: habilidades no maior tier liberado pelo elemento, bônus percentuais somados entre si,
-  poder com crítico e ameaça. Campeões, sementes, boosters e efeitos condicionais não entram.
+- Hypermax é uma estimativa calibrada com o titansdb (Astromante: 1,85 mi aqui x 1,75 mi lá): Forjado nas Estrelas,
+  Ascensão + Transcendência, encantamentos (espíritos iguais acumulam; elemento do herói = soma dos encantamentos do
+  mesmo elemento), habilidades no maior tier liberado pelo elemento, bônus percentuais somados, poder com crítico e
+  ameaça. Campeões, sementes, boosters e efeitos condicionais não entram.
 - O montador interpola os atributos da classe entre os níveis 1, 40, 50 e 100 e não considera habilidades,
   encantamentos nem elementos.
 - Prateleiras, mesas, balcões e baús de loja são modelos 3D sem ícone 2D no jogo.

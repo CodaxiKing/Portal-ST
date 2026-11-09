@@ -4,9 +4,9 @@
    Modelo (dados e constantes do jogo):
    - item: atributos × qualidade (item_power_*_mult) após Ascensão + Transcendência; bônus "% de itens do tipo X" das habilidades
    - encantamento de elemento e de espírito; afinidade × affinity_stat_bonus ("Todos": metade do bônus)
-   - elemento do herói = valor do rank (hero_element_rank_and_value) + elementos encantados do mesmo elemento (+ bônus de afinidade)
+   - elemento do herói = elementos encantados do mesmo elemento (+ bônus de afinidade); o rank não soma (calibrado com o titansdb)
    - habilidades: inata + espaços liberados pelo nível; cada uma no maior tier cujo elemento exigido foi atingido;
-     espíritos distintos no equipamento somam suas habilidades
+     espíritos no equipamento somam suas habilidades (iguais acumulam)
    - poder = ATQ×0,8×(1 + crítico×(dano crítico − 1)) + DEF×1,2 + PV×5 + escudo×3 + ameaça×(DEF×0,008 + PV×0,025) + escudo×evasão×0,025 */
 (() => {
   const { t, tr, esc, nf, img, short, dec } = ST;
@@ -19,6 +19,7 @@
       q: Math.min(4, Math.max(0, +(q.get('q') ?? 4))),
       lv: +(q.get('lv') || 50),
       tr: q.get('tr') !== '0',
+      sf: q.get('sf') !== '0', // projeto Forjado nas Estrelas (marcos extras, ex.: atributos base +25%)
       en: q.get('en') !== '0',
       sk: q.get('sk') !== '0',
       soon: q.get('soon') === '1',
@@ -30,6 +31,7 @@
     if (o.q !== 4) p.set('q', o.q);
     if (o.lv !== 50) p.set('lv', o.lv);
     if (!o.tr) p.set('tr', '0');
+    if (!o.sf) p.set('sf', '0');
     if (!o.en) p.set('en', '0');
     if (!o.sk) p.set('sk', '0');
     if (o.soon) p.set('soon', '1');
@@ -41,14 +43,15 @@
   // ---------------------------------------------------------------- preparação (uma vez por conjunto de opções)
   let PREP = { key: '', v: null };
   function prepare(d, skills, K, o) {
-    const key = [o.q, o.tr, o.en, o.soon].join('|');
+    const key = [o.q, o.tr, o.sf, o.en, o.soon].join('|');
     if (PREP.key === key) return PREP.v;
     const qm = [1, K.item_power_uncommon_mult || 1.25, K.item_power_flawless_mult || 1.5, K.item_power_epic_mult || 2, K.item_power_legd_mult || 3][o.q];
     const ok = (i) => o.soon || !ST.isUnreleased(i);
     // itens equipáveis com atributos já com qualidade e melhorias
     // tudo que cabe num espaço de herói (inclui feitiços, ervas e sobremesas), exceto encantamentos e materiais
     const items = d.items.filter((i) => !['z', 'm', 'ma'].includes(i.type) && ok(i)).map((it) => {
-      const s = o.tr ? ST.applySteps(it, [...(it.ascension || []), ...(it.transcendence || [])]).stats : it.stats;
+      const steps = [...(o.sf ? it.starforged || [] : []), ...(o.tr ? [...(it.ascension || []), ...(it.transcendence || [])] : [])];
+      const s = steps.length ? ST.applySteps(it, steps).stats : it.stats;
       const core = { atk: s.atk * qm, def: s.def * qm, hp: s.hp * qm, eva: s.eva || 0, crit: s.crit || 0 };
       return { it, core, raw: core.atk * 0.8 + core.def * 1.2 + core.hp * 5 };
     }).filter((x) => x.raw > 0);
@@ -81,7 +84,12 @@
     if (ctx.innate) { const tt = tierOf(ctx.innate); if (tt) active.push({ f: ctx.innate, tt }); }
     chosen.forEach((f) => { const tt = tierOf(f); if (tt) active.push({ f, tt }); });
     const seenSp = new Set();
-    gear.forEach((g) => { if (g && g.sp && g.sp.sk && !seenSp.has(g.sp.sk.f.family)) { seenSp.add(g.sp.sk.f.family); active.push({ f: g.sp.sk.f, tt: g.sp.sk.tt, spirit: true }); } });
+    gear.forEach((g) => {
+      if (!g || !g.sp || !g.sp.sk) return;
+      if (ST.HM_SPIRIT_UNIQUE && seenSp.has(g.sp.sk.f.family)) return;
+      seenSp.add(g.sp.sk.f.family);
+      active.push({ f: g.sp.sk.f, tt: g.sp.sk.tt, spirit: true });
+    });
     // 3) somatórios
     const pct = { atk: 0, def: 0, hp: 0, shieldHp: 0 }, abs = { atk: 0, def: 0, hp: 0 };
     let eva = c.evasion || 0, crit = c.critical || 0, cm = c.critMult || 2, aggro = c.aggro || 0;
@@ -91,15 +99,18 @@
       pct.atk += m.atk || 0; pct.def += m.def || 0; pct.hp += m.hp || 0; pct.shieldHp += m.shieldHp || 0;
       abs.atk += m.atkAbs || 0; abs.def += m.defAbs || 0; abs.hp += m.hpAbs || 0;
       eva += m.evasion || 0; crit += m.critical || 0; cm += m.critMult || 0; aggro += m.aggro || 0;
-      if (m.item) itemPct.push({ types: tt.itemTypes || [], v: m.item });
+      pct.atk += (m.eleAtk || 0) * E; // ex.: Geomancia — +1% de ATQ por ponto de elemento
+      if (m.item) itemPct.push({ types: tt.itemTypes || [], v: m.item, sec: !!tt.secStat });
     }
     const tot = { atk: base.atk + abs.atk, def: base.def + abs.def, hp: base.hp + abs.hp };
     gear.forEach((g) => {
       if (!g) return;
       const ty = g.x.it.type;
-      const ip = itemPct.reduce((a, p) => a + (!p.types.length || p.types.includes('*') || p.types.includes(ty) ? p.v : 0), 0);
+      const hit = (p) => !p.types.length || p.types.includes('*') || p.types.includes(ty);
+      const ip = itemPct.reduce((a, p) => a + (hit(p) ? p.v : 0), 0);
+      const sp = itemPct.reduce((a, p) => a + (hit(p) && p.sec ? p.v : 0), 0); // "affectSecStat": também evasão e crítico do item
       for (const k of ['atk', 'def', 'hp']) tot[k] += g.x.core[k] * (1 + ip);
-      eva += g.x.core.eva; crit += g.x.core.crit;
+      eva += g.x.core.eva * (1 + sp); crit += g.x.core.crit * (1 + sp);
       for (const en of [g.el, g.sp]) if (en) {
         const am = en === g.el
           ? (g.x.it.elementAffinity.some((a) => a.id === en.el) ? aff : g.x.it.elementAffinity.some((a) => a.id === 'all') ? 1 + (aff - 1) * affAll : 1)
@@ -123,7 +134,7 @@
     const lv = Math.min(o.lv, ST.maxLevel(c) === 100 ? 100 : Math.max(ST.maxLevel(c), 50));
     const base = { atk: ST.statAt(c.stats.atk, lv), def: ST.statAt(c.stats.def, lv), hp: ST.statAt(c.stats.hp, lv) };
     const rankPairs = parsePairs(K.hero_element_rank_and_value);
-    const ctx = { c, K, base, rankEl: rankPairs.length ? rankPairs[rankPairs.length - 1][1] : 0, aff: K.affinity_stat_bonus || 1.5,
+    const ctx = { c, K, base, rankEl: ST.HM_RANK_EL ? (rankPairs.length ? rankPairs[rankPairs.length - 1][1] : 0) : 0, aff: K.affinity_stat_bonus || 1.5,
       affAll: K.affinity_all_bonus_mult || 0.5, elBonus: parsePairs(K.affinity_element_bonus),
       innate: o.sk && c.innate ? skills.find((f) => f.family === c.innate.uid) : null };
     const nSlots = o.sk ? (c.skillSlots || []).filter((l) => l <= lv).length : 0;
@@ -152,7 +163,9 @@
     let gear = cands.map((cs) => (cs[0] ? { x: cs[0], el: elOptions(cs[0])[0] || null, sp: null } : null));
     let chosen = [];
     const score = () => evaluate(ctx, gear, chosen).power;
-    for (let round = 0; round < 3; round++) {
+    let bestAll = null;
+    const snap = () => { const p = score(); if (!bestAll || p > bestAll.p) bestAll = { p, gear: gear.map((g) => g && { ...g }), chosen: chosen.slice() }; };
+    for (let round = 0; round < 4; round++) {
       // espíritos e elementos por espaço
       if (o.en) gear.forEach((g, k) => {
         if (!g) return;
@@ -160,16 +173,22 @@
         for (const sp of spirits) { g.sp = sp; const s = score(); if (s > best) { best = s; keep = sp; } }
         g.sp = keep;
       });
-      // habilidades (gulosa)
+      // habilidades: busca exaustiva entre as candidatas mais fortes (pega combinações como crítico + dano crítico)
+      const prev = chosen;
       chosen = [];
-      for (let n = 0; n < nSlots; n++) {
-        let best = -1, pickF = null;
-        for (const f of pool) {
-          if (chosen.includes(f)) continue;
-          chosen.push(f); const s = score(); chosen.pop();
-          if (s > best) { best = s; pickF = f; }
-        }
-        if (pickF) chosen.push(pickF);
+      if (nSlots) {
+        const solo = pool.map((f) => { chosen = [f]; return { f, s: score() }; }).sort((x, y) => y.s - x.s);
+        const synergy = pool.filter((f) => f.tiers.some((tt) => tt.mods && (tt.mods.critical || tt.mods.critMult || tt.mods.eleAtk)));
+        const cand = [...new Set([...prev, ...solo.slice(0, 10).map((x) => x.f), ...synergy])].slice(0, 18);
+        const k = Math.min(nSlots, cand.length);
+        let best = -1, bestSet = [];
+        const pickSet = [];
+        const rec = (start) => {
+          if (pickSet.length === k) { chosen = pickSet.slice(); const sc = score(); if (sc > best) { best = sc; bestSet = pickSet.slice(); } return; }
+          for (let i = start; i <= cand.length - (k - pickSet.length); i++) { pickSet.push(cand[i]); rec(i + 1); pickSet.pop(); }
+        };
+        rec(0);
+        chosen = bestSet;
       }
       // equipamento por espaço
       let changed = false;
@@ -184,10 +203,12 @@
         if (keep.x !== g.x || keep.el !== g.el) changed = true;
         gear[k] = { x: keep.x, el: keep.el, sp: g.sp };
       });
+      snap();
       if (!changed && round > 0) break;
     }
+    gear = bestAll.gear; chosen = bestAll.chosen;
     const r = evaluate(ctx, gear, chosen);
-    return { c, lv, gear, chosen, ...r, heroOnly: evaluate(ctx, gear.map(() => null), []).power };
+    return { c, lv, gear, chosen, ctx, ...r, heroOnly: evaluate(ctx, gear.map(() => null), []).power };
   }
 
   // ---------------------------------------------------------------- interface
@@ -211,14 +232,15 @@
       <label class="field">${t('level')}<select class="inp" data-o="lv">${LEVELS.map((l) => `<option value="${l}" ${o.lv === l ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
       <label class="check"><input type="checkbox" data-o="sk" ${o.sk ? 'checked' : ''}> ${tr('Habilidades', 'Skills')}</label>
       <label class="check"><input type="checkbox" data-o="en" ${o.en ? 'checked' : ''}> ${tr('Encantamentos', 'Enchantments')}</label>
+      <label class="check"><input type="checkbox" data-o="sf" ${o.sf ? 'checked' : ''}> ${tr('Forjado nas Estrelas', 'Starforged')}</label>
       <label class="check"><input type="checkbox" data-o="tr" ${o.tr ? 'checked' : ''}> ${tr('Ascensão + Transcendência', 'Ascension + Transcendence')}</label>
       <label class="check"><input type="checkbox" data-o="soon" ${o.soon ? 'checked' : ''}> ${tr('Itens em breve', 'Upcoming items')}</label></div>`;
   const bindControls = (el, o, base) => el.querySelectorAll('[data-o]').forEach((n) => n.addEventListener('change', () => {
     o[n.dataset.o] = n.type === 'checkbox' ? n.checked : +n.value;
     location.hash = base + optQuery(o, { ty: o.ty });
   }));
-  const NOTE = () => tr('Estimativa a partir dos dados do jogo: atributos × qualidade (constantes item_power), Ascensão + Transcendência, encantamentos com afinidade, habilidade inata + habilidades dos espaços liberados pelo nível (tier liberado pelo elemento do herói: rank 20 + elementos encantados do mesmo elemento) e habilidades dos espíritos (sem repetir). Poder = ATQ×0,8×(1 + crítico×(dano crítico−1)) + DEF×1,2 + PV×5 + escudo×3 + ameaça×(DEF×0,008 + PV×0,025). Não entram: campeões, sementes, boosters de missão e efeitos condicionais (só em chefes, por turno etc.).',
-    'Estimate from the game data: stats × quality (item_power constants), Ascension + Transcendence, enchantments with affinity, innate skill + skills for the slots unlocked by level (tier unlocked by hero element: rank 20 + enchanted elements of the same element) and spirit skills (no repeats). Power = ATK×0.8×(1 + crit×(crit dmg−1)) + DEF×1.2 + HP×5 + shield×3 + threat×(DEF×0.008 + HP×0.025). Not included: champions, seeds, quest boosters and conditional effects (boss-only, per turn, etc.).');
+  const NOTE = () => tr('Estimativa a partir dos dados do jogo, calibrada com o titansdb: atributos × qualidade (constantes item_power), Forjado nas Estrelas (atributos base +25%), Ascensão + Transcendência, encantamentos com afinidade, habilidade inata + habilidades dos espaços liberados pelo nível (tier liberado pelo elemento do herói, que soma os encantamentos do mesmo elemento), bônus de tipo de item (também em evasão/crítico quando o jogo indica), ATQ por ponto de elemento (Geomancia) e habilidades dos espíritos (espíritos iguais acumulam). Poder = ATQ×0,8×(1 + crítico×(dano crítico−1)) + DEF×1,2 + PV×5 + escudo×3 + ameaça×(DEF×0,008 + PV×0,025). Não entram: campeões, sementes, boosters e efeitos condicionais.',
+    'Estimate from the game data, calibrated against titansdb: stats × quality (item_power constants), Starforged (base stats +25%), Ascension + Transcendence, enchantments with affinity, innate skill + skills for the slots unlocked by level (tier unlocked by hero element, the sum of same-element enchantments), item-type bonuses (also on evasion/crit when the game says so), ATK per element point (Geomancy) and spirit skills (identical spirits stack). Power = ATK×0.8×(1 + crit×(crit dmg−1)) + DEF×1.2 + HP×5 + shield×3 + threat×(DEF×0.008 + HP×0.025). Not included: champions, seeds, boosters and conditional effects.');
 
   function card(b, rank, o) {
     return `<a class="hm-card2" href="#/hypermax/${b.c.uid}${optQuery(o)}">
@@ -228,6 +250,8 @@
       ${skillRow(b)}${statsGrid(b)}
       <div class="hm-gear">${b.gear.map((g) => gearCell(g, o)).join('')}</div></a>`;
   }
+
+  ST.hmDebug = { evaluate, optimize, prepare };
 
   ST.page('hypermax', {
     nav: 'hypermax', title: () => t('hypermax'),
@@ -240,7 +264,7 @@
       const list = uid ? classes.filter((c) => c.uid === uid) : classes.filter((c) => !o.ty || c.type === o.ty);
       if (uid && !list.length) { el.innerHTML = ST.notFound(); return; }
       // ranking geral precisa de todas as classes; cache por opções
-      const ck = JSON.stringify([o.q, o.lv, o.tr, o.en, o.sk, o.soon]);
+      const ck = JSON.stringify([o.q, o.lv, o.tr, o.sf, o.en, o.sk, o.soon]);
       if (!ST._hmCache || ST._hmCache.k !== ck) {
         el.innerHTML = ST.skeleton();
         await new Promise((r) => setTimeout(r, 20));
