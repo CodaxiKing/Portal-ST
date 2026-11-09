@@ -332,7 +332,9 @@
       if (!improved) break;
     }
     const r = evaluate(ctx, gear, chosen);
-    return { c, lv, gear, chosen, ctx, ...r, heroOnly: evaluate(ctx, gear.map(() => null), []).power };
+    const prof = evaluate({ ...ctx, colMult: 1 }, gear, chosen); // o perfil do herói no jogo não aplica o Livro de Coleção
+    return { c, lv, gear, chosen, ctx, ...r, profile: { power: prof.power, atk: prof.atk, def: prof.def, hp: prof.hp },
+      heroOnly: evaluate(ctx, gear.map(() => null), []).power };
   }
 
   // ---------------------------------------------------------------- interface
@@ -392,7 +394,8 @@
   function card(b, rank, o) {
     return `<a class="hm-card2" href="#/${o.route}/${b.c.uid}${optQuery(o, qExtra(o))}">
       <div class="hm-h"><div class="hm-cls">${img(b.c.icon)}</div><div class="hm-hn"><b>${esc(b.c.name)}</b>
-        <span class="hm-pw2">${ST.ic('star')} ${nf(Math.round(b.power))}</span></div>
+        <span class="hm-pw2" title="${tr('Poder do placar de líderes (com Livro de Coleção)', 'Leaderboard power (with Collection book)')}">${ST.ic('star')} ${nf(Math.round(b.power))}</span>
+        ${b.ctx.colMult > 1 ? `<span class="hm-prof" title="${tr('Poder mostrado no perfil do herói, sem o Livro de Coleção', 'Power shown on the hero profile, without the Collection book')}">${tr('perfil', 'profile')} ${nf(Math.round(b.profile.power))}</span>` : ''}</div>
         <div class="hm-side"><span class="hm-rk">#${rank}</span><span class="hm-el">${nf(Math.round(b.E))} ${elIcon(b.c.element)}</span></div></div>
       ${skillRow(b)}${statsGrid(b)}
       <div class="hm-gear">${b.gear.map((g) => gearCell(g, o)).join('')}</div></a>`;
@@ -484,7 +487,12 @@
           <div class="hm-detail">${card(b, rankOf(b), o)}
             <div>${ST.sec(tr('Habilidades', 'Skills'), skillRows ? `<div class="list">${skillRows}</div>` : `<p class="muted">${t('none')}</p>`)}
               ${ST.sec(tr('Equipamento', 'Gear'), `<div class="table-wrap"><table class="data-table"><thead><tr><th>${t('items')}</th><th>${tr('Elemento', 'Element')}</th><th>${tr('Espírito', 'Spirit')}</th></tr></thead><tbody>${gearRows}</tbody></table></div>`)}
-              ${ST.stats([ST.stat(tr('Herói sem nada', 'Bare hero'), nf(Math.round(b.heroOnly))), ST.stat(tr('Elemento do herói', 'Hero element'), `${nf(Math.round(b.E))} ${elIcon(b.c.element)}`), ST.stat(t('level'), b.lv)])}
+              ${ST.stats([ST.stat(tr('Poder no placar', 'Leaderboard power'), nf(Math.round(b.power))),
+                ST.stat(tr('Poder no perfil do herói', 'Hero profile power'), nf(Math.round(b.profile.power))),
+                ST.stat(tr('ATQ / DEF / PV no perfil', 'ATK / DEF / HP on profile'), `${short(Math.round(b.profile.atk))} / ${short(Math.round(b.profile.def))} / ${short(Math.round(b.profile.hp))}`),
+                ST.stat(tr('Herói sem nada', 'Bare hero'), nf(Math.round(b.heroOnly))), ST.stat(tr('Elemento do herói', 'Hero element'), `${nf(Math.round(b.E))} ${elIcon(b.c.element)}`), ST.stat(t('level'), b.lv)])}
+              <p class="note">${tr('No jogo, o perfil do herói mostra atributos e poder sem o Livro de Coleção; o placar de líderes aplica o melhor bônus da classe (+25%). Por isso o mesmo herói aparece com 1.399.539 no perfil e 1.749.428 no placar (×1,25).',
+                'In the game, the hero profile shows stats and power without the Collection book; the leaderboard applies the best class bonus (+25%). That is why the same hero shows 1,399,539 on the profile and 1,749,428 on the leaderboard (×1.25).')}</p>
               <div class="tags" style="margin-top:12px"><a class="chip" href="${builder}">${ST.ic('swords')} ${tr('Abrir no montador', 'Open in builder')}</a><a class="chip" href="#/classes/${b.c.uid}">${ST.ic('info')} ${esc(b.c.name)}</a></div></div></div>
           ${ST.sec(tr('Cálculo dos atributos', 'Stat calculation'), calcSection(b, o, P), tr('Cada item: atributos base do jogo → melhorias do projeto (Forjado nas Estrelas, Ascensão, Transcendência) → × qualidade → × (1 + bônus de tipo das habilidades e espíritos). Depois soma herói + itens + encantamentos e aplica as porcentagens das habilidades e o Livro de Coleção.', 'Each item: game base stats → blueprint upgrades (Starforged, Ascension, Transcendence) → × quality → × (1 + type bonus from skills and spirits). Then hero + items + enchantments are added and skill percentages and the Collection book are applied.'))}
           <p class="note">${NOTE()}</p>`;
