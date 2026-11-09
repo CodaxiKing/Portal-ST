@@ -20,7 +20,7 @@ Progressão · Novidades (diferenças entre extrações + notas de atualização
 - **Onde conseguir**: melhor área de missão (quantidade por hora) e baús para cada material.
 - **Encantamentos**: elementos e espíritos por equipamento, com o bônus de afinidade das constantes do jogo.
 - **Montador de herói**: classe + nível + equipamentos → atributos finais, poder e missões ao alcance.
-- **Hypermax**: para cada classe, o item e os encantamentos (elemento + espírito, com afinidade) de maior poder em cada espaço; ranking das 42 classes, com qualidade, nível, Transcendência e itens em breve configuráveis.
+- **Hypermax**: ficha de herói por classe com o equipamento, os encantamentos (elemento + espírito) e as habilidades (inata, espaços por nível, espíritos) de maior poder; ranking das 42 classes com HP, ATQ, DEF, escudo, evasão, crítico, dano crítico, ameaça e elemento.
 - **Planejador de talentos**: pontos por árvore, custo total e bônus; o plano fica no link.
 - **Custos de melhoria**: soma de vários níveis de móveis, construções, guilda e pontos de talento.
 - **Lançamentos**: itens e móveis com data de lançamento, incluindo os que ainda vão sair.
@@ -66,8 +66,10 @@ para gerar `sitemap.xml`, `robots.txt` e links absolutos nas prévias.
 faz commit e push (se houver remoto). Para rodar todo dia às 9h e após o logon:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File extractoregister-task.ps1          # registrar
-powershell -ExecutionPolicy Bypass -File extractoregister-task.ps1 -Remove  # remover
+powershell -ExecutionPolicy Bypass -File extractor
+egister-task.ps1          # registrar
+powershell -ExecutionPolicy Bypass -File extractor
+egister-task.ps1 -Remove  # remover
 ```
 
 ## Atualizar manualmente após um patch do jogo
@@ -94,8 +96,10 @@ passa a mostrar itens novos, removidos e alterados.
 
 ## Limitações conhecidas
 
-- Atributos dos itens são valores base (qualidade Normal). O montador usa os multiplicadores de qualidade
-  conhecidos pela comunidade (1 / 1,25 / 1,5 / 2 / 3), pois eles não estão nas tabelas de dados.
+- Atributos dos itens são valores base (qualidade Normal). Os multiplicadores de qualidade (1 / 1,25 / 1,5 / 2 / 3)
+  vêm das constantes do jogo (`item_power_*_mult`).
+- Hypermax é uma estimativa: habilidades no maior tier liberado pelo elemento, bônus percentuais somados entre si,
+  poder com crítico e ameaça. Campeões, sementes, boosters e efeitos condicionais não entram.
 - O montador interpola os atributos da classe entre os níveis 1, 40, 50 e 100 e não considera habilidades,
   encantamentos nem elementos.
 - Prateleiras, mesas, balcões e baús de loja são modelos 3D sem ícone 2D no jogo.

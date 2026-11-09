@@ -1,160 +1,282 @@
-/* Hypermax: para cada classe, o equipamento (e encantamentos) que dá o maior poder possível em cada espaço.
-   Poder = ATQ×0,8 + DEF×1,2 + PV×5 (constantes do jogo). Rotas: #/hypermax e #/hypermax/<classe>. */
+/* Hypermax: o máximo teórico de cada classe — equipamento, encantamentos e habilidades que dão mais poder.
+   Rotas: #/hypermax e #/hypermax/<classe>.
+
+   Modelo (dados e constantes do jogo):
+   - item: atributos × qualidade (item_power_*_mult) após Ascensão + Transcendência; bônus "% de itens do tipo X" das habilidades
+   - encantamento de elemento e de espírito; afinidade × affinity_stat_bonus ("Todos": metade do bônus)
+   - elemento do herói = valor do rank (hero_element_rank_and_value) + elementos encantados do mesmo elemento (+ bônus de afinidade)
+   - habilidades: inata + espaços liberados pelo nível; cada uma no maior tier cujo elemento exigido foi atingido;
+     espíritos distintos no equipamento somam suas habilidades
+   - poder = ATQ×0,8×(1 + crítico×(dano crítico − 1)) + DEF×1,2 + PV×5 + escudo×3 + ameaça×(DEF×0,008 + PV×0,025) + escudo×evasão×0,025 */
 (() => {
-  const { t, tr, esc, nf, img, short } = ST;
+  const { t, tr, esc, nf, img, short, dec } = ST;
   ST.addI18n({ pt: { hypermax: 'Hypermax' }, en: { hypermax: 'Hypermax' } });
-  const AFF = 1.5, AFF_ALL = 0.5; // affinity_stat_bonus / affinity_all_bonus_mult
-  const STATS = ['atk', 'def', 'hp'];
+  const QN = [['Normal', 'Common'], ['Superior', 'Uncommon'], ['Magistral', 'Flawless'], ['Épico', 'Epic'], ['Lendário', 'Legendary']];
+  const LEVELS = [50, 40, 35, 23, 100];
 
   function readOpts(q) {
     return {
       q: Math.min(4, Math.max(0, +(q.get('q') ?? 4))),
-      lv: q.get('lv') ? +q.get('lv') : 0, // 0 = nível máximo da classe
-      tr: q.get('tr') !== '0', // Ascensão + Transcendência completas
-      en: q.get('en') !== '0', // encantamentos (elemento + espírito)
-      soon: q.get('soon') === '1', // incluir itens ainda não lançados
+      lv: +(q.get('lv') || 50),
+      tr: q.get('tr') !== '0',
+      en: q.get('en') !== '0',
+      sk: q.get('sk') !== '0',
+      soon: q.get('soon') === '1',
       ty: q.get('ty') || '',
     };
   }
   const optQuery = (o, extra = {}) => {
     const p = new URLSearchParams();
     if (o.q !== 4) p.set('q', o.q);
-    if (o.lv) p.set('lv', o.lv);
+    if (o.lv !== 50) p.set('lv', o.lv);
     if (!o.tr) p.set('tr', '0');
     if (!o.en) p.set('en', '0');
+    if (!o.sk) p.set('sk', '0');
     if (o.soon) p.set('soon', '1');
-    for (const [k, v] of Object.entries(extra)) if (v) p.set(k, v); else p.delete(k);
+    for (const [k, v] of Object.entries(extra)) if (v) p.set(k, v);
     const s = p.toString();
     return s ? '?' + s : '';
   };
 
-  /* Melhor combinação de cada item (independe da classe): atributos com qualidade, melhorias e encantamentos. */
-  let CACHE = { key: '', map: null };
-  function itemTable(d, o) {
+  // ---------------------------------------------------------------- preparação (uma vez por conjunto de opções)
+  let PREP = { key: '', v: null };
+  function prepare(d, skills, K, o) {
     const key = [o.q, o.tr, o.en, o.soon].join('|');
-    if (CACHE.key === key) return CACHE.map;
-    const m = ST.QUALITY[o.q][0];
-    const ench = d.items.filter((i) => i.type === 'z' && (o.soon || !ST.isUnreleased(i)) && STATS.some((k) => i.stats[k]));
-    const elements = ench.filter((i) => i.elements.length), spirits = ench.filter((i) => i.skill);
-    const pw = (s) => s.atk * 0.8 + s.def * 1.2 + s.hp * 5;
-    const bestEnch = (it, list, isEl) => {
-      let best = null;
-      for (const e of list) {
-        let k = 1;
-        if (isEl) {
-          const ids = it.elementAffinity.map((a) => a.id);
-          k = ids.includes(e.elements[0].id) ? AFF : ids.includes('all') ? 1 + (AFF - 1) * AFF_ALL : 1;
-        } else if (it.spiritAffinity.some((a) => a.id === e.uid)) k = AFF;
-        const s = { atk: e.stats.atk * m * k, def: e.stats.def * m * k, hp: e.stats.hp * m * k };
-        const p = pw(s);
-        if (!best || p > best.p) best = { e, s, p, aff: k > 1 ? k : 0 };
-      }
-      return best;
-    };
-    const map = new Map();
-    for (const it of d.items) {
-      if (!['weapon', 'armor', 'accessory'].includes(it.cat) || (!o.soon && ST.isUnreleased(it))) continue;
-      const up = o.tr ? ST.applySteps(it, [...(it.ascension || []), ...(it.transcendence || [])]).stats : it.stats;
-      const base = { atk: up.atk * m, def: up.def * m, hp: up.hp * m };
-      if (!pw(base)) continue;
-      const el = o.en ? bestEnch(it, elements, true) : null, sp = o.en ? bestEnch(it, spirits, false) : null;
-      const tot = { ...base };
-      for (const x of [el, sp]) if (x) STATS.forEach((k) => (tot[k] += x.s[k]));
-      map.set(it.uid, { it, base, el, sp, tot, p: pw(tot) });
-    }
-    CACHE = { key, map };
-    return map;
+    if (PREP.key === key) return PREP.v;
+    const qm = [1, K.item_power_uncommon_mult || 1.25, K.item_power_flawless_mult || 1.5, K.item_power_epic_mult || 2, K.item_power_legd_mult || 3][o.q];
+    const ok = (i) => o.soon || !ST.isUnreleased(i);
+    // itens equipáveis com atributos já com qualidade e melhorias
+    // tudo que cabe num espaço de herói (inclui feitiços, ervas e sobremesas), exceto encantamentos e materiais
+    const items = d.items.filter((i) => !['z', 'm', 'ma'].includes(i.type) && ok(i)).map((it) => {
+      const s = o.tr ? ST.applySteps(it, [...(it.ascension || []), ...(it.transcendence || [])]).stats : it.stats;
+      const core = { atk: s.atk * qm, def: s.def * qm, hp: s.hp * qm, eva: s.eva || 0, crit: s.crit || 0 };
+      return { it, core, raw: core.atk * 0.8 + core.def * 1.2 + core.hp * 5 };
+    }).filter((x) => x.raw > 0);
+    const ench = d.items.filter((i) => i.type === 'z' && ok(i));
+    // habilidades por uid de tier (para espíritos) e famílias
+    const tierByUid = new Map();
+    skills.forEach((f) => f.tiers.forEach((tt) => tierByUid.set(tt.uid, { f, tt })));
+    const elements = ench.filter((e) => e.elements.length && (e.stats.atk || e.stats.def || e.stats.hp)).map((e) => ({ e, el: e.elements[0].id, val: e.elements[0].value, s: { atk: e.stats.atk * qm, def: e.stats.def * qm, hp: e.stats.hp * qm } }));
+    const spirits = ench.filter((e) => e.skill).map((e) => ({ e, s: { atk: e.stats.atk * qm, def: e.stats.def * qm, hp: e.stats.hp * qm }, sk: tierByUid.get(e.skill.uid) }));
+    PREP = { key, v: { items, elements, spirits, qm } };
+    return PREP.v;
   }
 
-  /* Monta a classe: melhor item por espaço (sem repetir item único). */
-  function buildClass(c, table, o) {
-    const lv = o.lv ? Math.min(o.lv, ST.maxLevel(c)) : ST.maxLevel(c);
-    const hero = { atk: ST.statAt(c.stats.atk, lv), def: ST.statAt(c.stats.def, lv), hp: ST.statAt(c.stats.hp, lv) };
-    const slots = c.slots.map((sl) => {
-      const codes = sl.map((x) => x.code);
-      let best = null;
-      for (const r of table.values()) if (codes.includes(r.it.type) && (!best || r.p > best.p)) best = r;
-      return { sl, best };
+  const parsePairs = (s) => String(s || '').split(';').map((p) => p.split(',').map(Number)).filter((p) => p.length === 2 && !isNaN(p[0]));
+  const stepVal = (pairs, x) => pairs.reduce((a, [k, v]) => (x >= k ? v : a), 0);
+
+  // ---------------------------------------------------------------- avaliação de um herói
+  function evaluate(ctx, gear, chosen) {
+    const { c, K, base, rankEl, aff, affAll, elBonus } = ctx;
+    // 1) elemento do herói
+    let E = rankEl;
+    gear.forEach((g) => {
+      if (!g || !g.el || (g.el.el !== c.element && g.el.el !== 'all')) return;
+      const hasAff = g.x.it.elementAffinity.some((a) => a.id === g.el.el || a.id === 'all');
+      E += g.el.val + (hasAff ? stepVal(elBonus, g.el.val) : 0);
     });
-    const tot = { ...hero };
-    slots.forEach((s) => s.best && STATS.forEach((k) => (tot[k] += s.best.tot[k])));
-    const power = tot.atk * 0.8 + tot.def * 1.2 + tot.hp * 5;
-    return { c, lv, hero, slots, tot, power };
+    // 2) habilidades ativas (maior tier liberado pelo elemento)
+    const tierOf = (f) => { let best = null; for (const tt of f.tiers) if ((tt.req || 0) <= E && (!best || tt.tier > best.tier)) best = tt; return best; };
+    const active = [];
+    if (ctx.innate) { const tt = tierOf(ctx.innate); if (tt) active.push({ f: ctx.innate, tt }); }
+    chosen.forEach((f) => { const tt = tierOf(f); if (tt) active.push({ f, tt }); });
+    const seenSp = new Set();
+    gear.forEach((g) => { if (g && g.sp && g.sp.sk && !seenSp.has(g.sp.sk.f.family)) { seenSp.add(g.sp.sk.f.family); active.push({ f: g.sp.sk.f, tt: g.sp.sk.tt, spirit: true }); } });
+    // 3) somatórios
+    const pct = { atk: 0, def: 0, hp: 0, shieldHp: 0 }, abs = { atk: 0, def: 0, hp: 0 };
+    let eva = c.evasion || 0, crit = c.critical || 0, cm = c.critMult || 2, aggro = c.aggro || 0;
+    const itemPct = []; // [{types, v}]
+    for (const { tt } of active) {
+      const m = tt.mods || {};
+      pct.atk += m.atk || 0; pct.def += m.def || 0; pct.hp += m.hp || 0; pct.shieldHp += m.shieldHp || 0;
+      abs.atk += m.atkAbs || 0; abs.def += m.defAbs || 0; abs.hp += m.hpAbs || 0;
+      eva += m.evasion || 0; crit += m.critical || 0; cm += m.critMult || 0; aggro += m.aggro || 0;
+      if (m.item) itemPct.push({ types: tt.itemTypes || [], v: m.item });
+    }
+    const tot = { atk: base.atk + abs.atk, def: base.def + abs.def, hp: base.hp + abs.hp };
+    gear.forEach((g) => {
+      if (!g) return;
+      const ty = g.x.it.type;
+      const ip = itemPct.reduce((a, p) => a + (!p.types.length || p.types.includes('*') || p.types.includes(ty) ? p.v : 0), 0);
+      for (const k of ['atk', 'def', 'hp']) tot[k] += g.x.core[k] * (1 + ip);
+      eva += g.x.core.eva; crit += g.x.core.crit;
+      for (const en of [g.el, g.sp]) if (en) {
+        const am = en === g.el
+          ? (g.x.it.elementAffinity.some((a) => a.id === en.el) ? aff : g.x.it.elementAffinity.some((a) => a.id === 'all') ? 1 + (aff - 1) * affAll : 1)
+          : (g.x.it.spiritAffinity.some((a) => a.id === en.e.uid) ? aff : 1);
+        for (const k of ['atk', 'def', 'hp']) tot[k] += en.s[k] * am;
+      }
+    });
+    const atk = tot.atk * (1 + pct.atk), def = tot.def * (1 + pct.def), hp = tot.hp * (1 + pct.hp);
+    const shield = hp * pct.shieldHp;
+    eva = Math.min(eva, K.quest_evasion_max || 0.75);
+    const cr = Math.min(crit, 1);
+    const power = atk * (K.adventurer_power_attack_mult || 0.8) * (1 + cr * (cm - 1)) + def * (K.adventurer_power_defense_mult || 1.2) +
+      hp * (K.adventurer_power_hp_mult || 5) + shield * (K.adventurer_power_shieldhp_mult || 3) +
+      aggro * (def * (K.adventurer_extra_power_defense_aggro_mult || 0.008) + hp * (K.adventurer_extra_power_hp_aggro_mult || 0.025)) +
+      shield * eva * (K.adventurer_extra_power_shieldhp_eva_mult || 0.025);
+    return { power, atk, def, hp, shield, eva, crit, cm, aggro, E, active };
   }
 
-  const controls = (o, extra = '') => `<div class="form-row hm-ctl">
-      <label class="field">${tr('Qualidade', 'Quality')}<select class="inp" data-o="q">${ST.QUALITY.map(([m, n], k) =>
-        `<option value="${k}" ${k === o.q ? 'selected' : ''}>${tr(...n)} (×${ST.dec(m)})</option>`).join('')}</select></label>
-      <label class="field">${t('level')}<select class="inp" data-o="lv"><option value="0">${tr('Máximo', 'Max')}</option>${[40, 30, 20, 10].map((l) =>
-        `<option value="${l}" ${o.lv === l ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+  // ---------------------------------------------------------------- otimização por classe
+  function optimize(c, P, skills, K, o) {
+    const lv = Math.min(o.lv, ST.maxLevel(c) === 100 ? 100 : Math.max(ST.maxLevel(c), 50));
+    const base = { atk: ST.statAt(c.stats.atk, lv), def: ST.statAt(c.stats.def, lv), hp: ST.statAt(c.stats.hp, lv) };
+    const rankPairs = parsePairs(K.hero_element_rank_and_value);
+    const ctx = { c, K, base, rankEl: rankPairs.length ? rankPairs[rankPairs.length - 1][1] : 0, aff: K.affinity_stat_bonus || 1.5,
+      affAll: K.affinity_all_bonus_mult || 0.5, elBonus: parsePairs(K.affinity_element_bonus),
+      innate: o.sk && c.innate ? skills.find((f) => f.family === c.innate.uid) : null };
+    const nSlots = o.sk ? (c.skillSlots || []).filter((l) => l <= lv).length : 0;
+    const allowed = (tt) => (tt.classes || []).some((x) => x === '*' || x === c.uid || x === c.type);
+    const pool = o.sk ? skills.filter((f) => (f.kind === 'hero' || f.kind === 'mastery') && f.tiers.some(allowed)) : [];
+    // candidatos por espaço: os melhores pelo valor bruto + o melhor de cada tipo (para bônus de tipo)
+    const cands = c.slots.map((sl) => {
+      const codes = sl.map((x) => x.code);
+      const list = P.items.filter((x) => codes.includes(x.it.type)).sort((a, b) => b.raw - a.raw);
+      const pick = new Set(list.slice(0, 10));
+      codes.forEach((cd) => list.filter((x) => x.it.type === cd).slice(0, 3).forEach((x) => pick.add(x)));
+      return [...pick];
+    });
+    const heroEls = o.en ? P.elements.filter((e) => e.el === c.element).sort((a, b) => b.val - a.val || (b.s.atk + b.s.def) - (a.s.atk + a.s.def)) : [];
+    const anyEls = o.en ? P.elements.slice().sort((a, b) => (b.s.atk * 0.8 + b.s.def * 1.2 + b.s.hp * 5) - (a.s.atk * 0.8 + a.s.def * 1.2 + a.s.hp * 5)) : [];
+    const spirits = o.en ? P.spirits : [];
+    const elOptions = (x) => {
+      if (!o.en) return [null];
+      const opts = new Set(heroEls.slice(0, 2));
+      const affs = x.it.elementAffinity.map((a) => a.id);
+      const aff = anyEls.find((e) => affs.includes(e.el)); if (aff) opts.add(aff);
+      if (anyEls[0]) opts.add(anyEls[0]);
+      return [...opts];
+    };
+    // estado inicial
+    let gear = cands.map((cs) => (cs[0] ? { x: cs[0], el: elOptions(cs[0])[0] || null, sp: null } : null));
+    let chosen = [];
+    const score = () => evaluate(ctx, gear, chosen).power;
+    for (let round = 0; round < 3; round++) {
+      // espíritos e elementos por espaço
+      if (o.en) gear.forEach((g, k) => {
+        if (!g) return;
+        let best = score(), keep = g.sp;
+        for (const sp of spirits) { g.sp = sp; const s = score(); if (s > best) { best = s; keep = sp; } }
+        g.sp = keep;
+      });
+      // habilidades (gulosa)
+      chosen = [];
+      for (let n = 0; n < nSlots; n++) {
+        let best = -1, pickF = null;
+        for (const f of pool) {
+          if (chosen.includes(f)) continue;
+          chosen.push(f); const s = score(); chosen.pop();
+          if (s > best) { best = s; pickF = f; }
+        }
+        if (pickF) chosen.push(pickF);
+      }
+      // equipamento por espaço
+      let changed = false;
+      gear.forEach((g, k) => {
+        if (!g) return;
+        let best = score(), keep = { x: g.x, el: g.el };
+        for (const x of cands[k]) for (const el of elOptions(x)) {
+          gear[k] = { x, el, sp: g.sp };
+          const s = score();
+          if (s > best + 1e-6) { best = s; keep = { x, el }; }
+        }
+        if (keep.x !== g.x || keep.el !== g.el) changed = true;
+        gear[k] = { x: keep.x, el: keep.el, sp: g.sp };
+      });
+      if (!changed && round > 0) break;
+    }
+    const r = evaluate(ctx, gear, chosen);
+    return { c, lv, gear, chosen, ...r, heroOnly: evaluate(ctx, gear.map(() => null), []).power };
+  }
+
+  // ---------------------------------------------------------------- interface
+  const elIcon = (el) => img('icon_global_element_' + el, 'hm-elic');
+  const statBox = (k, v) => `<div class="hm-sb"><span>${k}</span><b>${v}</b></div>`;
+  const statsGrid = (b) => `<div class="hm-sgrid">${statBox(t('hp').toUpperCase(), nf(Math.round(b.hp)))}${statBox(t('atk').toUpperCase(), nf(Math.round(b.atk)))}
+    ${statBox(t('def').toUpperCase(), nf(Math.round(b.def)))}${statBox(tr('ESCUDO', 'M.SHIELD'), nf(Math.round(b.shield)))}
+    ${statBox(tr('EVA', 'EVA'), Math.round(b.eva * 100) + '%')}${statBox(tr('CRÍT', 'CRIT'), Math.round(Math.min(b.crit, 1) * 100) + '%')}
+    ${statBox(tr('DANO CRÍT', 'CRIT DMG'), '×' + dec(b.cm, 2))}${statBox(tr('AMEAÇA', 'THREAT'), nf(b.aggro))}</div>`;
+  const skillRow = (b) => `<div class="hm-skills">${b.active.filter((a) => !a.spirit).map((a, k) =>
+    `<span class="hm-sk ${k === 0 && b.c.innate && a.f.family === b.c.innate.uid ? 'inn' : ''}" title="${esc(a.tt.name || a.f.name)} · T${a.tt.tier || 1}: ${esc((a.tt.effects || []).join(', '))}">${img(a.f.icon)}<i>${a.tt.tier || ''}</i></span>`).join('')}</div>`;
+  const mainStat = (x) => { const c = x.core; const m = Math.max(c.atk * 0.8, c.def * 1.2, c.hp * 5); return m === c.atk * 0.8 ? 'atk' : m === c.def * 1.2 ? 'def' : 'hp'; };
+  const gearCell = (g, o) => (g ? `<span class="hm-it q${o.q}" title="${esc(g.x.it.name)}${g.el ? ' · ' + esc(g.el.e.name) : ''}${g.sp ? ' · ' + esc(g.sp.e.name) : ''}">
+      <span class="hm-tier">${g.x.it.tier}</span>${o.tr ? '<span class="hm-stars">★★★</span>' : ''}
+      <span class="hm-ms ${mainStat(g.x)}"></span>${img(g.x.it.uid, 'hm-itimg')}
+      <span class="hm-encs">${g.el ? `<span title="${esc(g.el.e.name)}">${elIcon(g.el.el)}</span>` : ''}${g.sp ? `<span title="${esc(g.sp.e.name)}">${img(g.sp.e.uid)}</span>` : ''}</span></span>`
+    : '<span class="hm-it empty"></span>');
+
+  const controls = (o) => `<div class="form-row hm-ctl">
+      <label class="field">${tr('Qualidade', 'Quality')}<select class="inp" data-o="q">${QN.map((n, k) => `<option value="${k}" ${k === o.q ? 'selected' : ''}>${tr(...n)}</option>`).join('')}</select></label>
+      <label class="field">${t('level')}<select class="inp" data-o="lv">${LEVELS.map((l) => `<option value="${l}" ${o.lv === l ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+      <label class="check"><input type="checkbox" data-o="sk" ${o.sk ? 'checked' : ''}> ${tr('Habilidades', 'Skills')}</label>
+      <label class="check"><input type="checkbox" data-o="en" ${o.en ? 'checked' : ''}> ${tr('Encantamentos', 'Enchantments')}</label>
       <label class="check"><input type="checkbox" data-o="tr" ${o.tr ? 'checked' : ''}> ${tr('Ascensão + Transcendência', 'Ascension + Transcendence')}</label>
-      <label class="check"><input type="checkbox" data-o="en" ${o.en ? 'checked' : ''}> ${tr('Encantamentos (elemento + espírito)', 'Enchantments (element + spirit)')}</label>
-      <label class="check"><input type="checkbox" data-o="soon" ${o.soon ? 'checked' : ''}> ${tr('Incluir itens em breve', 'Include upcoming items')}</label>${extra}</div>`;
+      <label class="check"><input type="checkbox" data-o="soon" ${o.soon ? 'checked' : ''}> ${tr('Itens em breve', 'Upcoming items')}</label></div>`;
   const bindControls = (el, o, base) => el.querySelectorAll('[data-o]').forEach((n) => n.addEventListener('change', () => {
-    const k = n.dataset.o;
-    o[k] = n.type === 'checkbox' ? n.checked : +n.value;
+    o[n.dataset.o] = n.type === 'checkbox' ? n.checked : +n.value;
     location.hash = base + optQuery(o, { ty: o.ty });
   }));
-  const enchIcons = (r) => [r.el, r.sp].filter(Boolean).map((x) => `<span class="hm-en ${x.aff ? 'aff' : ''}" title="${esc(x.e.name)}${x.aff ? ' · ' + tr('afinidade', 'affinity') : ''}">${img(x.e.uid)}</span>`).join('');
-  const NOTE = () => tr('Poder = ATQ×0,8 + DEF×1,2 + PV×5, pelas constantes do jogo. Qualidade usa os multiplicadores da comunidade (×1 a ×3) e vale também para os encantamentos; afinidade multiplica o encantamento por 1,5 (“Todos”: 1,25). Não entram: habilidades, sementes, bônus de campeão, evasão e crítico. Pedras e Pedras Lunares não dão atributos, por isso não aparecem.',
-    'Power = ATK×0.8 + DEF×1.2 + HP×5, from the game constants. Quality uses the community multipliers (×1 to ×3) and also applies to enchantments; affinity multiplies the enchantment by 1.5 (“All”: 1.25). Not included: skills, seeds, champion bonuses, evasion and crit. Runestones and Moonstones give no stats, so they are not shown.');
+  const NOTE = () => tr('Estimativa a partir dos dados do jogo: atributos × qualidade (constantes item_power), Ascensão + Transcendência, encantamentos com afinidade, habilidade inata + habilidades dos espaços liberados pelo nível (tier liberado pelo elemento do herói: rank 20 + elementos encantados do mesmo elemento) e habilidades dos espíritos (sem repetir). Poder = ATQ×0,8×(1 + crítico×(dano crítico−1)) + DEF×1,2 + PV×5 + escudo×3 + ameaça×(DEF×0,008 + PV×0,025). Não entram: campeões, sementes, boosters de missão e efeitos condicionais (só em chefes, por turno etc.).',
+    'Estimate from the game data: stats × quality (item_power constants), Ascension + Transcendence, enchantments with affinity, innate skill + skills for the slots unlocked by level (tier unlocked by hero element: rank 20 + enchanted elements of the same element) and spirit skills (no repeats). Power = ATK×0.8×(1 + crit×(crit dmg−1)) + DEF×1.2 + HP×5 + shield×3 + threat×(DEF×0.008 + HP×0.025). Not included: champions, seeds, quest boosters and conditional effects (boss-only, per turn, etc.).');
+
+  function card(b, rank, o) {
+    return `<a class="hm-card2" href="#/hypermax/${b.c.uid}${optQuery(o)}">
+      <div class="hm-h"><div class="hm-cls">${img(b.c.icon)}</div><div class="hm-hn"><b>${esc(b.c.name)}</b>
+        <span class="hm-pw2">${ST.ic('star')} ${nf(Math.round(b.power))}</span></div>
+        <div class="hm-side"><span class="hm-rk">#${rank}</span><span class="hm-el">${nf(Math.round(b.E))} ${elIcon(b.c.element)}</span></div></div>
+      ${skillRow(b)}${statsGrid(b)}
+      <div class="hm-gear">${b.gear.map((g) => gearCell(g, o)).join('')}</div></a>`;
+  }
 
   ST.page('hypermax', {
     nav: 'hypermax', title: () => t('hypermax'),
     async render(el, [uid], query) {
-      const [classes] = await ST.need('classes');
+      const [classes, skills, prog] = await ST.need('classes', 'skills', 'progression');
       const { d } = await ST.itemsIndex();
       const o = readOpts(query);
-      const table = itemTable(d, o);
-      const builds = classes.map((c) => buildClass(c, table, o)).sort((a, b) => b.power - a.power);
+      const K = prog.constants || {};
+      const P = prepare(d, skills, K, o);
+      const list = uid ? classes.filter((c) => c.uid === uid) : classes.filter((c) => !o.ty || c.type === o.ty);
+      if (uid && !list.length) { el.innerHTML = ST.notFound(); return; }
+      // ranking geral precisa de todas as classes; cache por opções
+      const ck = JSON.stringify([o.q, o.lv, o.tr, o.en, o.sk, o.soon]);
+      if (!ST._hmCache || ST._hmCache.k !== ck) {
+        el.innerHTML = ST.skeleton();
+        await new Promise((r) => setTimeout(r, 20));
+        ST._hmCache = { k: ck, builds: classes.map((c) => optimize(c, P, skills, K, o)).sort((a, b) => b.power - a.power) };
+      }
+      const builds = ST._hmCache.builds;
+      const rankOf = (b) => builds.indexOf(b) + 1;
 
       if (uid) {
         const b = builds.find((x) => x.c.uid === uid);
-        if (!b) { el.innerHTML = ST.notFound(); return; }
-        const rank = builds.indexOf(b) + 1;
-        const builder = `#/montador?c=${b.c.uid}&lv=${b.lv}&` + b.slots.map((s, k) => (s.best ? `s${k}=${s.best.it.uid}:${o.q}` : '')).filter(Boolean).join('&');
-        const rows = b.slots.map((s) => {
-          const r = s.best;
-          if (!r) return `<tr><td colspan="6" class="muted">${esc(s.sl.map((x) => x.name).join(' / '))} — ${t('none')}</td></tr>`;
-          const en = (x) => (x ? `<a class="cell-item" href="#/item/${x.e.uid}">${img(x.e.uid)}<span>${esc(x.e.name)}${x.aff ? ` <span class="badge">×${ST.dec(x.aff, 2)}</span>` : ''}</span></a>` : '—');
-          return `<tr><td><a class="cell-item" href="#/item/${r.it.uid}">${img(r.it.uid)}<span>${esc(r.it.name)}<br><span class="small muted">T${r.it.tier} · ${esc(s.sl.map((x) => x.name).join(' / '))}</span></span></a></td>
-            <td>${en(r.el)}</td><td>${en(r.sp)}</td>
-            <td class="num s-atk">${nf(Math.round(r.tot.atk))}</td><td class="num s-def">${nf(Math.round(r.tot.def))}</td><td class="num s-hp">${nf(Math.round(r.tot.hp))}</td></tr>`;
-        }).join('');
+        const gearRows = b.gear.map((g, k) => (g ? `<tr><td><a class="cell-item" href="#/item/${g.x.it.uid}">${img(g.x.it.uid)}<span>${esc(g.x.it.name)}<br>
+          <span class="small muted">T${g.x.it.tier} · ${esc(b.c.slots[k].map((x) => x.name).join(' / '))}</span></span></a></td>
+          <td>${g.el ? `<a class="cell-item" href="#/item/${g.el.e.uid}">${elIcon(g.el.el)}<span>${esc(g.el.e.name)}</span></a>` : '—'}</td>
+          <td>${g.sp ? `<a class="cell-item" href="#/item/${g.sp.e.uid}">${img(g.sp.e.uid)}<span>${esc(g.sp.e.name)}</span></a>` : '—'}</td></tr>` : '')).join('');
+        const skillRows = b.active.map((a) => `<div class="row">${img(a.f.icon)}<div class="grow"><b>${esc(a.tt.name || a.f.name)}</b>
+          <span class="muted small">${a.spirit ? tr('espírito', 'spirit') : a.f.kind === 'innate' ? tr('inata', 'innate') : a.f.kind === 'mastery' ? tr('maestria', 'mastery') : tr('herói', 'hero')}${a.tt.tier ? ' · T' + a.tt.tier : ''}${a.tt.req ? ` · ${nf(a.tt.req)} ${tr('de elemento', 'element')}` : ''}</span>
+          <div class="small">${esc((a.tt.effects || []).join(' · '))}</div></div></div>`).join('');
+        const builder = `#/montador?c=${b.c.uid}&lv=${Math.min(b.lv, ST.maxLevel(b.c))}&` + b.gear.map((g, k) => (g ? `s${k}=${g.x.it.uid}:${o.q}` : '')).filter(Boolean).join('&');
         el.innerHTML = `<a class="crumb" href="#/hypermax${optQuery(o)}">${ST.ic('left')} ${t('hypermax')}</a>
-          <header class="detail-head hm-head"><div class="thumb">${img(b.c.icon)}</div><div>
-            <h1 class="d-title">${esc(b.c.name)} <span class="hm-rank">#${rank}</span></h1>
-            <div class="d-sub">${esc(b.c.typeName)} · ${t('level')} ${b.lv} · ${tr(...ST.QUALITY[o.q][1])}</div>
-            <div class="hm-power">${nf(Math.round(b.power))} <span>${t('power')}</span></div></div></header>
           ${controls(o)}
-          ${ST.stats([ST.stat(t('atk'), nf(Math.round(b.tot.atk)), 's-atk'), ST.stat(t('def'), nf(Math.round(b.tot.def)), 's-def'), ST.stat(t('hp'), nf(Math.round(b.tot.hp)), 's-hp'),
-            ST.stat(tr('Herói (sem itens)', 'Hero (no gear)'), nf(Math.round(b.hero.atk * 0.8 + b.hero.def * 1.2 + b.hero.hp * 5))),
-            ST.stat(tr('Equipamento', 'Gear'), nf(Math.round(b.power - (b.hero.atk * 0.8 + b.hero.def * 1.2 + b.hero.hp * 5))))])}
-          <div class="tags" style="margin:14px 0"><a class="chip primary" href="${builder}">${ST.ic('swords')} ${tr('Abrir no montador', 'Open in builder')}</a>
-            <a class="chip" href="#/classes/${b.c.uid}">${ST.ic('info')} ${esc(b.c.name)}</a>
-            <span class="small muted">${tr('O montador leva só os itens e a qualidade; encantamentos e Transcendência ficam fora de lá.', 'The builder only takes items and quality; enchantments and Transcendence are not included there.')}</span></div>
-          ${ST.sec(tr('Equipamento por espaço', 'Gear per slot'), `<div class="table-wrap"><table class="data-table"><thead><tr><th>${t('items')}</th>
-            <th>${tr('Elemento', 'Element')}</th><th>${tr('Espírito', 'Spirit')}</th><th class="num">${t('atk')}</th><th class="num">${t('def')}</th><th class="num">${t('hp')}</th></tr></thead>
-            <tbody>${rows}</tbody></table></div>`, NOTE())}`;
+          <div class="hm-detail">${card(b, rankOf(b), o)}
+            <div>${ST.sec(tr('Habilidades', 'Skills'), skillRows ? `<div class="list">${skillRows}</div>` : `<p class="muted">${t('none')}</p>`)}
+              ${ST.sec(tr('Equipamento', 'Gear'), `<div class="table-wrap"><table class="data-table"><thead><tr><th>${t('items')}</th><th>${tr('Elemento', 'Element')}</th><th>${tr('Espírito', 'Spirit')}</th></tr></thead><tbody>${gearRows}</tbody></table></div>`)}
+              ${ST.stats([ST.stat(tr('Herói sem nada', 'Bare hero'), nf(Math.round(b.heroOnly))), ST.stat(tr('Elemento do herói', 'Hero element'), `${nf(Math.round(b.E))} ${elIcon(b.c.element)}`), ST.stat(t('level'), b.lv)])}
+              <div class="tags" style="margin-top:12px"><a class="chip" href="${builder}">${ST.ic('swords')} ${tr('Abrir no montador', 'Open in builder')}</a><a class="chip" href="#/classes/${b.c.uid}">${ST.ic('info')} ${esc(b.c.name)}</a></div></div></div>
+          <p class="note">${NOTE()}</p>`;
         bindControls(el, o, '#/hypermax/' + b.c.uid);
         return;
       }
-
       const types = [...new Map(classes.map((c) => [c.type, c.typeName])).entries()];
       const shown = builds.filter((b) => !o.ty || b.c.type === o.ty);
-      const top = builds[0] ? builds[0].power : 1;
-      el.innerHTML = ST.pageHead(t('hypermax'), tr('O máximo teórico de cada classe: em cada espaço, o item e os encantamentos que dão mais poder. Clique numa classe para ver o equipamento completo.',
-        'The theoretical maximum for each class: in every slot, the item and enchantments that give the most power. Click a class to see the full gear.')) +
+      el.innerHTML = ST.pageHead(t('hypermax'), tr('O máximo teórico de cada classe: equipamento, encantamentos e habilidades que dão mais poder. Clique numa classe para ver os detalhes.',
+        'The theoretical maximum for each class: the gear, enchantments and skills that give the most power. Click a class for details.')) +
         controls(o) +
         ST.tabs([['#/hypermax' + optQuery(o), t('all')], ...types.map(([k, n]) => ['#/hypermax' + optQuery(o, { ty: k }), esc(n)])], '#/hypermax' + optQuery(o, { ty: o.ty })) +
-        `<div class="hm-grid">${shown.map((b) => `<a class="tile hm-card" href="#/hypermax/${b.c.uid}${optQuery(o)}">
-          <div class="hm-top"><span class="hm-rank">#${builds.indexOf(b) + 1}</span><div class="thumb">${img(b.c.icon)}</div>
-            <div class="tile-body"><div class="tile-title">${esc(b.c.name)}</div><div class="tile-sub">${esc(b.c.typeName)} · ${t('level')} ${b.lv}</div></div>
-            <div class="hm-pw">${short(Math.round(b.power))}<span>${t('power')}</span></div></div>
-          <div class="hm-bar"><i style="--w:${(b.power / top * 100).toFixed(1)}%"></i></div>
-          <div class="hm-slots">${b.slots.map((s) => (s.best ? `<span class="hm-slot" title="${esc(s.best.it.name)}">${img(s.best.it.uid)}<span class="hm-ens">${enchIcons(s.best)}</span></span>` : '<span class="hm-slot empty"></span>')).join('')}</div>
-          <div class="hm-stats"><span class="s-atk">${t('atk')} ${short(Math.round(b.tot.atk))}</span><span class="s-def">${t('def')} ${short(Math.round(b.tot.def))}</span><span class="s-hp">${t('hp')} ${short(Math.round(b.tot.hp))}</span></div></a>`).join('')}</div>
-        <p class="note">${NOTE()}</p>`;
+        `<div class="hm-grid">${shown.map((b) => card(b, rankOf(b), o)).join('')}</div><p class="note">${NOTE()}</p>`;
       bindControls(el, o, '#/hypermax');
     },
   });

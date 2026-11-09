@@ -108,6 +108,8 @@ def build_classes(tables, T):
 
 
 # ------------------------------------------------------------------ habilidades
+SKILL_MODS = ("atk", "def", "hp", "shieldHp", "atkAbs", "defAbs", "hpAbs", "evasion", "critical", "critMult", "aggro",
+             "item", "eleAtk", "championStatBonusMultiplier", "elementalItemCoreStatMultiplier")
 SKILL_KIND = {"p": "hero", "s": "mastery", "c": "innate", "i": "spirit", "a": "artifact", "q": "item"}
 
 
@@ -124,8 +126,12 @@ def build_skills(tables, T):
                 "classes": [{"id": x, "name": T.first(f"classtype_{x}", f"class_{x}_name", default=x)} for x in classes],
                 "icon": f"icon_global_skill_{fam}", "tiers": [],
             }
+        mods = {k: num(s.get(k)) for k in SKILL_MODS if num(s.get(k))}
         f["tiers"].append({"uid": uid, "tier": s.get("tier"), "rank": s.get("rank"), "rarity": s.get("rarity"),
-                           "name": T.get(f"skill_{uid}_name"), "effects": stat_effects(s, T)})
+                           "name": T.get(f"skill_{uid}_name"), "effects": stat_effects(s, T),
+                           # números usados pelo Hypermax: % (0.6 = +60%), valores fixos (*Abs), elemento exigido, tipos de item
+                           "mods": mods, "req": num(s.get("elements")), "classes": split(s.get("classes")),
+                           "itemTypes": split(s.get("itemTypes")), "secStat": bool(s.get("affectSecStat"))})
     out = []
     for f in fams.values():
         f["tiers"].sort(key=lambda x: x["tier"] or 0)
@@ -450,12 +456,15 @@ def build_city(tables, T):
 def build_progression(tables, T):
     c = tables.get("constants", {})
     keep = ["adventurer_power_attack_mult", "adventurer_power_defense_mult", "adventurer_power_hp_mult",
-            "adventurer_power_shieldhp_mult"]
+            "adventurer_power_shieldhp_mult", "adventurer_extra_power_defense_aggro_mult", "adventurer_extra_power_hp_aggro_mult",
+            "adventurer_extra_power_shieldhp_eva_mult", "quest_evasion_max", "item_power_uncommon_mult", "item_power_flawless_mult",
+            "item_power_epic_mult", "item_power_legd_mult", "affinity_stat_bonus", "affinity_all_bonus_mult"]
+    raw = ["hero_element_rank_and_value", "affinity_element_bonus"]
     return {
         "levels": table_rows(tables, "levels"),
         "friendship": table_rows(tables, "flevels"),
         "fusion": [{"uid": k, "name": T.get(f"quality_{k}", k), **v} for k, v in tables.get("fusion", {}).items()],
-        "constants": {k: num(c.get(k)) for k in keep if k in c},
+        "constants": {**{k: num(c.get(k)) for k in keep if k in c}, **{k: c.get(k) for k in raw if k in c}},
     }, set()
 
 
