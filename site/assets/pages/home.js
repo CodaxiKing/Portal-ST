@@ -7,13 +7,15 @@
     mascotes: 'doghouse', colecao: 'img_collectionbook_book_quality_epic_big', titulos: 'img_player_titles_01', guilda: 'icon_global_upgrade_rareresregen',
     progressao: 'icon_achievements_gold04', novidades: 'icon_event_reward_dialog', calculadora: 'custom_handheld_wallacehammer',
     lucro: 'img_shop_item_sitems_gold1', montador: 'icon_global_class_swordmaster_128', lista: 'goldshell', comparar: 'icon_global_quality_legendary',
-    onde: 'elvenwood', encantamentos: 't14fire', planejador: 'crystalegg', hypermax: 'cc_sundragon', caravana: 'caravanbanner', invasao: 'airshipcannon', tumba: 'chest_tomb', custos: 'timecrystal', lancamentos: 'wolf',
+    onde: 'elvenwood', encantamentos: 't14fire', planejador: 'crystalegg', hypermax: 'cc_sundragon', caravana: 'caravanbanner', guildas: 'icon_global_upgrade_rareresregen', players: 'img_player_titles_01', invasao: 'airshipcannon', tumba: 'chest_tomb', custos: 'timecrystal', lancamentos: 'wolf',
   };
   const DESC = {
     lista: ['Junte vários itens e veja todos os materiais somados.', 'Combine several items and see every material added up.'],
     comparar: ['Até quatro itens lado a lado, com o melhor valor destacado.', 'Up to four items side by side, best value highlighted.'],
     onde: ['Melhor área para farmar cada material.', 'Best area to farm each material.'],
     encantamentos: ['Elementos e espíritos com bônus de afinidade.', 'Elements and spirits with affinity bonuses.'],
+    guildas: ['Pesquise guildas, membros e investimentos.', 'Search guilds, members and investments.'],
+    players: ['Jogadores, nível, investimento e histórico.', 'Players, level, investment and history.'],
     caravana: ['Itens que mais rendem em cada categoria pedida por Stahl.', 'Best-paying items for each category Stahl asks for.'],
     invasao: ['Itens mais fortes para abastecer as tropas da Aeronave.', 'Strongest items to supply the Airship troops.'],
     tumba: ['Melhores heróis para a Tumba dos Titãs, sem crítico.', 'Best heroes for the Tomb of Titans, without crit.'],
@@ -64,7 +66,8 @@
           <div class="tile-title">${esc(t(k))}</div><div class="tile-sub">${esc(tr(...(DESC[p] || ['', ''])))}</div></div>
           ${feat ? `<span class="cnt" data-count="items">${num('items')}</span>` : ''}</a>`;
       }).join('');
-      const [db, events, tools] = ST.NAV;
+      const NAVK = Object.fromEntries(ST.NAV.map((g) => [g[0], g]));
+      const db = NAVK.db, events = NAVK.eventsNav, comm = NAVK.communityNav, tools = NAVK.tools;
       const mosaic = MOSAIC.filter((n) => ST.icon(n)).slice(0, 16);
 
       el.innerHTML = `<section class="home-hero">
@@ -90,6 +93,8 @@
         <div class="bento">${tiles(db[1])}</div>
         <div class="home-sec-head"><h2>${t(events[0])}</h2><span>${events[1].length} ${tr('eventos', 'events')}</span></div>
         <div class="tiles">${events[1].map(([p, k]) => `<a class="tile home-tile" href="#/${p}"><div class="thumb">${img(ICON[p])}</div><div class="tile-body"><div class="tile-title">${esc(t(k))}</div><div class="tile-sub">${esc(tr(...(DESC[p] || ['', ''])))}</div></div></a>`).join('')}</div>
+        <div class="home-sec-head"><h2>${t(comm[0])}</h2><span>${tr('cadastrado por você', 'entered by you')}</span></div>
+        <div class="tiles">${comm[1].map(([p, k]) => `<a class="tile home-tile" href="#/${p}"><div class="thumb">${img(ICON[p])}</div><div class="tile-body"><div class="tile-title">${esc(t(k))}</div><div class="tile-sub">${esc(tr(...(DESC[p] || ['', ''])))}</div></div></a>`).join('')}</div>
         <div class="home-sec-head"><h2>${t(tools[0])}</h2><span>${tools[1].length} ${tr('ferramentas', 'tools')}</span></div>
         <div class="zig">${tools[1].filter(([p]) => FEATURED.includes(p)).map(([p, k]) => `<a href="#/${p}"><div class="zthumb">${img(ICON[p])}</div>
           <div class="zbody"><h3>${esc(t(k))}</h3><p>${esc(tr(...DESC[p]))}</p></div><span class="go">${ST.ic('right')}</span></a>`).join('')}</div>

@@ -121,8 +121,8 @@
   ST.need = (...names) => Promise.all(names.map((n) => {
     if (!loaded[n]) {
       // meta.js sempre fresco; os demais versionados pela data da extração (evita cache velho após re-extrair)
-      const shared = ['diff', 'icons', 'meta'].includes(n);
-      const v = n === 'meta' ? Date.now() : encodeURIComponent((ST.meta && ST.meta.generatedAt) || '');
+      const shared = ['diff', 'icons', 'meta', 'community'].includes(n);
+      const v = n === 'meta' || n === 'community' ? Date.now() : encodeURIComponent((ST.meta && ST.meta.generatedAt) || '');
       loaded[n] = loadScript(`${shared ? `data/${n}.js` : `data/${lang}/${n}.js`}?v=${v}`).then(() => ST[n]);
     }
     return loaded[n];
@@ -279,6 +279,7 @@
       ['talentos', 'talents'], ['mascotes', 'pets'], ['colecao', 'collection'], ['titulos', 'titles'],
       ['guilda', 'guild'], ['progressao', 'progression'], ['novidades', 'updates']]],
     ['eventsNav', [['caravana', 'caravan'], ['invasao', 'airship'], ['tumba', 'tomb']]],
+    ['communityNav', [['guildas', 'guilds'], ['players', 'players']]],
     ['tools', [['calculadora', 'calculator'], ['lista', 'craftList'], ['comparar', 'compare'], ['lucro', 'profit'], ['onde', 'whereToGet'],
       ['encantamentos', 'enchantPlanner'], ['montador', 'builder'], ['hypermax', 'hypermax'], ['planejador', 'talentPlanner'], ['custos', 'upgradeCosts'], ['lancamentos', 'releases']]],
   ];

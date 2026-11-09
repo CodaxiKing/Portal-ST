@@ -1,9 +1,9 @@
 /* Service worker do Portal Shop Titans: funciona offline depois da primeira visita.
    - interface (html/css/js): rede primeiro, cache como reserva
    - dados, ícones e imagens: cache primeiro (os arquivos de dados têm ?v=<data da extração>) */
-const CACHE = 'st-v3';
+const CACHE = 'st-v4';
 const SHELL = ['./', './index.html', './assets/style.css', './assets/core.js', './assets/search.js', './assets/pages/home.js',
-  './assets/pages/items.js', './assets/pages/db.js', './assets/pages/tools.js', './assets/pages/tools2.js', './assets/pages/hypermax.js', './assets/pages/events.js', './manifest.webmanifest',
+  './assets/pages/items.js', './assets/pages/db.js', './assets/pages/tools.js', './assets/pages/tools2.js', './assets/pages/hypermax.js', './assets/pages/events.js', './assets/pages/community.js', './manifest.webmanifest',
   './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', (e) => {
@@ -16,7 +16,7 @@ self.addEventListener('fetch', (e) => {
   const req = e.request;
   const url = new URL(req.url);
   if (req.method !== 'GET' || url.origin !== location.origin) return;
-  const isAsset = /\/(img|og|icons)\//.test(url.pathname) || (/\/data\//.test(url.pathname) && !/meta\.js$/.test(url.pathname));
+  const isAsset = /\/(img|og|icons)\//.test(url.pathname) || (/\/data\//.test(url.pathname) && !/(meta|community)\.js$/.test(url.pathname));
   if (isAsset) {
     e.respondWith(caches.open(CACHE).then(async (c) => {
       const hit = await c.match(req);

@@ -16,6 +16,12 @@ Progressão · Novidades (diferenças entre extrações + notas de atualização
 - **Invasão Dracônica**: itens mais fortes para abastecer as tropas da Aeronave, no geral e por categoria.
 - **Tumba dos Titãs**: ranking de heróis sem crítico (os monstros anulam), espírito da Tumba dobrado, níveis, maldição e modificadores.
 
+**Comunidade (cadastrada no portal):**
+- **Guildas**: busca, membros, cargos, investimento total e por membro, níveis das construções da cidade, histórico e card de última atualização.
+- **Jogadores**: busca, guilda, nível, ouro investido, poder, histórico de atualizações.
+- Os dados ficam no navegador até você clicar em **Exportar arquivo** e substituir `site/data/community.js` (é esse arquivo que vai publicado).
+  Jogadores e guildas não existem nos arquivos do jogo; ficam nos servidores da Kabam.
+
 **Ferramentas:**
 - **Busca global** (Ctrl+K ou `/`): itens, classes, campeões, habilidades, missões, baús, móveis, mascotes e talentos.
 - **Calculadora de fabricação**: árvore completa de materiais, com marcos, Forjado nas Estrelas e ascensão.
