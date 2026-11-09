@@ -14,13 +14,7 @@
     get: read,
     active: () => { const a = read(); return !!(a && a.on); },
     /* projeto desbloqueado? (sem perfil ativo: tudo liberado) */
-    has(i) {
-      const a = read();
-      if (!a || !a.on) return true;
-      if ((a.hidden || []).includes(i.uid)) return false;
-      if ((a.extra || []).includes(i.uid)) return true;
-      return i.tier <= (a.maxTier || 0) && (!a.merchant || !i.level || i.level <= a.merchant + 5);
-    },
+    has(i) { return ST.profileHas(read(), i); },
     workerLevel(id) { const a = read(); return (a && a.on && a.workers && a.workers[id]) || null; },
   };
   const toggleHTML = (on) => (ST.account.get() ? `<label class="check acc-tg"><input type="checkbox" data-acc ${on ? 'checked' : ''}> ${tr('Só o que eu tenho (Minha conta)', 'Only what I own (My account)')}</label>` : '');
@@ -128,7 +122,7 @@
     ST._hmCaches = ST._hmCaches || {};
     if (!ST._hmCaches[ck]) {
       const P = ST.hmDebug.prepare(d, skills, prog.constants || {}, o);
-      ST._hmCaches[ck] = classes.map((c) => ST.hmDebug.optimize(c, P, skills, prog.constants || {}, o)).sort((a, b) => b.power - a.power);
+      ST._hmCaches[ck] = (await ST.hmComputeAll(classes, P, skills, prog.constants || {}, o)).sort((a, b) => b.power - a.power);
     }
     return ST._hmCaches[ck];
   }

@@ -45,11 +45,13 @@
   // ---------------------------------------------------------------- preparação (uma vez por conjunto de opções)
   let PREP = { key: '', v: null };
   function prepare(d, skills, K, o) {
-    const acc = ST.account && ST.account.active() ? JSON.stringify(ST.account.get()) : '';
+    // perfil de "Minha conta": vem em o.profile (Worker/testes) ou do navegador
+    const prof = o.profile !== undefined ? o.profile : (ST.account && ST.account.active() ? ST.account.get() : null);
+    const acc = prof && prof.on ? JSON.stringify(prof) : '';
     const key = [o.q, o.tr, o.sf, o.en, o.soon, acc].join('|');
     if (PREP.key === key) return PREP.v;
     const qm = [1, K.item_power_uncommon_mult || 1.25, K.item_power_flawless_mult || 1.5, K.item_power_epic_mult || 2, K.item_power_legd_mult || 3][o.q];
-    const ok = (i) => (o.soon || !ST.isUnreleased(i)) && (!acc || ST.account.has(i));
+    const ok = (i) => (o.soon || !ST.isUnreleased(i)) && (!acc || ST.profileHas(prof, i));
     const nameToCode = {};
     Object.entries(d.types || {}).forEach(([code, ty]) => { if (ty && ty.name && !nameToCode[ty.name]) nameToCode[ty.name] = code; });
     // itens equipáveis com atributos já com qualidade e melhorias
@@ -73,6 +75,15 @@
 
   const parsePairs = (s) => String(s || '').split(';').map((p) => p.split(',').map(Number)).filter((p) => p.length === 2 && !isNaN(p[0]));
   const stepVal = (pairs, x) => pairs.reduce((a, [k, v]) => (x >= k ? v : a), 0);
+
+  /* Poder do herói (constantes adventurer_power_*): conferido com o perfil do herói no jogo (0,01%). */
+  function powerOf(s, K) {
+    const cr = Math.min(s.crit || 0, 1);
+    return s.atk * (K.adventurer_power_attack_mult || 0.8) * (1 + cr * ((s.cm || 1) - 1)) + s.def * (K.adventurer_power_defense_mult || 1.2) +
+      s.hp * (K.adventurer_power_hp_mult || 5) + (s.shield || 0) * (K.adventurer_power_shieldhp_mult || 3) +
+      (s.aggro || 0) * (s.def * (K.adventurer_extra_power_defense_aggro_mult || 0.008) + s.hp * (K.adventurer_extra_power_hp_aggro_mult || 0.025)) +
+      (s.shield || 0) * (s.eva || 0) * (K.adventurer_extra_power_shieldhp_eva_mult || 0.025);
+  }
 
   // ---------------------------------------------------------------- avaliação de um herói
   function evaluate(ctx, gear, chosen, trace) {
@@ -153,10 +164,7 @@
     if (ctx.noCrit) crit = 0; else crit = Math.max(0, crit + (ctx.critAdj || 0));
     cm = Math.max(1, cm + (ctx.critMultAdj || 0));
     const cr = Math.min(crit, 1);
-    const power = atk * (K.adventurer_power_attack_mult || 0.8) * (1 + cr * (cm - 1)) + def * (K.adventurer_power_defense_mult || 1.2) +
-      hp * (K.adventurer_power_hp_mult || 5) + shield * (K.adventurer_power_shieldhp_mult || 3) +
-      aggro * (def * (K.adventurer_extra_power_defense_aggro_mult || 0.008) + hp * (K.adventurer_extra_power_hp_aggro_mult || 0.025)) +
-      shield * eva * (K.adventurer_extra_power_shieldhp_eva_mult || 0.025);
+    const power = powerOf({ atk, def, hp, shield, eva, crit: cr, cm, aggro }, K);
     if (trace) Object.assign(trace, { base, abs, items, pct: { ...pct }, cb, tot: { ...tot }, crit0, critItems: crit - crit0,
       critClass: c.critical || 0, cmClass: c.critMult || 2 });
     return { power, atk, def, hp, shield, eva, crit, cm, aggro, E, active };
@@ -227,15 +235,38 @@
   }
 
   // ---------------------------------------------------------------- otimização por classe
-  function optimize(c, P, skills, K, o) {
+  function makeCtx(c, skills, K, o) {
     const lv = Math.min(o.lv, ST.maxLevel(c) === 100 ? 100 : Math.max(ST.maxLevel(c), 50));
     const base = { atk: ST.statAt(c.stats.atk, lv), def: ST.statAt(c.stats.def, lv), hp: ST.statAt(c.stats.hp, lv) };
     const rankPairs = parsePairs(K.hero_element_rank_and_value);
-    const ctx = { c, K, base, rankEl: ST.HM_RANK_EL ? (rankPairs.length ? rankPairs[rankPairs.length - 1][1] : 0) : 0, aff: K.affinity_stat_bonus || 1.5,
+    return { lv, ctx: { c, K, base, rankEl: ST.HM_RANK_EL ? (rankPairs.length ? rankPairs[rankPairs.length - 1][1] : 0) : 0, aff: K.affinity_stat_bonus || 1.5,
       affAll: K.affinity_all_bonus_mult || 0.5, elBonus: parsePairs(K.affinity_element_bonus),
       innate: o.sk && c.innate ? skills.find((f) => f.family === c.innate.uid) : null,
       colMult: o.col && c.cardBonus && c.cardBonus.length ? Math.max(...c.cardBonus) : 1,
-      tower: !!o.tower, questMult: o.questMult || 2, noCrit: !!o.noCrit, critAdj: o.critAdj || 0, critMultAdj: o.critMultAdj || 0 };
+      tower: !!o.tower, questMult: o.questMult || 2, noCrit: !!o.noCrit, critAdj: o.critAdj || 0, critMultAdj: o.critMultAdj || 0 } };
+  }
+
+  /* Resultado final de uma classe a partir das escolhas (itens, runas, espíritos e habilidades). */
+  function finish(c, lv, ctx, gear, chosen) {
+    const r = evaluate(ctx, gear, chosen);
+    const prof = evaluate({ ...ctx, colMult: 1 }, gear, chosen); // o perfil do herói no jogo não aplica o Livro de Coleção
+    return { c, lv, gear, chosen, ctx, ...r, profile: { power: prof.power, atk: prof.atk, def: prof.def, hp: prof.hp },
+      heroOnly: evaluate(ctx, gear.map(() => null), []).power };
+  }
+
+  /* Reconstrói um resultado do Worker (só ids) com os objetos desta página. */
+  function rebuild(c, P, skills, K, o, choice) {
+    const { lv, ctx } = makeCtx(c, skills, K, o);
+    const X = new Map(P.items.map((x) => [x.it.uid, x])), EL = new Map(P.elements.map((e) => [e.e.uid, e])), SP = new Map(P.spirits.map((s) => [s.e.uid, s]));
+    const gear = choice.gear.map((g) => (g && X.get(g.x) ? { x: X.get(g.x), el: EL.get(g.el) || null, sp: SP.get(g.sp) || null, elTies: (g.ties || []).map((u) => EL.get(u)).filter(Boolean) } : null));
+    const chosen = choice.chosen.map((f) => skills.find((s) => s.family === f)).filter(Boolean);
+    return finish(c, lv, ctx, gear, chosen);
+  }
+  /* Só os ids de um resultado (o que o Worker devolve). */
+  const toChoice = (b) => ({ c: b.c.uid, gear: b.gear.map((g) => (g ? { x: g.x.it.uid, el: g.el && g.el.e.uid, sp: g.sp && g.sp.e.uid, ties: (g.elTies || []).map((e) => e.e.uid) } : null)), chosen: b.chosen.map((f) => f.family) });
+
+  function optimize(c, P, skills, K, o) {
+    const { lv, ctx } = makeCtx(c, skills, K, o);
     const nSlots = o.sk ? (c.skillSlots || []).filter((l) => l <= lv).length : 0;
     const allowed = (tt) => (tt.classes || []).some((x) => x === '*' || x === c.uid || x === c.type);
     const pool = o.sk ? skills.filter((f) => (f.kind === 'hero' || f.kind === 'mastery') && f.tiers.some(allowed)) : [];
@@ -339,7 +370,6 @@
       }
       if (!improved) break;
     }
-    const r = evaluate(ctx, gear, chosen);
     // empates exatos de runa (ex.: Aperture Catalyst tem afinidade com luz e escuridão; Apoteose e Oblívio têm os mesmos atributos):
     // guarda as alternativas e usa a ordem preferida pelos primeiros do placar (escuridão antes de luz)
     if (o.en) {
@@ -355,9 +385,7 @@
         gear[k] = { ...g, el: all[0], elTies: all.slice(1) };
       });
     }
-    const prof = evaluate({ ...ctx, colMult: 1 }, gear, chosen); // o perfil do herói no jogo não aplica o Livro de Coleção
-    return { c, lv, gear, chosen, ctx, ...r, profile: { power: prof.power, atk: prof.atk, def: prof.def, hp: prof.hp },
-      heroOnly: evaluate(ctx, gear.map(() => null), []).power };
+    return finish(c, lv, ctx, gear, chosen);
   }
 
   // ---------------------------------------------------------------- interface
@@ -424,7 +452,43 @@
       <div class="hm-gear">${b.gear.map((g) => gearCell(g, o)).join('')}</div></a>`;
   }
 
-  ST.hmDebug = { evaluate, optimize, prepare };
+  ST.hmDebug = { evaluate, optimize, prepare, powerOf, rebuild, toChoice };
+
+  /* Calcula todas as classes. Com servidor (http), roda num Web Worker e a página não trava; abrindo o arquivo
+     direto (file://) ou sem suporte, calcula aqui mesmo. onProgress(feitas, total) atualiza a barra. */
+  ST.hmComputeAll = function (classes, P, skills, K, o, onProgress) {
+    const local = () => new Promise((res) => {
+      const out = [];
+      let i = 0;
+      const stepFn = () => { // em fatias, para a barra de progresso aparecer
+        const end = Math.min(classes.length, i + 4);
+        for (; i < end; i++) out.push(optimize(classes[i], P, skills, K, o));
+        if (onProgress) onProgress(i, classes.length);
+        if (i < classes.length) setTimeout(stepFn, 0); else res(out);
+      };
+      stepFn();
+    });
+    if (typeof Worker === 'undefined' || !/^https?:/.test(location.protocol)) return local();
+    return new Promise((res) => {
+      let w;
+      const tag = typeof document !== 'undefined' && document.querySelector('script[src*="pages/hypermax.js"]');
+      const codeV = tag ? (tag.getAttribute('src').split('v=')[1] || '') : '';
+      try { w = new Worker('assets/hm-worker.js?c=' + encodeURIComponent(codeV)); } catch (e) { return local().then(res); }
+      const fail = () => { try { w.terminate(); } catch (e) {} local().then(res); };
+      w.onerror = fail;
+      w.onmessage = (ev) => {
+        const m = ev.data;
+        if (m.type === 'progress') { if (onProgress) onProgress(m.done, m.total); return; }
+        if (m.type === 'error') return fail();
+        w.terminate();
+        const byUid = new Map(classes.map((c) => [c.uid, c]));
+        res(m.choices.map((ch) => rebuild(byUid.get(ch.c), P, skills, K, o, ch)));
+      };
+      const { profile, ...rest } = o;
+      w.postMessage({ lang: ST.lang, v: (ST.meta && ST.meta.generatedAt) || '', opts: { ...rest, profile: profile !== undefined ? profile : (ST.account && ST.account.active() ? ST.account.get() : null) },
+        classes: classes.map((c) => c.uid) });
+    });
+  };
 
   // ---------------------------------------------------------------- Tumba: informações do evento
   const pct = (v) => `${v > 0 ? '+' : ''}${Math.round(v * 100)}%`;
@@ -481,9 +545,16 @@
       const ck = JSON.stringify([mode, o.cr, o.q, o.lv, o.tr, o.sf, o.col, o.en, o.sk, o.soon, ST.account && ST.account.active() ? JSON.stringify(ST.account.get()) : '']);
       ST._hmCaches = ST._hmCaches || {};
       if (!ST._hmCaches[ck]) {
-        el.innerHTML = ST.skeleton();
-        await new Promise((r) => setTimeout(r, 20));
-        ST._hmCaches[ck] = classes.map((c) => optimize(c, P, skills, K, o)).sort((a, b) => b.power - a.power);
+        el.innerHTML = `<div class="hm-progress"><p>${tr('Calculando o melhor equipamento das 42 classes…', 'Computing the best gear for all 42 classes…')}</p>
+          <div class="hm-pbar"><i style="--w:0%"></i></div><span class="small muted" id="hmPct">0 / ${classes.length}</span></div>` + ST.skeleton();
+        const myKey = location.hash;
+        const res = await ST.hmComputeAll(classes, P, skills, K, o, (done, total) => {
+          const bar = el.querySelector('.hm-pbar i'), t0 = el.querySelector('#hmPct');
+          if (bar) bar.style.setProperty('--w', (done / total * 100).toFixed(0) + '%');
+          if (t0) t0.textContent = `${done} / ${total}`;
+        });
+        ST._hmCaches[ck] = res.sort((a, b) => b.power - a.power);
+        if (location.hash !== myKey) return; // o usuário mudou de página enquanto calculava
       }
       const builds = ST._hmCaches[ck];
       ST._hmCache = { k: ck, builds };

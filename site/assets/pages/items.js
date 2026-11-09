@@ -35,8 +35,7 @@
   const PAGE = 120;
   const SOON = '__soon';
   // já existe nos arquivos, mas a data de lançamento ainda não chegou (2099 = sem data definida)
-  const today = () => new Date().toISOString().slice(0, 10);
-  ST.isUnreleased = (i) => !!i.releaseAt && String(i.releaseAt).slice(0, 10) > today();
+  const today = ST.today; // ST.isUnreleased vem de st-pure.js
   const relDate = (i) => (String(i.releaseAt) >= '2090' ? tr('sem data', 'no date') : new Date(String(i.releaseAt).slice(0, 10) + 'T12:00').toLocaleDateString(ST.locale));
   // moedas das melhorias especiais, com o sprite do jogo quando existir
   const cur = (sprite, ic) => (icon(sprite) ? `<img class="cur-img" src="${icon(sprite)}" alt="">` : `<i class="ic ic-${ic}"></i>`);
@@ -180,27 +179,7 @@
 
   // ---------------------------------------------------------------- melhorias aplicadas
   /* Aplica uma lista de efeitos (na ordem do jogo) ao item: atributos, receita, valor, tempo e efeitos extras. */
-  const STAT_KEYS = ['atk', 'def', 'hp', 'eva', 'crit', 'shieldHp'];
-  function applySteps(i, steps) {
-    const st = { ...i.stats }, res = i.resources.map((r) => ({ ...r })), comps = i.components.map((c) => ({ ...c }));
-    let value = i.value, time = i.time;
-    const other = [];
-    const num = (x, u) => (u.op === '-' ? Math.max(0, x - u.v) : u.op === '*' ? x * u.v : x + u.v);
-    for (const u of steps) {
-      const m = u.key && u.key.match(/^(resource|component)(\d)$/);
-      if (m) { const tgt = (m[1] === 'resource' ? res : comps)[+m[2] - 1]; if (tgt) tgt.qty = num(tgt.qty, u); }
-      else if (STAT_KEYS.includes(u.key)) st[u.key] = num(st[u.key] || 0, u);
-      else if (u.key === 'baseStats' && u.op === '*') ['atk', 'def', 'hp'].forEach((k) => (st[k] = (st[k] || 0) * u.v));
-      else if (u.key === 'value') value = num(value, u);
-      else if (u.key === 'time') time = num(time, u);
-      else other.push(u.text);
-    }
-    ['atk', 'def', 'hp', 'shieldHp'].forEach((k) => (st[k] = Math.round(st[k] || 0)));
-    res.forEach((r) => (r.qty = Math.ceil(r.qty)));
-    comps.forEach((c) => (c.qty = Math.ceil(c.qty)));
-    return { stats: st, res, comps, value: Math.round(value), time, other };
-  }
-  ST.applySteps = applySteps;
+  const applySteps = ST.applySteps; // definida em st-pure.js (compartilhada com o Worker e os testes)
 
   /* Painel "Valores": Base / Ascensão / Transcendência + etapa 1–3, com marcos opcionais. */
   function valuesPanel(i, mode, step, ms) {

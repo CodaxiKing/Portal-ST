@@ -148,18 +148,7 @@
   });
 
   // ================================================================ montador
-  const QUALITY = [[1, ['Normal', 'Common']], [1.25, ['Superior', 'Uncommon']], [1.5, ['Magistral', 'Flawless']], [2, ['Épico', 'Epic']], [3, ['Lendário', 'Legendary']]];
-  function statAt(points, lv) {
-    const pts = Object.entries(points).map(([l, v]) => [+l, v]).filter(([l, v]) => l === 1 || v).sort((a, b) => a[0] - b[0]);
-    if (lv <= pts[0][0]) return pts[0][1];
-    for (let k = 1; k < pts.length; k++) {
-      const [l0, v0] = pts[k - 1], [l1, v1] = pts[k];
-      if (lv <= l1) return v0 + (v1 - v0) * (lv - l0) / (l1 - l0);
-    }
-    return pts[pts.length - 1][1];
-  }
-  const maxLevel = (c) => (c.stats.atk['100'] ? 100 : c.stats.atk['50'] ? 50 : 40);
-  ST.statAt = statAt; ST.QUALITY = QUALITY; ST.maxLevel = maxLevel;
+  const { QUALITY, statAt, maxLevel } = ST; // st-pure.js
 
   ST.page('montador', {
     nav: 'montador', title: () => t('builder'),

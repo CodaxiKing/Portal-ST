@@ -805,3 +805,7 @@ a.hm-card2:hover { transform: translateY(-3px); box-shadow: var(--shadow-lift); 
 .hm-sum { margin-top: 10px; }
 .hm-sum .r { font: 500 12.5px var(--mono); text-align: right; white-space: normal; }
 .hm-prof { font: 500 11.5px var(--mono); color: var(--muted); }
+.hm-progress { padding: 22px 0 6px; display: flex; flex-direction: column; gap: 8px; max-width: 520px; }
+.hm-progress p { margin: 0; color: var(--muted); }
+.hm-pbar { height: 6px; border-radius: 6px; background: var(--bg-2); overflow: hidden; }
+.hm-pbar i { display: block; height: 100%; width: var(--w); background: var(--accent); border-radius: inherit; transition: width .3s var(--ease); }
