@@ -280,9 +280,9 @@
       ['guilda', 'guild'], ['progressao', 'progression'], ['historias', 'stories'], ['skins', 'skins'], ['novidades', 'updates']]],
     ['rewardsNav', [['passes', 'passes'], ['recompensas', 'evRewards'], ['quadro', 'bounties'], ['loja', 'store'], ['expansoes', 'expansions'], ['sorte', 'luck']]],
     ['eventsNav', [['caravana', 'caravan'], ['invasao', 'airship'], ['tumba', 'tomb']]],
-    ['communityNav', [['guildas', 'guilds'], ['players', 'players']]],
+    ['communityNav', [['hypermax', 'hypermax'], ['guildas', 'guilds'], ['players', 'players']]],
     ['tools', [['conta', 'account'], ['simulador', 'simulator'], ['qualidade', 'quality'], ['calculadora', 'calculator'], ['lista', 'craftList'], ['comparar', 'compare'], ['lucro', 'profit'], ['onde', 'whereToGet'],
-      ['encantamentos', 'enchantPlanner'], ['montador', 'builder'], ['hypermax', 'hypermax'], ['planejador', 'talentPlanner'], ['custos', 'upgradeCosts'], ['lancamentos', 'releases']]],
+      ['encantamentos', 'enchantPlanner'], ['montador', 'builder'], ['planejador', 'talentPlanner'], ['custos', 'upgradeCosts'], ['lancamentos', 'releases']]],
   ];
   ST.NAV = NAV;
   ST.openNavGroup = (gi) => {
