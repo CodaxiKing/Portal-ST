@@ -79,6 +79,9 @@
     const { c, K, base, rankEl, aff, affAll, elBonus } = ctx;
     // 1) elemento do herói
     let E = rankEl;
+    // elemento total (runas de qualquer elemento + elemento próprio dos itens), usado pelo ATQ por elemento
+    let Eall = rankEl;
+    gear.forEach((g) => { if (!g) return; (g.x.it.elements || []).forEach((x) => (Eall += x.value || 0)); if (g.el) Eall += g.el.val; });
     gear.forEach((g) => { // elemento próprio do item (ex.: armas com "Fogo +35") também conta
       if (g) (g.x.it.elements || []).forEach((x) => { if (x.id === c.element || x.id === 'all') E += x.value || 0; });
     });
@@ -116,7 +119,9 @@
       pct.atk += m.atk || 0; pct.def += m.def || 0; pct.hp += m.hp || 0; pct.shieldHp += m.shieldHp || 0;
       abs.atk += m.atkAbs || 0; abs.def += m.defAbs || 0; abs.hp += m.hpAbs || 0;
       eva += m.evasion || 0; crit += m.critical || 0; cm += m.critMult || 0; aggro += m.aggro || 0;
-      pct.atk += (m.eleAtk || 0) * E; // ex.: Geomancia — +1% de ATQ por ponto de elemento
+      // Geomancia: +1% de ATQ por ponto de elemento de QUALQUER tipo (runas + elemento próprio dos itens).
+      // Conferido com o placar: assim o melhor build calculado é o mesmo dos primeiros colocados (runa de afinidade na arma).
+      pct.atk += (m.eleAtk || 0) * (ST.HM_ELEALL === false ? E : Eall);
       if (m.item) itemPct.push({ types: tt.itemTypes || [], v: m.item, sec: !!tt.secStat });
     }
     const tot = { atk: base.atk + abs.atk, def: base.def + abs.def, hp: base.hp + abs.hp };
