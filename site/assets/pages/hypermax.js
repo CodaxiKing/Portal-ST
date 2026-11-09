@@ -97,8 +97,10 @@
     gear.forEach((g, idx) => {
       if (!g || !g.sp || !g.sp.sk) return;
       const tt = g.sp.sk.tt, qm = tt.quest && ctx.tower ? ctx.questMult : 1; // efeito dobrado na Torre/Tumba
+      // habilidade restrita a uma missão (ex.: Malevolência Nascida da Tumba) não entra no poder geral do herói
+      if (tt.quest && !ctx.tower) { active.push({ f: g.sp.sk.f, tt, spirit: true, off: true }); return; }
       if (tt.self) { selfPct[idx] += ((tt.mods || {}).item || 0) * qm; active.push({ f: g.sp.sk.f, tt, spirit: true, self: true }); return; }
-      if (seenSp.has(g.sp.sk.f.family)) return;
+      // espíritos iguais acumulam: cada item com o espírito soma a habilidade dele (confirmado no jogo: 6× Leviatã = +18% de crítico)
       seenSp.add(g.sp.sk.f.family);
       active.push({ f: g.sp.sk.f, tt, spirit: true, qm });
     });
@@ -107,7 +109,7 @@
     let eva = c.evasion || 0, crit = c.critical || 0, cm = c.critMult || 2, aggro = c.aggro || 0;
     const itemPct = []; // [{types, v}]
     for (const a of active) {
-      if (a.self) continue;
+      if (a.self || a.off) continue;
       const tt = a.tt, q = a.qm || (tt.quest && ctx.tower ? ctx.questMult : 1);
       const m = q === 1 ? (tt.mods || {}) : Object.fromEntries(Object.entries(tt.mods || {}).map(([k, v]) => [k, v * q]));
       pct.atk += m.atk || 0; pct.def += m.def || 0; pct.hp += m.hp || 0; pct.shieldHp += m.shieldHp || 0;

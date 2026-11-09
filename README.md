@@ -127,7 +127,8 @@ passa a mostrar itens novos, removidos e alterados.
   vêm das constantes do jogo (`item_power_*_mult`).
 - Hypermax é calculado só com os dados do jogo: Forjado nas Estrelas, Ascensão + Transcendência, encantamentos com afinidade,
   elemento do herói (encantamentos + elemento próprio dos itens) liberando o tier das habilidades, Livro de Coleção (melhor carta
-  da classe) e poder com crítico e ameaça. Campeões, sementes e boosters não entram (dependem da missão). As fórmulas exatas
+  da classe), espíritos acumulando por item (6× Leviatã = +18% de crítico, conferido no jogo), espírito da Tumba só na
+  Torre/Tumba e poder com crítico e ameaça. Campeões, sementes e boosters não entram (dependem da missão). As fórmulas exatas
   ficam no código compilado do jogo; os nomes dos métodos (CalculateAttackPower, CalculateCriticalRatePower...) confirmam os
   componentes usados, mas os pesos de crítico e evasão são estimados.
 - Caravana: a pontuação mostrada é relativa (valor × qualidade × bônus de procurado); a conversão exata em Vales não está
