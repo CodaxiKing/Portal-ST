@@ -2,8 +2,8 @@
 (() => {
   const { t, tr, esc, nf, short, dur, img, dec } = ST;
   ST.addI18n({
-    pt: { account: 'Minha conta', simulator: 'Simulador de missão', quality: 'Calculadora de qualidade' },
-    en: { account: 'My account', simulator: 'Quest simulator', quality: 'Quality calculator' },
+    pt: { account: 'Minha conta', simulator: 'Simulador de missão', qualityCalc: 'Calculadora de qualidade' },
+    en: { account: 'My account', simulator: 'Quest simulator', qualityCalc: 'Quality calculator' },
   });
 
   // ---------------------------------------------------------------- perfil
@@ -211,7 +211,7 @@
 
   // ---------------------------------------------------------------- calculadora de qualidade
   ST.page('qualidade', {
-    nav: 'qualidade', title: () => t('quality'),
+    nav: 'qualidade', title: () => t('qualityCalc'),
     async render(el, args, query) {
       const { d, by } = await ST.itemsIndex();
       const [prog] = await ST.need('progression');
@@ -225,7 +225,7 @@
       const rows = base.map(([k, p, nm]) => { const pq = Math.min(1, p * (1 + bonus)); return { k, nm: tr(...nm), base: p, p: pq, atLeast: 1 - Math.pow(1 - pq, n), exp: 1 / pq }; });
       const common = Math.max(0, 1 - rows.reduce((a, r) => a + r.p, 0));
       const craftable = d.items.filter((i) => !i.nonCraftable && (i.resources.length || i.components.length));
-      el.innerHTML = ST.pageHead(t('quality'), tr('Chance de cada qualidade por fabricação, com os bônus de “Chance de qualidade” do projeto (+1 = dobra a chance) e bônus extras (talentos, eventos).', 'Chance of each quality per craft, with the blueprint\'s “Quality chance” bonuses (+1 = double) and extra bonuses (talents, events).')) +
+      el.innerHTML = ST.pageHead(t('qualityCalc'), tr('Chance de cada qualidade por fabricação, com os bônus de “Chance de qualidade” do projeto (+1 = dobra a chance) e bônus extras (talentos, eventos).', 'Chance of each quality per craft, with the blueprint\'s “Quality chance” bonuses (+1 = double) and extra bonuses (talents, events).')) +
         `<div class="form-row">
           <label class="field">${t('items')}<input class="inp" id="qi" list="qi-list" placeholder="${tr('Opcional: escolha um projeto…', 'Optional: pick a blueprint…')}" value="${esc(it ? it.name : '')}" style="min-width:240px"></label>
           <datalist id="qi-list">${craftable.map((i) => `<option value="${esc(i.name)}">T${i.tier}</option>`).join('')}</datalist>

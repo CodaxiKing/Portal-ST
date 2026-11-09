@@ -5,8 +5,9 @@
   const KIND = {
     i: ['Item', 'Item'], c: ['Campeão', 'Champion'], k: ['Classe', 'Class'], s: ['Habilidade', 'Skill'], q: ['Missão', 'Quest'],
     b: ['Baú', 'Chest'], w: ['Trabalhador', 'Worker'], f: ['Móvel', 'Furniture'], p: ['Mascote', 'Pet'], t: ['Talento', 'Talent'],
+    a: ['Passe', 'Pass'], h: ['História', 'Story'], n: ['Skin', 'Skin'], l: ['Evento de login', 'Login event'], g: ['Página', 'Page'],
   };
-  const ORDER = 'ikcqsbwfpt';
+  const ORDER = 'gikcqsahbwfpnlt';
   let index = null, box = null, results = [], sel = 0;
 
   async function load() {
@@ -17,6 +18,11 @@
       const sub = e[0] === 'f' && ft[e[2]] ? tr(...ft[e[2]]) : e[2];
       return { k: e[0], name: e[1], sub, icon: e[3], href: e[4], n: ST.norm(e[1]), s: ST.norm(sub) };
     });
+    // páginas do menu (Hypermax, Calendário, Caravana, ferramentas…): o nome vem da tradução da interface
+    (ST.NAV || []).forEach(([g, links]) => links.forEach(([route, key]) => {
+      const name = ST.t(key), sub = ST.t(g);
+      index.push({ k: 'g', name, sub, icon: '', href: '#/' + route, n: ST.norm(name), s: ST.norm(sub) });
+    }));
     return index;
   }
 
@@ -45,7 +51,7 @@
     sel = 0;
     list.innerHTML = results.length
       ? results.map((e, i) => `<a class="gs-row ${i === 0 ? 'on' : ''}" href="${e.href}" data-i="${i}">
-          <span class="gs-ic">${img(e.icon)}</span><span class="gs-main"><b>${esc(e.name)}</b><span>${esc(e.sub || '')}</span></span>
+          <span class="gs-ic">${e.icon && ST.icon(e.icon) ? img(e.icon) : ST.ic(e.k === 'g' ? 'right' : e.k === 'l' ? 'calendar' : 'star')}</span><span class="gs-main"><b>${esc(e.name)}</b><span>${esc(e.sub || '')}</span></span>
           <span class="gs-kind">${tr(...KIND[e.k])}</span></a>`).join('')
       : ST.empty(tr('Nada encontrado', 'Nothing found'), tr(`Nenhum resultado para “${esc(q)}”.`, `No results for “${esc(q)}”.`));
   }

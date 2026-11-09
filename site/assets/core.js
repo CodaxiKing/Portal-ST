@@ -58,12 +58,15 @@
       version: 'Game version', grid: 'Grid', table: 'Table', sortBy: 'Sort', ofItems: 'of', results: 'results',
     },
   };
+  // idiomas extras da interface (es, fr, de, it…): assets/i18n.js traz os termos do menu e os rótulos comuns;
+  // os textos longos das páginas (ST.tr) ficam em inglês nesses idiomas
+  ST.I18N = I18N;
   ST.t = (k, ...args) => {
-    let s = (I18N[ui] && I18N[ui][k]) ?? I18N.en[k] ?? k;
+    let s = (I18N[lang] && I18N[lang][k]) ?? (I18N[ui] && I18N[ui][k]) ?? I18N.en[k] ?? k;
     args.forEach((a, i) => (s = s.replace(`{${i}}`, a)));
     return s;
   };
-  ST.addI18n = (dict) => { for (const l of ['pt', 'en']) Object.assign(I18N[l], dict[l] || {}); };
+  ST.addI18n = (dict) => { for (const [l, v] of Object.entries(dict)) Object.assign((I18N[l] = I18N[l] || {}), v); };
   // texto por idioma inline: ST.tr('Olá', 'Hello')
   ST.tr = (pt, en) => (ui === 'pt' ? pt : en);
 
@@ -281,7 +284,7 @@
     ['rewardsNav', [['passes', 'passes'], ['recompensas', 'evRewards'], ['quadro', 'bounties'], ['loja', 'store'], ['expansoes', 'expansions'], ['sorte', 'luck']]],
     ['eventsNav', [['calendario', 'calendar'], ['caravana', 'caravan'], ['invasao', 'airship'], ['tumba', 'tomb']]],
     ['communityNav', [['hypermax', 'hypermax'], ['guildas', 'guilds'], ['players', 'players']]],
-    ['tools', [['conta', 'account'], ['simulador', 'simulator'], ['qualidade', 'quality'], ['calculadora', 'calculator'], ['lista', 'craftList'], ['comparar', 'compare'], ['lucro', 'profit'], ['onde', 'whereToGet'],
+    ['tools', [['conta', 'account'], ['simulador', 'simulator'], ['qualidade', 'qualityCalc'], ['calculadora', 'calculator'], ['lista', 'craftList'], ['comparar', 'compare'], ['lucro', 'profit'], ['onde', 'whereToGet'],
       ['encantamentos', 'enchantPlanner'], ['montador', 'builder'], ['planejador', 'talentPlanner'], ['custos', 'upgradeCosts'], ['lancamentos', 'releases']]],
   ];
   ST.NAV = NAV;
