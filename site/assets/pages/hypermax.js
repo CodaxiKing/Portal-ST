@@ -340,6 +340,21 @@
       if (!improved) break;
     }
     const r = evaluate(ctx, gear, chosen);
+    // empates exatos de runa (ex.: Aperture Catalyst tem afinidade com luz e escuridão; Apoteose e Oblívio têm os mesmos atributos):
+    // guarda as alternativas e usa a ordem preferida pelos primeiros do placar (escuridão antes de luz)
+    if (o.en) {
+      const PREF = ['dark', 'light', 'water', 'fire', 'air', 'earth', 'gold', 'all'];
+      gear.forEach((g, k) => {
+        if (!g || !g.el) return;
+        const cur = score();
+        const ties = P.elements.filter((e) => e.val === g.el.val && e.e.tier === g.el.e.tier && e !== g.el).filter((e) => {
+          gear[k] = { ...g, el: e }; const sc = score(); gear[k] = g; return Math.abs(sc - cur) < 1e-6;
+        });
+        if (!ties.length) return;
+        const all = [g.el, ...ties].sort((a, b) => PREF.indexOf(a.el) - PREF.indexOf(b.el));
+        gear[k] = { ...g, el: all[0], elTies: all.slice(1) };
+      });
+    }
     const prof = evaluate({ ...ctx, colMult: 1 }, gear, chosen); // o perfil do herói no jogo não aplica o Livro de Coleção
     return { c, lv, gear, chosen, ctx, ...r, profile: { power: prof.power, atk: prof.atk, def: prof.def, hp: prof.hp },
       heroOnly: evaluate(ctx, gear.map(() => null), []).power };
@@ -479,7 +494,7 @@
         const b = builds.find((x) => x.c.uid === uid);
         const gearRows = b.gear.map((g, k) => (g ? `<tr><td><a class="cell-item" href="#/item/${g.x.it.uid}">${img(g.x.it.uid)}<span>${esc(g.x.it.name)}<br>
           <span class="small muted">T${g.x.it.tier} · ${esc(b.c.slots[k].map((x) => x.name).join(' / '))}</span></span></a></td>
-          <td>${g.el ? `<a class="cell-item" href="#/item/${g.el.e.uid}"><span class="hm-rune lg">${img(g.el.e.uid)}<em>${elIcon(g.el.el)}</em></span><span>${esc(g.el.e.name)} <span class="small muted">+${g.el.val}</span></span></a>` : '—'}</td>
+          <td>${g.el ? `<a class="cell-item" href="#/item/${g.el.e.uid}"><span class="hm-rune lg">${img(g.el.e.uid)}<em>${elIcon(g.el.el)}</em></span><span>${esc(g.el.e.name)} <span class="small muted">+${g.el.val}</span>${g.elTies && g.elTies.length ? `<br><span class="small muted">${tr('empate exato com', 'exact tie with')} ${g.elTies.map((e) => esc(e.e.name)).join(', ')}</span>` : ''}</span></a>` : '—'}</td>
           <td>${g.sp ? `<a class="cell-item" href="#/item/${g.sp.e.uid}">${img(g.sp.e.uid)}<span>${esc(g.sp.e.name)}</span></a>` : '—'}</td></tr>` : '')).join('');
         const seen = new Set();
         const skillRows = b.active.filter((a) => { const k = a.f.family; if (a.spirit && seen.has(k)) return false; seen.add(k); return true; }).map((a) => {
