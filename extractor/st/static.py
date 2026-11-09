@@ -21,7 +21,11 @@ UI = {
            "desc_class": "{name}: classe de herói do Shop Titans. Atributos, equipamentos e habilidades.",
            "desc_champ": "{name}: campeão do Shop Titans. Atributos, habilidade de líder e ranks.",
            "desc_zone": "{name}: área de missão do Shop Titans. Poder exigido, chefe e drops.",
-           "lang": "pt-BR", "fan": "Portal de fãs, sem afiliação com a Kabam."},
+           "lang": "pt-BR", "fan": "Portal de fãs, sem afiliação com a Kabam.",
+           "hm": "Hypermax: o build mais forte", "hm_rank": "{rank}º de {of} classes no ranking Hypermax", "rune": "Runa", "spirit": "Espírito",
+           "skills": "Habilidades", "profile": "Poder no perfil", "board": "Poder no placar", "crit_dmg": "Dano crítico",
+           "hm_note": "Calculado só com os dados do jogo: qualidade Lendária, Forjado nas Estrelas, Ascensão e Transcendência, nível {lv}.",
+           "hm_open": "Ver no Hypermax"},
     "en": {"open": "Open in the portal", "home": "Shop Titans Portal", "stats": "Stats", "recipe": "Recipe",
            "econ": "Economy", "value": "Value", "time": "Crafting time", "tier": "Tier", "level": "Level",
            "workers": "Workers", "upgrades": "Blueprint milestones", "atk": "Attack", "def": "Defense", "hp": "Health",
@@ -31,7 +35,11 @@ UI = {
            "desc_class": "{name}: Shop Titans hero class. Stats, equipment and skills.",
            "desc_champ": "{name}: Shop Titans champion. Stats, leader skill and ranks.",
            "desc_zone": "{name}: Shop Titans quest area. Required power, boss and drops.",
-           "lang": "en", "fan": "Fan-made portal, not affiliated with Kabam."},
+           "lang": "en", "fan": "Fan-made portal, not affiliated with Kabam.",
+           "hm": "Hypermax: the strongest build", "hm_rank": "#{rank} of {of} classes in the Hypermax ranking", "rune": "Rune", "spirit": "Spirit",
+           "skills": "Skills", "profile": "Profile power", "board": "Leaderboard power", "crit_dmg": "Crit damage",
+           "hm_note": "Computed only from game data: Legendary quality, Starforged, Ascension and Transcendence, level {lv}.",
+           "hm_open": "Open in Hypermax"},
 }
 FONT_BOLD = [r"C:\Windows\Fonts\segoeuib.ttf", "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"]
 FONT_REG = [r"C:\Windows\Fonts\segoeui.ttf", "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"]
@@ -114,7 +122,25 @@ def item_page(lang, it, items, base):
                  {l: f"p/{l}/item/{it['uid']}.html" for l in PAGE_LANGS}, f"og/{it['uid']}.jpg", base)
 
 
-def simple_page(lang, kind, uid, title, sub, desc_key, desc_extra, art, sections, route, base):
+def _hm_section(b, U, lang):
+    rel = "../../../"
+    stats = [(U["board"], _num(b["power"], lang)), (U["profile"], _num(b["profile"], lang)), (U["atk"], _num(b["atk"], lang)),
+             (U["def"], _num(b["def"], lang)), (U["hp"], _num(b["hp"], lang)), (U["crit"], f'{round(b["crit"] * 100)}%'),
+             (U["crit_dmg"], f'×{b["cm"]}'), (U["element"], str(b["E"]))]
+    grid = "".join(f'<div class="stat"><div class="k">{h(k)}</div><div class="v">{h(v)}</div></div>' for k, v in stats)
+    gear = "".join(
+        f'<div class="row"><img src="{rel}img/items/{h(g["uid"])}.webp" alt="" width="40" height="40" onerror="this.remove()">'
+        f'<div class="grow"><b>{h(g["name"])}</b> <span class="small muted">T{g["tier"]}</span>'
+        f'<div class="small muted">{U["rune"]}: {h(g["rune"] or "—")} · {U["spirit"]}: {h(g["spirit"] or "—")}</div></div></div>'
+        for g in b["gear"] if g)
+    skills = ", ".join(f'{h(s["name"])}{" T" + str(s["tier"]) if s["tier"] else ""}' for s in b["skills"])
+    return (f'<p><b>{h(U["hm_rank"].format(rank=b["rank"], of=b["of"]))}</b></p><div class="stat-grid">{grid}</div>'
+            f'<div class="list" style="margin-top:12px">{gear}</div><p><b>{U["skills"]}:</b> {skills}</p>'
+            f'<p class="small muted">{h(U["hm_note"].format(lv=b["lv"]))}</p>'
+            f'<p><a class="btn" href="{rel}index.html?lang={lang}#/{b["link"]}">{U["hm_open"]}</a></p>')
+
+
+def simple_page(lang, kind, uid, title, sub, desc_key, desc_extra, art, sections, route, base, hm_desc=""):
     U = UI[lang]
     rel = "../../../"
     secs = "".join(f'<section class="sec"><h2>{h(t)}</h2>{b}</section>' for t, b in sections if b)
@@ -123,7 +149,7 @@ def simple_page(lang, kind, uid, title, sub, desc_key, desc_extra, art, sections
 <div><h1 class="d-title">{h(title)}</h1><div class="d-sub">{h(sub)}</div></div></div>
 {f'<p class="d-desc">{h(desc_extra)}</p>' if desc_extra else ''}
 <p><a class="btn primary" href="{rel}index.html?lang={lang}#/{route}">{U['open']}</a></p>{secs}</article>"""
-    desc = (U[desc_key].format(name=title) + (" " + desc_extra if desc_extra else ""))[:300]
+    desc = (U[desc_key].format(name=title) + (" " + hm_desc if hm_desc else "") + (" " + desc_extra if desc_extra else ""))[:300]
     return _page(lang, title, desc, body, rel, f"p/{lang}/{kind}/{uid}.html",
                  {l: f"p/{l}/{kind}/{uid}.html" for l in PAGE_LANGS}, "og/default.jpg", base)
 
@@ -150,9 +176,12 @@ def build_pages(site, by_lang, base):
             rows = "".join(f'<div class="stat"><div class="k">{U[k]} (100)</div><div class="v s-{k}">{_num((st.get(k) or {}).get("100") or 0, lang)}</div></div>'
                            for k in ("atk", "def", "hp") if isinstance(st.get(k), dict))
             slots = ", ".join(s.get("name", "") for s in c.get("slots") or [] if isinstance(s, dict))
+            hmb = (D.get("hm") or {}).get(c["uid"])
+            hm_html = _hm_section(hmb, U, lang) if hmb else ""
             _write(os.path.join(root, "class", c["uid"] + ".html"), simple_page(
                 lang, "class", c["uid"], c["name"], c.get("typeName") or "", "desc_class", c.get("desc") or "", c.get("icon"),
-                [(U["stats"], f'<div class="stat-grid">{rows}</div>' if rows else ""), (U["items"], h(slots))], f"classes/{c['uid']}", base))
+                [(U["stats"], f'<div class="stat-grid">{rows}</div>' if rows else ""), (U["hm"], hm_html), (U["items"], h(slots))], f"classes/{c['uid']}", base,
+                hm_desc=(U["hm_rank"].format(rank=hmb["rank"], of=hmb["of"]) + ". " + U["board"] + " " + _num(hmb["power"], lang) + ".") if hmb else ""))
             urls.append(f"p/{lang}/class/{c['uid']}.html")
         for c in D["champions"]:
             st = c.get("stats") or {}

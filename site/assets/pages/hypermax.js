@@ -49,7 +49,7 @@
     const prof = o.profile !== undefined ? o.profile : (ST.account && ST.account.active() ? ST.account.get() : null);
     const acc = prof && prof.on ? JSON.stringify(prof) : '';
     const key = [o.q, o.tr, o.sf, o.en, o.soon, acc].join('|');
-    if (PREP.key === key) return PREP.v;
+    if (PREP.key === key && PREP.d === d) return PREP.v; // d muda com o idioma
     const qm = [1, K.item_power_uncommon_mult || 1.25, K.item_power_flawless_mult || 1.5, K.item_power_epic_mult || 2, K.item_power_legd_mult || 3][o.q];
     const ok = (i) => (o.soon || !ST.isUnreleased(i)) && (!acc || ST.profileHas(prof, i));
     const nameToCode = {};
@@ -69,7 +69,7 @@
     skills.forEach((f) => f.tiers.forEach((tt) => tierByUid.set(tt.uid, { f, tt })));
     const elements = ench.filter((e) => e.elements.length && (e.stats.atk || e.stats.def || e.stats.hp)).map((e) => ({ e, el: e.elements[0].id, val: e.elements[0].value, s: { atk: e.stats.atk * qm, def: e.stats.def * qm, hp: e.stats.hp * qm } }));
     const spirits = ench.filter((e) => e.skill).map((e) => ({ e, s: { atk: e.stats.atk * qm, def: e.stats.def * qm, hp: e.stats.hp * qm }, sk: tierByUid.get(e.skill.uid) }));
-    PREP = { key, v: { items, elements, spirits, qm } };
+    PREP = { key, d, v: { items, elements, spirits, qm } };
     return PREP.v;
   }
 

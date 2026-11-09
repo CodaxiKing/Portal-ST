@@ -105,9 +105,31 @@ def main():
     })
     build_app_icons(SITE)
     if not a.no_pages:
+        hm = run_hm_static()
+        for lang in pages_data:
+            pages_data[lang]["hm"] = hm.get(lang) or {}
         build_pages(SITE, pages_data, base_url)
         build_og(SITE, items_by_lang["en"], a.force_og)
     log("pronto:", DATA)
+
+
+def run_hm_static():
+    """Hypermax de cada classe calculado pelo motor do site (Node). Sem Node, as páginas saem sem essa seção."""
+    import shutil
+    import subprocess
+    import tempfile
+    node = shutil.which("node")
+    if not node:
+        log("Node não encontrado: páginas de classe sem a seção Hypermax")
+        return {}
+    out = os.path.join(tempfile.gettempdir(), "st_hm_static.json")
+    try:
+        subprocess.run([node, os.path.join(HERE, "hm_static.js"), out, *PAGE_LANGS], check=True, timeout=900)
+        with open(out, encoding="utf-8") as f:
+            return json.load(f)
+    except Exception as e:  # noqa: BLE001
+        log("Hypermax estático falhou:", e)
+        return {}
 
 
 if __name__ == "__main__":

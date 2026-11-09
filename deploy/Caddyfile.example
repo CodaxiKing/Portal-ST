@@ -1,7 +1,7 @@
 # Caddy serve o site com HTTPS automático. Troque pelo seu domínio.
 portal.seudominio.com {
 	root * /var/www/shoptitans
-	encode gzip
+	encode zstd gzip
 	file_server
 	@data path /data/* /img/* /og/*
 	header @data Cache-Control "public, max-age=3600"
