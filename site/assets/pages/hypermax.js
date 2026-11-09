@@ -197,14 +197,15 @@
       const sf = stage(s0, [], it.starforged || [], o.sf);
       const asc = stage(s0, sf.list, it.ascension || [], o.tr);
       const trs = stage(s0, asc.list, it.transcendence || [], o.tr);
-      const q = { atk: trs.stats.atk * P.qm, def: trs.stats.def * P.qm, hp: trs.stats.hp * P.qm };
+      const qmul = r.g.qm || P.qm;
+      const q = { atk: trs.stats.atk * qmul, def: trs.stats.def * qmul, hp: trs.stats.hp * qmul };
       const enc = r.ench.reduce(add, Z);
       return `<tr><td><a class="cell-item" href="#/item/${it.uid}">${img(it.uid)}<span>${esc(it.name)}<br><span class="small muted">T${it.tier}</span></span></a></td>
         <td class="num">${three(s0)}</td>
         <td class="num">${sf.html}</td>
         <td class="num">${asc.html}</td>
         <td class="num">${trs.html}</td>
-        <td class="num">${three(q)}<div class="small muted">×${dec(P.qm, 2)}</div></td>
+        <td class="num">${three(q)}<div class="small muted">×${dec(r.g.qm || P.qm, 2)}</div></td>
         <td class="num">${r.ip ? '+' + dec(r.ip * 100, 0) + '%' : '—'}</td>
         <td class="num"><b>${three(r.item)}</b></td>
         <td class="num">${three(enc)}<div class="small muted">${r.ench.map((e) => `${esc(e.en.e.name)}${e.am > 1 ? ' ×' + dec(e.am, 2) : ''}`).join(' · ')}</div></td></tr>`;
@@ -398,7 +399,7 @@
   const skillRow = (b) => `<div class="hm-skills">${b.active.filter((a) => !a.spirit).map((a, k) =>
     `<span class="hm-sk ${k === 0 && b.c.innate && a.f.family === b.c.innate.uid ? 'inn' : ''}" title="${esc(a.tt.name || a.f.name)} · T${a.tt.tier || 1}: ${esc((a.tt.effects || []).join(', '))}">${img(a.f.icon)}<i>${a.tt.tier || ''}</i></span>`).join('')}</div>`;
   const mainStat = (x) => { const c = x.core; const m = Math.max(c.atk * 0.8, c.def * 1.2, c.hp * 5); return m === c.atk * 0.8 ? 'atk' : m === c.def * 1.2 ? 'def' : 'hp'; };
-  const gearCell = (g, o) => (g ? `<span class="hm-it q${o.q}" title="${esc(g.x.it.name)}${g.el ? ' · ' + esc(g.el.e.name) : ''}${g.sp ? ' · ' + esc(g.sp.e.name) : ''}">
+  const gearCell = (g, o) => (g ? `<span class="hm-it q${g.q ?? o.q}" title="${esc(g.x.it.name)}${g.el ? ' · ' + esc(g.el.e.name) : ''}${g.sp ? ' · ' + esc(g.sp.e.name) : ''}">
       <span class="hm-tier">${g.x.it.tier}</span>${o.tr ? '<span class="hm-stars">★★★</span>' : ''}
       <span class="hm-ms ${mainStat(g.x)}"></span>${img(g.x.it.uid, 'hm-itimg')}
       <span class="hm-encs">${g.el ? `<span class="hm-rune" title="${esc(g.el.e.name)}">${img(g.el.e.uid)}<em>${elIcon(g.el.el)}</em></span>` : ''}${g.sp ? `<span title="${esc(g.sp.e.name)}">${img(g.sp.e.uid)}</span>` : ''}</span></span>`
@@ -443,7 +444,7 @@
   const qExtra = (o) => (o.tower && o.cr && o.cr !== 'off' ? { cr: o.cr } : {});
 
   function card(b, rank, o) {
-    return `<a class="hm-card2" href="#/${o.route}/${b.c.uid}${optQuery(o, qExtra(o))}">
+    return `<a class="hm-card2" href="${o.href || `#/${o.route}/${b.c.uid}${optQuery(o, qExtra(o))}`}">
       <div class="hm-h"><div class="hm-cls">${img(b.c.icon)}</div><div class="hm-hn"><b>${esc(b.c.name)}</b>
         <span class="hm-pw2" title="${tr('Poder do placar de líderes (com Livro de Coleção)', 'Leaderboard power (with Collection book)')}">${ST.ic('star')} ${nf(Math.round(b.power))}</span>
         ${b.ctx.colMult > 1 ? `<span class="hm-prof" title="${tr('Poder mostrado no perfil do herói, sem o Livro de Coleção', 'Power shown on the hero profile, without the Collection book')}">${tr('perfil', 'profile')} ${nf(Math.round(b.profile.power))}</span>` : ''}</div>
@@ -452,7 +453,8 @@
       <div class="hm-gear">${b.gear.map((g) => gearCell(g, o)).join('')}</div></a>`;
   }
 
-  ST.hmDebug = { evaluate, optimize, prepare, powerOf, rebuild, toChoice };
+  ST.hmDebug = { evaluate, optimize, prepare, powerOf, rebuild, toChoice, makeCtx, finish };
+  ST.hmUI = { card: (b, rank, o) => card(b, rank, o), calc: (b, o, P) => calcSection(b, o, P), elIcon: (el) => elIcon(el), statsGrid: (b) => statsGrid(b) };
 
   /* Calcula todas as classes. Com servidor (http), roda num Web Worker e a página não trava; abrindo o arquivo
      direto (file://) ou sem suporte, calcula aqui mesmo. onProgress(feitas, total) atualiza a barra. */
@@ -575,7 +577,7 @@
           <span class="muted small">${a.spirit ? tr('espírito', 'spirit') : a.f.kind === 'innate' ? tr('inata', 'innate') : a.f.kind === 'mastery' ? tr('maestria', 'mastery') : tr('herói', 'hero')}${a.tt.tier ? ' · T' + a.tt.tier : ''}${a.tt.req ? ` · ${nf(a.tt.req)} ${tr('de elemento', 'element')}` : ''}${a.self ? ' · ' + tr('só no próprio item', 'this item only') : ''}</span>
           <div class="small">${esc((a.tt.effects || []).join(' · '))}</div></div></div>`;
         }).join('');
-        const builder = `#/montador?c=${b.c.uid}&lv=${Math.min(b.lv, ST.maxLevel(b.c))}&` + b.gear.map((g, k) => (g ? `s${k}=${g.x.it.uid}:${o.q}` : '')).filter(Boolean).join('&');
+        const builder = `#/montador?c=${b.c.uid}&lv=${Math.min(b.lv, ST.maxLevel(b.c))}&` + b.gear.map((g, k) => (g ? `s${k}=${g.x.it.uid}:${o.q}:${g.el ? g.el.e.uid : ''}:${g.sp ? g.sp.e.uid : ''}` : '')).filter(Boolean).join('&') + `&sk=${b.chosen.map((f) => f.family).join(',')}` + (o.tr ? '' : '&tr=0') + (o.sf ? '' : '&sf=0') + (o.col ? '' : '&col=0');
         el.innerHTML = `<a class="crumb" href="${base}${optQuery(o, qExtra(o))}">${ST.ic('left')} ${title}</a>
           ${controls(o)}
           <div class="hm-detail">${card(b, rankOf(b), o)}
@@ -587,10 +589,21 @@
                 ST.stat(tr('Herói sem nada', 'Bare hero'), nf(Math.round(b.heroOnly))), ST.stat(tr('Elemento do herói', 'Hero element'), `${nf(Math.round(b.E))} ${elIcon(b.c.element)}`), ST.stat(t('level'), b.lv)])}
               <p class="note">${tr('No jogo, o perfil do herói mostra atributos e poder sem o Livro de Coleção; o placar de líderes aplica o melhor bônus da classe (+25%). Por isso o mesmo herói aparece com 1.399.539 no perfil e 1.749.428 no placar (×1,25).',
                 'In the game, the hero profile shows stats and power without the Collection book; the leaderboard applies the best class bonus (+25%). That is why the same hero shows 1,399,539 on the profile and 1,749,428 on the leaderboard (×1.25).')}</p>
-              <div class="tags" style="margin-top:12px"><a class="chip" href="${builder}">${ST.ic('swords')} ${tr('Abrir no montador', 'Open in builder')}</a><a class="chip" href="#/classes/${b.c.uid}">${ST.ic('info')} ${esc(b.c.name)}</a></div></div></div>
+              <div class="tags" style="margin-top:12px"><a class="chip" href="${builder}">${ST.ic('swords')} ${tr('Abrir no montador', 'Open in builder')}</a><a class="chip" href="#/classes/${b.c.uid}">${ST.ic('info')} ${esc(b.c.name)}</a>
+                <button class="chip" id="hmLink">${tr('Copiar link', 'Copy link')}</button><button class="chip" id="hmImg">${tr('Compartilhar imagem', 'Share image')}</button><span class="small muted" id="hmMsg"></span></div></div></div>
           ${ST.sec(tr('Cálculo dos atributos', 'Stat calculation'), calcSection(b, o, P), tr('Cada item: atributos base do jogo → melhorias do projeto (Forjado nas Estrelas, Ascensão, Transcendência) → × qualidade → × (1 + bônus de tipo das habilidades e espíritos). Depois soma herói + itens + encantamentos e aplica as porcentagens das habilidades e o Livro de Coleção.', 'Each item: game base stats → blueprint upgrades (Starforged, Ascension, Transcendence) → × quality → × (1 + type bonus from skills and spirits). Then hero + items + enchantments are added and skill percentages and the Collection book are applied.'))}
           <p class="note">${NOTE()}</p>`;
         bindControls(el, o, base + '/' + b.c.uid);
+        const hmMsg = (x) => { el.querySelector('#hmMsg').textContent = x; };
+        el.querySelector('#hmLink').addEventListener('click', async () => {
+          try { await navigator.clipboard.writeText(location.href); hmMsg(tr('Link copiado.', 'Link copied.')); } catch (e) { prompt('URL', location.href); }
+        });
+        el.querySelector('#hmImg').addEventListener('click', async () => {
+          if (!ST.shareBuild) return;
+          hmMsg(tr('Gerando imagem…', 'Generating image…'));
+          const r = await ST.shareBuild(b, o, location.href, 'Portal Shop Titans · ' + title);
+          hmMsg(r === 'shared' ? tr('Compartilhado.', 'Shared.') : tr('Imagem baixada.', 'Image downloaded.'));
+        });
         return;
       }
       const types = [...new Map(classes.map((c) => [c.type, c.typeName])).entries()];

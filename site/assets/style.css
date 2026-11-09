@@ -809,3 +809,15 @@ a.hm-card2:hover { transform: translateY(-3px); box-shadow: var(--shadow-lift); 
 .hm-progress p { margin: 0; color: var(--muted); }
 .hm-pbar { height: 6px; border-radius: 6px; background: var(--bg-2); overflow: hidden; }
 .hm-pbar i { display: block; height: 100%; width: var(--w); background: var(--accent); border-radius: inherit; transition: width .3s var(--ease); }
+
+/* montador */
+.bd-grid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:18px;align-items:start}
+.bd-slots{display:grid;gap:10px}
+.bd-slot{display:grid;grid-template-columns:56px 1fr;gap:10px;align-items:start;padding:10px;border:1px solid var(--line);border-radius:14px;background:var(--card)}
+.bd-ic img,.bd-ic .ph{width:56px;height:56px;display:block;border-radius:10px}
+.bd-ic .ph{background:var(--bg-2)}
+.bd-f{display:grid;gap:6px;min-width:0}
+.bd-f select{width:100%;min-width:0}
+.bd-row{display:grid;grid-template-columns:1fr 1.4fr 1.4fr;gap:6px}
+.bd-skills{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}
+@media (max-width:860px){.bd-grid{grid-template-columns:1fr}.bd-row{grid-template-columns:1fr}}
