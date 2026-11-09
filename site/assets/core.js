@@ -143,7 +143,7 @@
     <div class="skel skel-line" style="width:min(520px,90%)"></div><div class="skel skel-line" style="width:min(380px,70%)"></div>
     <div class="skel-grid">${'<div class="skel skel-card"></div>'.repeat(9)}</div></div>`;
   /* Entrada escalonada dos filhos de grades e listas (só transform/opacity) */
-  const STAGGER = '.tiles,.grid,.bento,.zig,.stat-grid,.slot-grid,.list,.tags,.mosaic';
+  const STAGGER = '.tiles,.grid,.bento,.zig,.hm-grid,.stat-grid,.slot-grid,.list,.tags,.mosaic';
   ST.stagger = (root, from = 0) => {
     root.querySelectorAll(STAGGER).forEach((g) => {
       [...g.children].slice(from).forEach((c, i) => {
@@ -276,7 +276,7 @@
       ['talentos', 'talents'], ['mascotes', 'pets'], ['colecao', 'collection'], ['titulos', 'titles'],
       ['guilda', 'guild'], ['progressao', 'progression'], ['novidades', 'updates']]],
     ['tools', [['calculadora', 'calculator'], ['lista', 'craftList'], ['comparar', 'compare'], ['lucro', 'profit'], ['onde', 'whereToGet'],
-      ['encantamentos', 'enchantPlanner'], ['montador', 'builder'], ['planejador', 'talentPlanner'], ['custos', 'upgradeCosts'], ['lancamentos', 'releases']]],
+      ['encantamentos', 'enchantPlanner'], ['montador', 'builder'], ['hypermax', 'hypermax'], ['planejador', 'talentPlanner'], ['custos', 'upgradeCosts'], ['lancamentos', 'releases']]],
   ];
   ST.NAV = NAV;
 

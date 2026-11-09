@@ -151,6 +151,7 @@
     return pts[pts.length - 1][1];
   }
   const maxLevel = (c) => (c.stats.atk['100'] ? 100 : c.stats.atk['50'] ? 50 : 40);
+  ST.statAt = statAt; ST.QUALITY = QUALITY; ST.maxLevel = maxLevel;
 
   ST.page('montador', {
     nav: 'montador', title: () => t('builder'),

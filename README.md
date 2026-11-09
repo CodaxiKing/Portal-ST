@@ -20,6 +20,7 @@ Progressão · Novidades (diferenças entre extrações + notas de atualização
 - **Onde conseguir**: melhor área de missão (quantidade por hora) e baús para cada material.
 - **Encantamentos**: elementos e espíritos por equipamento, com o bônus de afinidade das constantes do jogo.
 - **Montador de herói**: classe + nível + equipamentos → atributos finais, poder e missões ao alcance.
+- **Hypermax**: para cada classe, o item e os encantamentos (elemento + espírito, com afinidade) de maior poder em cada espaço; ranking das 42 classes, com qualidade, nível, Transcendência e itens em breve configuráveis.
 - **Planejador de talentos**: pontos por árvore, custo total e bônus; o plano fica no link.
 - **Custos de melhoria**: soma de vários níveis de móveis, construções, guilda e pontos de talento.
 - **Lançamentos**: itens e móveis com data de lançamento, incluindo os que ainda vão sair.

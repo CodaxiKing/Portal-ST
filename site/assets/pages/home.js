@@ -7,13 +7,14 @@
     mascotes: 'doghouse', colecao: 'img_collectionbook_book_quality_epic_big', titulos: 'img_player_titles_01', guilda: 'icon_global_upgrade_rareresregen',
     progressao: 'icon_achievements_gold04', novidades: 'icon_event_reward_dialog', calculadora: 'custom_handheld_wallacehammer',
     lucro: 'img_shop_item_sitems_gold1', montador: 'icon_global_class_swordmaster_128', lista: 'goldshell', comparar: 'icon_global_quality_legendary',
-    onde: 'elvenwood', encantamentos: 't14fire', planejador: 'crystalegg', custos: 'timecrystal', lancamentos: 'wolf',
+    onde: 'elvenwood', encantamentos: 't14fire', planejador: 'crystalegg', hypermax: 'cc_sundragon', custos: 'timecrystal', lancamentos: 'wolf',
   };
   const DESC = {
     lista: ['Junte vários itens e veja todos os materiais somados.', 'Combine several items and see every material added up.'],
     comparar: ['Até quatro itens lado a lado, com o melhor valor destacado.', 'Up to four items side by side, best value highlighted.'],
     onde: ['Melhor área para farmar cada material.', 'Best area to farm each material.'],
     encantamentos: ['Elementos e espíritos com bônus de afinidade.', 'Elements and spirits with affinity bonuses.'],
+    hypermax: ['O equipamento de maior poder para cada classe.', 'The highest-power gear for every class.'],
     planejador: ['Distribua pontos nas árvores de talento.', 'Spend points across talent trees.'],
     custos: ['Custo somado de vários níveis de uma vez.', 'Total cost of several levels at once.'],
     lancamentos: ['Itens que ainda vão sair, com data.', 'Upcoming items with their dates.'],
