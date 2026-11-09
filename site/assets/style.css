@@ -880,3 +880,5 @@ a.hm-card2:hover { transform: translateY(-3px); box-shadow: var(--shadow-lift); 
 .gp-party{display:flex;gap:4px}.gp-party img{width:32px;height:32px;border-radius:8px;background:var(--bg-2)}
 .up-row{align-items:flex-start}
 @media (max-width:860px){.bc-wrap{grid-template-columns:1fr}}
+.notes textarea{width:100%;resize:vertical;font:inherit;min-height:72px}
+.note-pub{border-left:3px solid var(--accent);padding:6px 12px;margin-bottom:10px;background:var(--bg-2);border-radius:0 10px 10px 0}.note-pub p{margin:4px 0 0}

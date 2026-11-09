@@ -124,8 +124,8 @@
   ST.need = (...names) => Promise.all(names.map((n) => {
     if (!loaded[n]) {
       // meta.js sempre fresco; os demais versionados pela data da extração (evita cache velho após re-extrair)
-      const shared = ['diff', 'icons', 'meta', 'community'].includes(n);
-      const v = n === 'meta' || n === 'community' ? Date.now() : encodeURIComponent((ST.meta && ST.meta.generatedAt) || '');
+      const shared = ['diff', 'icons', 'meta', 'community', 'notes'].includes(n);
+      const v = n === 'meta' || n === 'community' || n === 'notes' ? Date.now() : encodeURIComponent((ST.meta && ST.meta.generatedAt) || '');
       loaded[n] = loadScript(`${shared ? `data/${n}.js` : `data/${lang}/${n}.js`}?v=${v}`).then(() => ST[n]);
     }
     return loaded[n];

@@ -317,6 +317,7 @@
     if (!i) return ST.drawer.open(ST.notFound());
     vpState.mode = 'base'; vpState.step = 3; vpState.ms = false;
     ST.drawer.open(await detailHTML(i), i.name);
+    if (ST.itemNotes) ST.itemNotes(i);
   });
   // botões da ficha: lista de fabricação e comparador
   const vpState = { mode: 'base', step: 3, ms: false };

@@ -30,7 +30,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from st.common import DEFAULT_GAME, LANGS, Texts, game_version, load_tables, log, write_js
 from st.icons import export_icons
-from st.notify import notify_patch
+from st.notify import notify_events, notify_patch
 from st.items import build_items
 from st.search import build_search
 from st.sections import SECTIONS
@@ -66,6 +66,7 @@ def main():
     wanted = set()
     items_by_lang = {}
     pages_data = {}
+    calendar_pt = None
     for lang in LANGS:
         T = Texts(tables, lang)
         items, icons = build_items(tables, T)
@@ -79,6 +80,8 @@ def main():
             sec[name] = data
             write_js(os.path.join(DATA, lang, f"{name}.js"), name, data)
         write_js(os.path.join(DATA, lang, "search.js"), "search", build_search(items, sec))
+        if lang == "pt":
+            calendar_pt = sec.get("calendar")
         if lang in PAGE_LANGS:
             pages_data[lang] = {"items": items, "classes": sec.get("classes") or [], "champions": sec.get("champions") or [],
                                 "quests": sec.get("quests") or []}
@@ -87,6 +90,7 @@ def main():
     diff = save_and_diff(os.path.join(HERE, "snapshots"), items_by_lang, version)
     write_js(os.path.join(DATA, "diff.js"), "diff", diff)
     notify_patch(HERE, cfg, diff, version, items_by_lang.get("pt"))
+    notify_events(HERE, cfg, calendar_pt, items_by_lang.get("pt"), datetime.now(timezone.utc).strftime("%Y-%m-%d"))
 
     # ícones usados na página inicial
     wanted |= {"img_collectionbook_book_quality_epic_big", "img_player_titles_01", "icon_global_upgrade_rareresregen",
