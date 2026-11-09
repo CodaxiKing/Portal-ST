@@ -80,7 +80,7 @@
       const input = box.querySelector('input');
       box.addEventListener('click', (e) => { if (e.target === box) close(); });
       box.querySelector('.gs-list').addEventListener('click', (e) => { if (e.target.closest('.gs-row')) close(); });
-      input.addEventListener('input', () => render(input.value));
+      input.addEventListener('input', async () => { await load(); render(input.value); }); // o índice pode ainda estar carregando
       input.addEventListener('keydown', (e) => {
         if (e.key === 'ArrowDown') { e.preventDefault(); move(1); }
         else if (e.key === 'ArrowUp') { e.preventDefault(); move(-1); }
