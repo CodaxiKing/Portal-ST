@@ -159,16 +159,33 @@
     const three = (x) => `<span class="s-atk">${n0(x.atk)}</span> / <span class="s-def">${n0(x.def)}</span> / <span class="s-hp">${n0(x.hp)}</span>`;
     const add = (a, x) => ({ atk: a.atk + x.atk, def: a.def + x.def, hp: a.hp + x.hp });
     const Z = { atk: 0, def: 0, hp: 0 };
+    const STAT_KEYS = ['atk', 'def', 'hp', 'baseStats', 'eva', 'crit'];
+    const stage = (base0, prev, steps, on) => { // acumula as etapas a partir da base (arredonda só no fim, como o motor)
+      // aplica uma etapa de melhorias e mostra o resultado + o que foi aplicado (ou por que não muda atributos)
+      const calc = (list) => ST.applySteps({ stats: base0, resources: [], components: [], value: 0, time: 0 }, list).stats;
+      if (!on) return { list: prev, stats: calc(prev), html: `<span class="muted">${tr('desligado', 'off')}</span>` };
+      if (!steps.length) { const st0 = calc(prev); return { list: prev, stats: st0, html: `${three(st0)}<div class="small muted">${tr('sem etapas', 'no steps')}</div>` }; }
+      const list = [...prev, ...steps];
+      const next = calc(list);
+      const statSteps = steps.filter((u) => STAT_KEYS.includes(u.key));
+      const note = statSteps.length ? statSteps.map((u) => esc(u.text)).join(' · ')
+        : `${tr('não muda atributos', 'no stat change')}: ${steps.map((u) => esc(u.text)).join(' · ')}`;
+      return { list, stats: next, html: `${three(next)}<div class="small muted">${note}</div>` };
+    };
     const rows = T0.items.map((r) => {
       const it = r.g.x.it;
-      const up = [...(o.sf ? it.starforged || [] : []), ...(o.tr ? [...(it.ascension || []), ...(it.transcendence || [])] : [])];
-      const afterUp = up.length ? ST.applySteps(it, up).stats : it.stats;
+      const s0 = { ...it.stats };
+      const sf = stage(s0, [], it.starforged || [], o.sf);
+      const asc = stage(s0, sf.list, it.ascension || [], o.tr);
+      const trs = stage(s0, asc.list, it.transcendence || [], o.tr);
+      const q = { atk: trs.stats.atk * P.qm, def: trs.stats.def * P.qm, hp: trs.stats.hp * P.qm };
       const enc = r.ench.reduce(add, Z);
-      const upTxt = up.filter((u) => ['atk', 'def', 'hp', 'baseStats', 'eva', 'crit'].includes(u.key)).map((u) => esc(u.text)).join(' · ');
       return `<tr><td><a class="cell-item" href="#/item/${it.uid}">${img(it.uid)}<span>${esc(it.name)}<br><span class="small muted">T${it.tier}</span></span></a></td>
-        <td class="num">${three(it.stats)}</td>
-        <td class="num">${three(afterUp)}${upTxt ? `<div class="small muted">${upTxt}</div>` : ''}</td>
-        <td class="num">×${dec(P.qm, 2)}</td>
+        <td class="num">${three(s0)}</td>
+        <td class="num">${sf.html}</td>
+        <td class="num">${asc.html}</td>
+        <td class="num">${trs.html}</td>
+        <td class="num">${three(q)}<div class="small muted">×${dec(P.qm, 2)}</div></td>
         <td class="num">${r.ip ? '+' + dec(r.ip * 100, 0) + '%' : '—'}</td>
         <td class="num"><b>${three(r.item)}</b></td>
         <td class="num">${three(enc)}<div class="small muted">${r.ench.map((e) => `${esc(e.en.e.name)}${e.am > 1 ? ' ×' + dec(e.am, 2) : ''}`).join(' · ')}</div></td></tr>`;
@@ -180,7 +197,8 @@
     const critTxt = `${dec(T0.critClass * 100, 1)}% ${tr('classe', 'class')} + ${dec((T0.crit0 - T0.critClass) * 100, 1)}% ${tr('habilidades', 'skills')} + ${dec(T0.critItems * 100, 1)}% ${tr('itens', 'items')}`
       + (o.tower && o.noCrit ? ` → 0 (${tr('Tumba', 'Tomb')})` : '') + ` = <b>${dec(Math.min(b.crit, 1) * 100, 1)}%</b>`;
     return `<div class="table-wrap"><table class="data-table hm-calc"><thead><tr><th>${t('items')}</th><th class="num">${tr('Base do jogo', 'Game base')} ATQ/DEF/PV</th>
-        <th class="num">${tr('Com melhorias', 'With upgrades')}</th><th class="num">${tr('Qualidade', 'Quality')}</th><th class="num">${tr('Bônus de tipo', 'Type bonus')}</th>
+        <th class="num">${tr('+ Forjado nas Estrelas', '+ Starforged')}</th><th class="num">${tr('+ Ascensão (1–3)', '+ Ascension (1–3)')}</th><th class="num">${tr('+ Transcendência (4–6)', '+ Transcendence (4–6)')}</th>
+        <th class="num">${tr('× Qualidade', '× Quality')}</th><th class="num">${tr('Bônus de tipo', 'Type bonus')}</th>
         <th class="num">${tr('Item final', 'Final item')}</th><th class="num">${tr('Encantamentos', 'Enchantments')}</th></tr></thead><tbody>${rows}</tbody></table></div>
       <div class="list hm-sum">
         ${row(`${tr('Herói', 'Hero')} (${t('level')} ${b.lv})`, three(T0.base))}
