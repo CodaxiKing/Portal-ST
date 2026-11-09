@@ -59,7 +59,11 @@
       (misc.skins.hero || []).forEach((s) => { if (s.release && s.n) all.push({ d: s.release.slice(0, 10), k: 'skin', u: s.id, n: s.n, href: '#/skins' }); });
       (misc.skins.furniture || []).forEach((s) => { if (s.release && s.n) all.push({ d: s.release.slice(0, 10), k: 'fskin', u: s.id, n: s.n, href: '#/skins' }); });
       cal.releases.forEach((r) => all.push({ ...r }));
-      cal.logins.forEach((g) => all.push({ d: g.d, k: 'login', u: g.id, n: g.n, login: g }));
+      cal.logins.forEach((g) => all.push({ d: g.d, k: 'login', u: ST.icon(g.icon) ? g.icon : 'icon_login_event_default', n: g.n, login: g }));
+      // eventos primeiro, depois quem tem ícone (para a grade e a lista mostrarem os ícones dos eventos)
+      const PRI = { login: 0, item: 1, furniture: 2, skin: 3, fskin: 4, deco: 5, look: 6, pet: 7 };
+      all.sort((a, b) => (PRI[a.k] ?? 9) - (PRI[b.k] ?? 9) || (ST.icon(b.u) ? 1 : 0) - (ST.icon(a.u) ? 1 : 0));
+      const icons = (list, n) => list.filter((e) => ST.icon(e.u)).slice(0, n);
       const dated = all.filter((e) => !noDate(e.d)), undated = all.length - dated.length;
       const today = ST.today();
       const kinds = Object.keys(KIND).filter((k) => dated.some((e) => e.k === k));
@@ -82,7 +86,8 @@
         const cnt = {};
         list.forEach((e) => (cnt[e.k] = (cnt[e.k] || 0) + 1));
         cells.push(`<${list.length ? `a href="#cal-${key}"` : 'div'} class="cal-cell ${key === today ? 'today' : ''} ${list.length ? 'has' : ''} ${key > today ? 'future' : ''}">
-          <span class="cal-n">${dd}</span>${Object.entries(cnt).map(([k, n]) => `<span class="cal-dot k-${k}" title="${esc(tr(...KIND[k]))}">${n}</span>`).join('')}</${list.length ? 'a' : 'div'}>`);
+          <span class="cal-n">${dd}</span>${list.length ? `<span class="cal-ics">${(list.some((e) => e.k === 'login') ? list.filter((e) => e.k === 'login').slice(0, 2) : icons(list, 2)).map((e) =>
+            `<span class="cal-ic ${e.k === 'login' ? 'ev' : ''}" title="${esc(e.n)}">${img(e.u)}</span>`).join('')}</span>` : ''}${Object.entries(cnt).map(([k, n]) => `<span class="cal-dot k-${k}" title="${esc(tr(...KIND[k]))}">${n}</span>`).join('')}</${list.length ? 'a' : 'div'}>`);
       }
       const q = (extra) => {
         const p = new URLSearchParams({ m: m0 });
@@ -91,8 +96,11 @@
         return '#/calendario?' + p.toString();
       };
       const entryHTML = (e) => {
-        const icon = ST.icon(e.u) ? img(e.u) : `<span class="cal-ph">${ST.ic(KIND_IC[e.k] || 'star')}</span>`;
-        const extra = e.login ? `<div class="small muted">${e.login.days.length} ${tr('dias', 'days')} · ${tr('data de criação nos arquivos; o evento costuma começar depois', 'creation date in the files; the event usually starts later')}</div>` : '';
+        const icon = ST.icon(e.u) ? (e.k === 'login' ? `<span class="cal-evic">${img(e.u)}</span>` : img(e.u)) : `<span class="cal-ph">${ST.ic(KIND_IC[e.k] || 'star')}</span>`;
+        const rw = (x) => (x.t === 'gems' ? `<span class="cal-rw" title="${nf(x.q)} ${t('gems')}">${ST.ic('gem')}<em>${nf(x.q)}</em></span>`
+          : ST.icon(x.id) ? `<span class="cal-rw" title="${esc(x.id)}">${img(x.id)}${x.q > 1 ? `<em>${nf(x.q)}</em>` : ''}</span>` : '');
+        const extra = e.login ? `<div class="cal-rws">${e.login.days.map((d) => `<span class="cal-dayrw ${d.sp ? 'sp' : ''}"><b>${d.n}</b>${d.r.map(rw).join('')}</span>`).join('')}</div>
+          <div class="small muted">${e.login.days.length} ${tr('dias', 'days')} · ${tr('data de criação nos arquivos; o evento costuma começar depois', 'creation date in the files; the event usually starts later')}</div>` : '';
         const inner = `${icon}<div class="grow"><b>${esc(e.n)}</b> <span class="badge k-${e.k}">${esc(tr(...KIND[e.k]))}</span>${e.tier ? ` <span class="small muted">T${e.tier}</span>` : ''}${extra}</div>`;
         return e.href ? `<a class="row" href="${e.href}">${inner}</a>` : `<div class="row">${inner}</div>`;
       };
@@ -128,7 +136,8 @@
               const list = upcoming.filter((e) => e.d === dd), cnt = {};
               list.forEach((e) => (cnt[e.k] = (cnt[e.k] || 0) + 1));
               return `<a class="row" href="${q({ m: dd.slice(0, 7), d: dd })}"><div class="cal-date"><b>${esc(fmtDate(dd, { day: '2-digit' }))}</b><span>${esc(fmtDate(dd, { month: 'short' }))}</span></div>
-                <div class="grow">${list.slice(0, 3).map((e) => esc(e.n)).join(' · ')}${list.length > 3 ? ` <span class="muted">+${list.length - 3}</span>` : ''}
+                <div class="grow">${list.slice(0, 3).map((e) => esc(e.n)).join(' · ')}
+                <span class="cal-ics up">${icons(list, 6).map((e) => `<span class="cal-ic ${e.k === 'login' ? 'ev' : ''}" title="${esc(e.n)}">${img(e.u)}</span>`).join('')}</span>${list.length > 3 ? ` <span class="muted">+${list.length - 3}</span>` : ''}
                 <div class="small muted">${Object.entries(cnt).map(([k, n]) => `${n} ${esc(tr(...KIND[k]).toLowerCase())}`).join(' · ')}</div></div></a>`;
             }).join('')}</div>` : `<p class="muted">${tr('Nenhuma data futura nos arquivos atuais.', 'No future dates in the current files.')}</p>`}
           </section>

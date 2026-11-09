@@ -191,11 +191,23 @@ def build_calendar(tables, T):
         f = r.get("family") or ""
         if f.startswith("test") or r.get("isPersonal"):
             continue
-        g = fams.setdefault(f, {"id": f, "d": (r.get("dateCreated") or "")[:10], "n": T.first(f"login_event_{f}_title", default=f), "days": []})
-        typ, _, rest = str(r.get("reward") or "").partition(":")
-        rid, _, qty = rest.partition(",")
-        g["days"].append({"n": r.get("rewardNum"), "t": typ, "id": rid, "q": num(qty) if qty else 1, "sp": bool(r.get("rewardSpecial"))})
+        g = fams.setdefault(f, {"id": f, "d": (r.get("dateCreated") or "")[:10], "n": T.first(f"login_event_{f}_title", default=f), "days": [],
+                                "icon": f"icon_login_event_{f}"})
+        rw = []
+        for part in str(r.get("reward") or "").split(";"):  # "tipo:id,qtd;tipo:id,qtd"
+            typ, _, rest = part.partition(":")
+            rid, _, qty = rest.partition(",")
+            if typ:
+                if typ == "gems":
+                    rw.append({"t": typ, "id": "", "q": num(rid) or 1})
+                else:
+                    rw.append({"t": typ, "id": rid, "q": num(qty) if qty else 1})
+        g["days"].append({"n": r.get("rewardNum"), "r": rw, "sp": bool(r.get("rewardSpecial"))})
     for g in fams.values():
         g["days"].sort(key=lambda x: x["n"] or 0)
     rel.sort(key=lambda x: (x["d"], x["k"], x["n"]))
-    return {"releases": rel, "logins": sorted(fams.values(), key=lambda g: g["d"])}, set()
+    # ícone do evento (sprite icon_login_event_<família> do bundle ui) + recompensas especiais dos dias
+    icons = {g["icon"] for g in fams.values()} | {"icon_login_event_default"}
+    for g in fams.values():
+        icons |= {x["id"] for d in g["days"] for x in d["r"] if x["id"]}
+    return {"releases": rel, "logins": sorted(fams.values(), key=lambda g: g["d"])}, icons
