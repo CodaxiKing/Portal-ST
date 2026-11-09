@@ -800,3 +800,7 @@ a.hm-card2:hover { transform: translateY(-3px); box-shadow: var(--shadow-lift); 
 .sim-slot .thumb { width: 48px; height: 48px; grid-row: span 2; }
 .sim-slot select { width: 100%; }
 @media (max-width: 640px) { .sim-top { grid-template-columns: 1fr; } }
+.hm-calc td { vertical-align: top; }
+.hm-calc td.num { font-size: 12px; }
+.hm-sum { margin-top: 10px; }
+.hm-sum .r { font: 500 12.5px var(--mono); text-align: right; white-space: normal; }

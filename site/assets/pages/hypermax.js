@@ -72,7 +72,7 @@
   const stepVal = (pairs, x) => pairs.reduce((a, [k, v]) => (x >= k ? v : a), 0);
 
   // ---------------------------------------------------------------- avaliação de um herói
-  function evaluate(ctx, gear, chosen) {
+  function evaluate(ctx, gear, chosen, trace) {
     const { c, K, base, rankEl, aff, affAll, elBonus } = ctx;
     // 1) elemento do herói
     let E = rankEl;
@@ -114,6 +114,7 @@
       if (m.item) itemPct.push({ types: tt.itemTypes || [], v: m.item, sec: !!tt.secStat });
     }
     const tot = { atk: base.atk + abs.atk, def: base.def + abs.def, hp: base.hp + abs.hp };
+    const crit0 = crit, items = [];
     gear.forEach((g, idx) => {
       if (!g) return;
       const ty = g.x.it.type;
@@ -122,12 +123,16 @@
       const sp = itemPct.reduce((a, p) => a + (hit(p) && p.sec ? p.v : 0), 0) + selfPct[idx]; // "affectSecStat": também evasão e crítico do item
       for (const k of ['atk', 'def', 'hp']) tot[k] += g.x.core[k] * (1 + ip);
       eva += g.x.core.eva * (1 + sp); crit += g.x.core.crit * (1 + sp);
+      const row = trace ? { g, ip, item: {}, ench: [] } : null;
+      if (row) for (const k of ['atk', 'def', 'hp']) row.item[k] = g.x.core[k] * (1 + ip);
       for (const en of [g.el, g.sp]) if (en) {
         const am = en === g.el
           ? (g.x.it.elementAffinity.some((a) => a.id === en.el) ? aff : g.x.it.elementAffinity.some((a) => a.id === 'all') ? 1 + (aff - 1) * affAll : 1)
           : (g.x.it.spiritAffinity.some((a) => a.id === en.e.uid) ? aff : 1);
         for (const k of ['atk', 'def', 'hp']) tot[k] += en.s[k] * am;
+        if (row) row.ench.push({ en, am, atk: en.s.atk * am, def: en.s.def * am, hp: en.s.hp * am });
       }
+      if (row) items.push(row);
     });
     const cb = ctx.colMult || 1; // Livro de Coleção (HeroStatsIncrease)
     const atk = tot.atk * (1 + pct.atk) * cb, def = tot.def * (1 + pct.def) * cb, hp = tot.hp * (1 + pct.hp) * cb;
@@ -141,7 +146,55 @@
       hp * (K.adventurer_power_hp_mult || 5) + shield * (K.adventurer_power_shieldhp_mult || 3) +
       aggro * (def * (K.adventurer_extra_power_defense_aggro_mult || 0.008) + hp * (K.adventurer_extra_power_hp_aggro_mult || 0.025)) +
       shield * eva * (K.adventurer_extra_power_shieldhp_eva_mult || 0.025);
+    if (trace) Object.assign(trace, { base, abs, items, pct: { ...pct }, cb, tot: { ...tot }, crit0, critItems: crit - crit0,
+      critClass: c.critical || 0, cmClass: c.critMult || 2 });
     return { power, atk, def, hp, shield, eva, crit, cm, aggro, E, active };
+  }
+
+  /* Tabela "Cálculo dos atributos" da página da classe */
+  function calcSection(b, o, P) {
+    const T0 = {};
+    evaluate(b.ctx, b.gear, b.chosen, T0);
+    const n0 = (v) => nf(Math.round(v));
+    const three = (x) => `<span class="s-atk">${n0(x.atk)}</span> / <span class="s-def">${n0(x.def)}</span> / <span class="s-hp">${n0(x.hp)}</span>`;
+    const add = (a, x) => ({ atk: a.atk + x.atk, def: a.def + x.def, hp: a.hp + x.hp });
+    const Z = { atk: 0, def: 0, hp: 0 };
+    const rows = T0.items.map((r) => {
+      const it = r.g.x.it;
+      const up = [...(o.sf ? it.starforged || [] : []), ...(o.tr ? [...(it.ascension || []), ...(it.transcendence || [])] : [])];
+      const afterUp = up.length ? ST.applySteps(it, up).stats : it.stats;
+      const enc = r.ench.reduce(add, Z);
+      const upTxt = up.filter((u) => ['atk', 'def', 'hp', 'baseStats', 'eva', 'crit'].includes(u.key)).map((u) => esc(u.text)).join(' · ');
+      return `<tr><td><a class="cell-item" href="#/item/${it.uid}">${img(it.uid)}<span>${esc(it.name)}<br><span class="small muted">T${it.tier}</span></span></a></td>
+        <td class="num">${three(it.stats)}</td>
+        <td class="num">${three(afterUp)}${upTxt ? `<div class="small muted">${upTxt}</div>` : ''}</td>
+        <td class="num">×${dec(P.qm, 2)}</td>
+        <td class="num">${r.ip ? '+' + dec(r.ip * 100, 0) + '%' : '—'}</td>
+        <td class="num"><b>${three(r.item)}</b></td>
+        <td class="num">${three(enc)}<div class="small muted">${r.ench.map((e) => `${esc(e.en.e.name)}${e.am > 1 ? ' ×' + dec(e.am, 2) : ''}`).join(' · ')}</div></td></tr>`;
+    }).join('');
+    const sumItems = T0.items.reduce((a, r) => add(a, r.item), Z);
+    const sumEnch = T0.items.reduce((a, r) => r.ench.reduce(add, a), Z);
+    const row = (label, val, strong) => `<div class="row"><div class="grow">${strong ? `<b>${label}</b>` : label}</div><div class="r">${strong ? `<b>${val}</b>` : val}</div></div>`;
+    const pctTxt = `× <span class="s-atk">${dec(1 + T0.pct.atk, 2)}</span> / <span class="s-def">${dec(1 + T0.pct.def, 2)}</span> / <span class="s-hp">${dec(1 + T0.pct.hp, 2)}</span>`;
+    const critTxt = `${dec(T0.critClass * 100, 1)}% ${tr('classe', 'class')} + ${dec((T0.crit0 - T0.critClass) * 100, 1)}% ${tr('habilidades', 'skills')} + ${dec(T0.critItems * 100, 1)}% ${tr('itens', 'items')}`
+      + (o.tower && o.noCrit ? ` → 0 (${tr('Tumba', 'Tomb')})` : '') + ` = <b>${dec(Math.min(b.crit, 1) * 100, 1)}%</b>`;
+    return `<div class="table-wrap"><table class="data-table hm-calc"><thead><tr><th>${t('items')}</th><th class="num">${tr('Base do jogo', 'Game base')} ATQ/DEF/PV</th>
+        <th class="num">${tr('Com melhorias', 'With upgrades')}</th><th class="num">${tr('Qualidade', 'Quality')}</th><th class="num">${tr('Bônus de tipo', 'Type bonus')}</th>
+        <th class="num">${tr('Item final', 'Final item')}</th><th class="num">${tr('Encantamentos', 'Enchantments')}</th></tr></thead><tbody>${rows}</tbody></table></div>
+      <div class="list hm-sum">
+        ${row(`${tr('Herói', 'Hero')} (${t('level')} ${b.lv})`, three(T0.base))}
+        ${T0.abs.atk || T0.abs.def || T0.abs.hp ? row(tr('Valores fixos das habilidades', 'Flat skill values'), '+ ' + three(T0.abs)) : ''}
+        ${row(tr('Itens', 'Items'), '+ ' + three(sumItems))}
+        ${row(tr('Encantamentos', 'Enchantments'), '+ ' + three(sumEnch))}
+        ${row(tr('Soma', 'Sum'), '= ' + three(T0.tot), true)}
+        ${row(tr('Habilidades (%)', 'Skills (%)'), pctTxt)}
+        ${row(tr('Livro de Coleção', 'Collection book'), '× ' + dec(T0.cb, 2))}
+        ${row(tr('Atributos finais', 'Final stats'), three(b), true)}
+        ${row(tr('Crítico', 'Crit'), critTxt)}
+        ${row(tr('Dano crítico', 'Crit damage'), `×${dec(T0.cmClass, 2)} ${tr('classe', 'class')} + ${dec(b.cm - T0.cmClass, 2)} ${tr('habilidades', 'skills')} = <b>×${dec(b.cm, 2)}</b>`)}
+        ${row(tr('Elemento do herói', 'Hero element'), `<b>${n0(b.E)}</b> ${elIcon(b.c.element)}`)}
+        ${row(tr('Poder', 'Power'), n0(b.power), true)}</div>`;
   }
 
   // ---------------------------------------------------------------- otimização por classe
@@ -379,6 +432,7 @@
               ${ST.sec(tr('Equipamento', 'Gear'), `<div class="table-wrap"><table class="data-table"><thead><tr><th>${t('items')}</th><th>${tr('Elemento', 'Element')}</th><th>${tr('Espírito', 'Spirit')}</th></tr></thead><tbody>${gearRows}</tbody></table></div>`)}
               ${ST.stats([ST.stat(tr('Herói sem nada', 'Bare hero'), nf(Math.round(b.heroOnly))), ST.stat(tr('Elemento do herói', 'Hero element'), `${nf(Math.round(b.E))} ${elIcon(b.c.element)}`), ST.stat(t('level'), b.lv)])}
               <div class="tags" style="margin-top:12px"><a class="chip" href="${builder}">${ST.ic('swords')} ${tr('Abrir no montador', 'Open in builder')}</a><a class="chip" href="#/classes/${b.c.uid}">${ST.ic('info')} ${esc(b.c.name)}</a></div></div></div>
+          ${ST.sec(tr('Cálculo dos atributos', 'Stat calculation'), calcSection(b, o, P), tr('Cada item: atributos base do jogo → melhorias do projeto (Forjado nas Estrelas, Ascensão, Transcendência) → × qualidade → × (1 + bônus de tipo das habilidades e espíritos). Depois soma herói + itens + encantamentos e aplica as porcentagens das habilidades e o Livro de Coleção.', 'Each item: game base stats → blueprint upgrades (Starforged, Ascension, Transcendence) → × quality → × (1 + type bonus from skills and spirits). Then hero + items + enchantments are added and skill percentages and the Collection book are applied.'))}
           <p class="note">${NOTE()}</p>`;
         bindControls(el, o, base + '/' + b.c.uid);
         return;
