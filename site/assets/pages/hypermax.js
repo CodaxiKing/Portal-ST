@@ -85,7 +85,8 @@
     gear.forEach((g) => {
       if (!g || !g.el || (g.el.el !== c.element && g.el.el !== 'all')) return;
       const hasAff = g.x.it.elementAffinity.some((a) => a.id === g.el.el || a.id === 'all');
-      E += g.el.val + (hasAff ? stepVal(elBonus, g.el.val) : 0);
+      // bônus de afinidade de elemento (affinity_element_bonus "0,5;25,10"): +5 abaixo do limite 25 (conferido no jogo: 5 runas de 35 + 1 afinidade = 180)
+      E += g.el.val + (hasAff ? stepVal(elBonus, g.x.it.tier || 0) : 0);
     });
     // 2) habilidades ativas (maior tier liberado pelo elemento)
     const tierOf = (f) => { let best = null; for (const tt of f.tiers) if ((tt.req || 0) <= E && (!best || tt.tier > best.tier)) best = tt; return best; };
