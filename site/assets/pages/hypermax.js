@@ -224,7 +224,7 @@
   const gearCell = (g, o) => (g ? `<span class="hm-it q${o.q}" title="${esc(g.x.it.name)}${g.el ? ' · ' + esc(g.el.e.name) : ''}${g.sp ? ' · ' + esc(g.sp.e.name) : ''}">
       <span class="hm-tier">${g.x.it.tier}</span>${o.tr ? '<span class="hm-stars">★★★</span>' : ''}
       <span class="hm-ms ${mainStat(g.x)}"></span>${img(g.x.it.uid, 'hm-itimg')}
-      <span class="hm-encs">${g.el ? `<span title="${esc(g.el.e.name)}">${elIcon(g.el.el)}</span>` : ''}${g.sp ? `<span title="${esc(g.sp.e.name)}">${img(g.sp.e.uid)}</span>` : ''}</span></span>`
+      <span class="hm-encs">${g.el ? `<span class="hm-rune" title="${esc(g.el.e.name)}">${img(g.el.e.uid)}<em>${elIcon(g.el.el)}</em></span>` : ''}${g.sp ? `<span title="${esc(g.sp.e.name)}">${img(g.sp.e.uid)}</span>` : ''}</span></span>`
     : '<span class="hm-it empty"></span>');
 
   const controls = (o) => `<div class="form-row hm-ctl">
@@ -277,7 +277,7 @@
         const b = builds.find((x) => x.c.uid === uid);
         const gearRows = b.gear.map((g, k) => (g ? `<tr><td><a class="cell-item" href="#/item/${g.x.it.uid}">${img(g.x.it.uid)}<span>${esc(g.x.it.name)}<br>
           <span class="small muted">T${g.x.it.tier} · ${esc(b.c.slots[k].map((x) => x.name).join(' / '))}</span></span></a></td>
-          <td>${g.el ? `<a class="cell-item" href="#/item/${g.el.e.uid}">${elIcon(g.el.el)}<span>${esc(g.el.e.name)}</span></a>` : '—'}</td>
+          <td>${g.el ? `<a class="cell-item" href="#/item/${g.el.e.uid}"><span class="hm-rune lg">${img(g.el.e.uid)}<em>${elIcon(g.el.el)}</em></span><span>${esc(g.el.e.name)} <span class="small muted">+${g.el.val}</span></span></a>` : '—'}</td>
           <td>${g.sp ? `<a class="cell-item" href="#/item/${g.sp.e.uid}">${img(g.sp.e.uid)}<span>${esc(g.sp.e.name)}</span></a>` : '—'}</td></tr>` : '')).join('');
         const skillRows = b.active.map((a) => `<div class="row">${img(a.f.icon)}<div class="grow"><b>${esc(a.tt.name || a.f.name)}</b>
           <span class="muted small">${a.spirit ? tr('espírito', 'spirit') : a.f.kind === 'innate' ? tr('inata', 'innate') : a.f.kind === 'mastery' ? tr('maestria', 'mastery') : tr('herói', 'hero')}${a.tt.tier ? ' · T' + a.tt.tier : ''}${a.tt.req ? ` · ${nf(a.tt.req)} ${tr('de elemento', 'element')}` : ''}</span>
