@@ -142,8 +142,11 @@ def build_items(tables, T):
                            for i in range(1, 6) if it[f"upgrade{i}"]],
             "starforged": [{"req": it[f"us{i}Req"], **effect(it[f"upgradeShiny{i}"], it)}
                            for i in range(1, 6) if it[f"upgradeShiny{i}"]],
+            # 6 melhorias especiais: 1-3 = Ascensão (Estilhaços), 4-6 = Transcendência (Selos; atributos)
             "ascension": [{"cost": it[f"su{i}Cost"], **effect(it[f"supgrade{i}"], it)}
-                          for i in range(1, 7) if it[f"supgrade{i}"]],
+                          for i in range(1, 4) if it.get(f"supgrade{i}")],
+            "transcendence": [{"cost": it[f"su{i}Cost"], **effect(it[f"supgrade{i}"], it)}
+                              for i in range(4, 7) if it.get(f"supgrade{i}")],
             "elements": elements,
             "elementAffinity": [{"id": e, "name": T.get(f"element_{e}", e)} for e in split(it.get("elementAffinity"))],
             "spiritAffinity": [{"id": s, "name": T.first(f"{s}_name_o", f"{s}_name", default=s)}

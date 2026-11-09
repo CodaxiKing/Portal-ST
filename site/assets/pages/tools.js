@@ -103,7 +103,7 @@
       const wl = w.wlevels.find((x) => x.level === lvl) || w.wlevels[0];
       const opt = { ms: query.get('ms') !== '0', sf: query.get('sf') === '1', tmax: +(query.get('tmax') || 99), cat: query.get('cat') || '', worker: query.get('w') || '' };
       const tiers = [...new Set(d.items.map((i) => i.tier))].sort((a, b) => a - b);
-      const rows = d.items.filter((i) => !i.nonCraftable && i.time > 0 && i.tier <= opt.tmax && (!opt.cat || i.cat === opt.cat) &&
+      const rows = d.items.filter((i) => !i.nonCraftable && !(ST.isUnreleased && ST.isUnreleased(i)) && i.time > 0 && i.tier <= opt.tmax && (!opt.cat || i.cat === opt.cat) &&
         (!opt.worker || i.workers.some((x) => x.id === opt.worker))).map((i) => {
         const e = effective(i, opt);
         const time = e.time * wl.craftingTime / 100;

@@ -90,7 +90,8 @@ def main():
     wanted |= {"img_collectionbook_book_quality_epic_big", "img_player_titles_01", "icon_global_upgrade_rareresregen",
                "icon_achievements_gold04", "icon_event_reward_dialog", "custom_handheld_wallacehammer",
                "img_shop_item_sitems_gold1", "icon_global_quality_legendary", "icon_global_quality_epic",
-               "icon_global_quality_flawless", "icon_global_quality_uncommon", "icon_global_quality_common"}
+               "icon_global_quality_flawless", "icon_global_quality_uncommon", "icon_global_quality_common",
+               "bp_upgrade", "bp_upgrade02", "icon_bp_upgrade", "icon_bp_upgrade02", "antique_shard"}
     wanted.discard("")
     if not a.no_icons:
         export_icons(a.game, wanted, ICONS, a.icon_size, a.force_icons)

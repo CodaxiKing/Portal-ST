@@ -33,6 +33,14 @@
 
   // ---------------------------------------------------------------- lista
   const PAGE = 120;
+  const SOON = '__soon';
+  // já existe nos arquivos, mas a data de lançamento ainda não chegou (2099 = sem data definida)
+  const today = () => new Date().toISOString().slice(0, 10);
+  ST.isUnreleased = (i) => !!i.releaseAt && String(i.releaseAt).slice(0, 10) > today();
+  const relDate = (i) => (String(i.releaseAt) >= '2090' ? tr('sem data', 'no date') : new Date(String(i.releaseAt).slice(0, 10) + 'T12:00').toLocaleDateString(ST.locale));
+  // moedas das melhorias especiais, com o sprite do jogo quando existir
+  const cur = (sprite, ic) => (icon(sprite) ? `<img class="cur-img" src="${icon(sprite)}" alt="">` : `<i class="ic ic-${ic}"></i>`);
+  const SHARD = () => cur('bp_upgrade', 'shard'), SEAL = () => cur('bp_upgrade02', 'seal');
   const state = { cat: '', type: '', q: '', tmin: null, tmax: null, sort: 'tier', dir: 1, view: 'grid', shown: 0, list: [] };
   try { state.view = localStorage.getItem('st_view') || 'grid'; } catch (e) {}
 
@@ -48,10 +56,10 @@
   const cardHTML = (i, d) => `<a class="card" href="#/item/${i.uid}">
       <div class="thumb">${img(i.uid)}<span class="tier-badge">T${i.tier}</span></div>
       <div class="card-body"><div class="card-name">${esc(i.name)}</div>
-      <div class="card-type">${esc(d.types[i.type].name)} · ${t('level')} ${i.level}</div>
+      <div class="card-type">${esc(d.types[i.type].name)} · ${t('level')} ${i.level}${ST.isUnreleased(i) ? ` <span class="badge soon">${relDate(i)}</span>` : ''}</div>
       <div class="card-stats">${statsMini(i)}</div></div></a>`;
   const rowHTML = (i, d) => `<tr data-href="#/item/${i.uid}"><td>${icon(i.uid) ? `<img src="${icon(i.uid)}" alt="" loading="lazy">` : ''}</td>
-      <td>${esc(i.name)}</td><td>${esc(d.types[i.type].name)}</td><td class="num">${i.tier}</td>
+      <td>${esc(i.name)}${ST.isUnreleased(i) ? ` <span class="badge soon">${relDate(i)}</span>` : ''}</td><td>${esc(d.types[i.type].name)}</td><td class="num">${i.tier}</td>
       <td class="num gold">${nf(i.value)}</td><td class="num s-atk">${i.stats.atk || ''}</td><td class="num s-def">${i.stats.def || ''}</td>
       <td class="num s-hp">${i.stats.hp || ''}</td><td class="num">${dur(i.time)}</td></tr>`;
 
@@ -68,7 +76,10 @@
       const tierOpts = tiers.map((x) => `<option value="${x}">${x}</option>`).join('');
       el.innerHTML = `${ST.pageHead(t('items'), tr('Todos os projetos do jogo, com atributos, receitas e melhorias.', 'Every blueprint in the game with stats, recipes and upgrades.'))}
         <nav class="cats" id="cats">${[['', t('all')], ...Object.entries(d.categories)].map(([k, v]) =>
-          `<button data-cat="${k}" class="${k === state.cat ? 'active' : ''}">${esc(v)}</button>`).join('')}</nav>
+          `<button data-cat="${k}" class="${k === state.cat ? 'active' : ''}">${esc(v)}</button>`).join('')}
+          <button data-cat="${SOON}" class="cat-soon ${state.cat === SOON ? 'active' : ''}">${tr('Em breve', 'Coming soon')} <span class="cnt-pill">${d.items.filter(ST.isUnreleased).length}</span></button></nav>
+        <p class="note" id="soonNote" ${state.cat === SOON ? '' : 'hidden'}>${tr('Itens que já estão nos arquivos do jogo, mas cuja data de lançamento ainda não chegou. Eles não aparecem nas outras abas.',
+          'Items already in the game files whose release date has not arrived yet. They are left out of the other tabs.')}</p>
         <section class="toolbar">
           <input id="q" type="search" placeholder="${tr('Buscar item, recurso, componente…', 'Search item, resource, component…')}" value="${esc(state.q)}" autocomplete="off">
           <select id="type"></select>
@@ -88,8 +99,9 @@
           </tr></thead><tbody id="tbody"></tbody></table></section>
         <div id="sentinel" class="sentinel"></div>`;
       const $ = (s) => el.querySelector(s);
+      const inCat = (i) => (state.cat === SOON ? ST.isUnreleased(i) : !ST.isUnreleased(i) && (!state.cat || i.cat === state.cat));
       const fillTypes = () => {
-        const codes = [...new Set(d.items.filter((i) => !state.cat || i.cat === state.cat).map((i) => i.type))]
+        const codes = [...new Set(d.items.filter(inCat).map((i) => i.type))]
           .sort((a, b) => d.types[a].name.localeCompare(d.types[b].name));
         $('#type').innerHTML = `<option value="">${tr('Todos os tipos', 'All types')}</option>` +
           codes.map((c) => `<option value="${c}">${esc(d.types[c].plural)}</option>`).join('');
@@ -122,12 +134,15 @@
       const apply = () => {
         const words = ST.norm(state.q).split(/\s+/).filter(Boolean);
         const lo = Math.min(state.tmin, state.tmax), hi = Math.max(state.tmin, state.tmax);
-        const list = d.items.filter((i) => (!state.cat || i.cat === state.cat) && (!state.type || i.type === state.type) &&
+        const list = d.items.filter((i) => inCat(i) && (!state.type || i.type === state.type) &&
           i.tier >= lo && i.tier <= hi && words.every((w) => i._s.includes(w)));
-        if (state.sort === 'name') list.sort((a, b) => state.dir * a.name.localeCompare(b.name));
+        if (state.cat === SOON && state.sort === 'tier') list.sort((a, b) => String(a.releaseAt).localeCompare(String(b.releaseAt)) * state.dir);
+        else if (state.sort === 'name') list.sort((a, b) => state.dir * a.name.localeCompare(b.name));
         else { const k = key[state.sort]; list.sort((a, b) => state.dir * (k(a) - k(b)) || a.name.localeCompare(b.name)); }
         state.list = list;
-        $('#count').textContent = `${nf(list.length)} ${t('ofItems')} ${nf(d.items.length)} ${t('items').toLowerCase()}`;
+        const pool = d.items.filter((i) => (state.cat === SOON) === ST.isUnreleased(i)).length;
+        $('#count').textContent = `${nf(list.length)} ${t('ofItems')} ${nf(pool)} ${t('items').toLowerCase()}`;
+        $('#soonNote').hidden = state.cat !== SOON;
         ST.setQuery({ q: state.q, cat: state.cat, type: state.type, tmin: state.tmin !== tiers[0] ? state.tmin : '', tmax: state.tmax !== tiers[tiers.length - 1] ? state.tmax : '' });
         render(true);
       };
@@ -163,6 +178,56 @@
     },
   });
 
+  // ---------------------------------------------------------------- melhorias aplicadas
+  /* Aplica uma lista de efeitos (na ordem do jogo) ao item: atributos, receita, valor, tempo e efeitos extras. */
+  const STAT_KEYS = ['atk', 'def', 'hp', 'eva', 'crit', 'shieldHp'];
+  function applySteps(i, steps) {
+    const st = { ...i.stats }, res = i.resources.map((r) => ({ ...r })), comps = i.components.map((c) => ({ ...c }));
+    let value = i.value, time = i.time;
+    const other = [];
+    const num = (x, u) => (u.op === '-' ? Math.max(0, x - u.v) : u.op === '*' ? x * u.v : x + u.v);
+    for (const u of steps) {
+      const m = u.key && u.key.match(/^(resource|component)(\d)$/);
+      if (m) { const tgt = (m[1] === 'resource' ? res : comps)[+m[2] - 1]; if (tgt) tgt.qty = num(tgt.qty, u); }
+      else if (STAT_KEYS.includes(u.key)) st[u.key] = num(st[u.key] || 0, u);
+      else if (u.key === 'baseStats' && u.op === '*') ['atk', 'def', 'hp'].forEach((k) => (st[k] = (st[k] || 0) * u.v));
+      else if (u.key === 'value') value = num(value, u);
+      else if (u.key === 'time') time = num(time, u);
+      else other.push(u.text);
+    }
+    ['atk', 'def', 'hp', 'shieldHp'].forEach((k) => (st[k] = Math.round(st[k] || 0)));
+    res.forEach((r) => (r.qty = Math.ceil(r.qty)));
+    comps.forEach((c) => (c.qty = Math.ceil(c.qty)));
+    return { stats: st, res, comps, value: Math.round(value), time, other };
+  }
+  ST.applySteps = applySteps;
+
+  /* Painel "Valores": Base / Ascensão / Transcendência + etapa 1–3, com marcos opcionais. */
+  function valuesPanel(i, mode, step, ms) {
+    const A = i.ascension || [], X = i.transcendence || [];
+    const mil = ms ? i.milestones.filter((u) => u.key) : [];
+    const applied = mode === 'asc' ? A.slice(0, step) : mode === 'tr' ? [...A, ...X.slice(0, step)] : [];
+    const b = applySteps(i, mil), v = applySteps(i, [...mil, ...applied]);
+    const delta = (a, c, f = nf) => (c !== a ? ` <span class="delta ${c > a ? 'up' : 'down'}">${c > a ? '+' : '−'}${f(Math.abs(c - a))}</span>` : '');
+    const pctf = (x) => ST.dec(x * 100, 1) + '%';
+    const S = [['atk', tr('Ataque', 'Attack'), nf], ['def', tr('Defesa', 'Defense'), nf], ['hp', tr('Vida (PV)', 'Health (HP)'), nf],
+      ['eva', t('eva'), pctf], ['crit', t('crit'), pctf], ['shieldHp', tr('PV de escudo', 'Shield HP'), nf]]
+      .filter(([k]) => b.stats[k] || v.stats[k]).map(([k, label, f]) => ST.stat(label, f(v.stats[k]) + delta(b.stats[k], v.stats[k], f), 's-' + k));
+    const E = [ST.stat(t('value'), nf(v.value) + ' <i class="ic ic-coin"></i>' + delta(b.value, v.value), 'gold'),
+      i.time && ST.stat(tr('Tempo de fabricação', 'Crafting time'), dur(v.time) + (v.time !== b.time ? ` <span class="delta up">−${dur(b.time - v.time)}</span>` : ''))];
+    const R = [...v.res.map((r, k) => [r, b.res[k]]), ...v.comps.map((c, k) => [c, b.comps[k]])].filter(([x]) => x.qty > 0).map(([x, y]) =>
+      `<div class="row">${icon(x.id) ? `<img src="${icon(x.id)}" alt="" loading="lazy">` : ''}<div class="grow">${esc(ST.refName(x.id))}</div>
+        <div class="r">× ${nf(x.qty)}${x.qty !== y.qty ? ` <span class="delta up">−${nf(y.qty - x.qty)}</span>` : ''}</div></div>`).join('');
+    const costA = (mode === 'asc' ? A.slice(0, step) : mode === 'tr' ? A : []).reduce((a, u) => a + (u.cost || 0), 0);
+    const costX = mode === 'tr' ? X.slice(0, step).reduce((a, u) => a + (u.cost || 0), 0) : 0;
+    return `${S.length ? ST.stats(S) : ''}${ST.stats(E)}
+      ${R ? `<div class="list" style="margin-top:8px">${R}</div>` : ''}
+      ${costA || costX ? `<div class="vp-cost">${costA ? `<span>${SHARD()} ${nf(costA)} ${tr('Estilhaços de Ascensão', 'Ascension Shards')}</span>` : ''}
+        ${costX ? `<span>${SEAL()} ${nf(costX)} ${tr('Selos da Transcendência', 'Transcendence Seals')}</span>` : ''}</div>` : ''}
+      ${applied.length ? `<div class="vp-applied">${applied.map((u, k) => `<span class="tag ${k >= A.length ? 'tr' : 'asc'}">${esc(u.text)}</span>`).join('')}</div>` : ''}
+      ${v.other.length ? `<p class="note">${tr('Outros efeitos', 'Other effects')}: ${esc(v.other.join(' · '))}</p>` : ''}`;
+  }
+
   // ---------------------------------------------------------------- detalhes
   const QUALS = () => [tr('Normal', 'Common'), tr('Superior', 'Uncommon'), tr('Magistral', 'Flawless'), tr('Épico', 'Epic'), tr('Lendário', 'Legendary')];
 
@@ -187,7 +252,8 @@
     if (i.source) tags.push(ST.tag(esc(i.source)));
     if (i.titan) tags.push(ST.tag(tr('Titã', 'Titan'), 'hl'));
     if (i.nonCraftable) tags.push(ST.tag(tr('Não fabricável', 'Not craftable')));
-    if (i.releaseAt) tags.push(ST.tag(`${tr('Lançamento', 'Release')}: ${esc(String(i.releaseAt).slice(0, 10))}`));
+    if (ST.isUnreleased(i)) tags.push(ST.tag(`${tr('Em breve', 'Coming soon')}: ${relDate(i)}`, 'hl'));
+    else if (i.releaseAt) tags.push(ST.tag(`${tr('Lançamento', 'Release')}: ${esc(String(i.releaseAt).slice(0, 10))}`));
 
     const combat = [s.atk && ST.stat(tr('Ataque', 'Attack'), nf(s.atk), 's-atk'), s.def && ST.stat(tr('Defesa', 'Defense'), nf(s.def), 's-def'),
       s.hp && ST.stat(tr('Vida (PV)', 'Health (HP)'), nf(s.hp), 's-hp'), s.eva && ST.stat(t('eva'), pct(s.eva), 's-eva'),
@@ -195,6 +261,7 @@
     const econ = [ST.stat(t('value'), nf(i.value) + ' <i class="ic ic-coin"></i>', 'gold'), i.time && ST.stat(tr('Tempo de fabricação', 'Crafting time'), dur(i.time)),
       i.xp && ST.stat(tr('XP do comerciante', 'Merchant XP'), nf(i.xp)), i.craftXp && ST.stat(tr('XP de fabricação', 'Worker XP'), nf(i.craftXp)),
       i.favor && ST.stat(tr('Graça', 'Favor'), nf(i.favor))];
+    const hasUp = (i.ascension && i.ascension.length) || (i.transcendence && i.transcendence.length);
     const e = i.energy;
     const energy = e.discount || e.surcharge || e.suggest || e.speedup ? ST.stats([ST.stat(tr('Desconto', 'Discount'), nf(e.discount)),
       ST.stat(tr('Sobretaxa', 'Surcharge'), nf(e.surcharge)), ST.stat(tr('Sugerir', 'Suggest'), nf(e.suggest)), ST.stat(tr('Acelerar', 'Speed up'), nf(e.speedup))]) : '';
@@ -231,8 +298,17 @@
         <button class="chip" data-act="cmp" data-uid="${i.uid}">${tr('Comparar', 'Compare')}</button>
         ${['weapon', 'armor', 'accessory'].includes(i.cat) && (i.elementAffinity.length || i.spiritAffinity.length) ? `<a class="chip" href="#/encantamentos?m=item&i=${i.uid}">${tr('Encantamentos', 'Enchantments')}</a>` : ''}
         <a class="chip" href="p/${ST.ui}/item/${i.uid}.html" title="${tr('Página para compartilhar', 'Shareable page')}">${tr('Compartilhar', 'Share')}</a></div>
-      ${ST.sec(tr('Atributos de combate', 'Combat stats'), combat.length ? ST.stats(combat) : '', tr('Valores base em qualidade Normal.', 'Base values at Common quality.'))}
-      ${ST.sec(tr('Economia', 'Economy'), ST.stats(econ))}
+      ${hasUp ? `<section class="sec vp" data-uid="${i.uid}"><h3>${tr('Valores', 'Values')}</h3>
+        <div class="seg" role="tablist">${[['base', 'Base'], ['asc', tr('Ascensão', 'Ascension')], ['tr', tr('Transcendência', 'Transcendence')]]
+          .filter(([k]) => k === 'base' || (k === 'asc' ? i.ascension.length : (i.transcendence || []).length))
+          .map(([k, l]) => `<button role="tab" data-mode="${k}" class="${k === 'base' ? 'on' : ''}" aria-selected="${k === 'base'}">${k === 'asc' ? SHARD() : k === 'tr' ? SEAL() : ''}${l}</button>`).join('')}</div>
+        <div class="vp-steps" hidden><span class="small muted">${tr('Etapa', 'Step')}</span>${[1, 2, 3].map((n) => `<button data-step="${n}" class="${n === 3 ? 'on' : ''}">${n}</button>`).join('')}</div>
+        <label class="check vp-ms"><input type="checkbox" data-ms> ${tr('Incluir marcos do projeto', 'Include blueprint milestones')}</label>
+        <div class="vp-body">${valuesPanel(i, 'base', 3, false)}</div>
+        <p class="note">${tr('Valores em qualidade Normal. A Transcendência inclui as 3 etapas de Ascensão; os efeitos são aplicados na ordem do jogo.',
+          'Values at Common quality. Transcendence includes all 3 Ascension steps; effects are applied in game order.')}</p></section>`
+        : `${ST.sec(tr('Atributos de combate', 'Combat stats'), combat.length ? ST.stats(combat) : '', tr('Valores base em qualidade Normal.', 'Base values at Common quality.'))}
+      ${ST.sec(tr('Economia', 'Economy'), ST.stats(econ))}`}
       ${ST.sec(tr('Custos de energia', 'Energy costs'), energy)}
       ${ST.sec(tr('Fabricação', 'Crafting'), craft)}
       ${ST.sec(tr('Classes que podem equipar', 'Classes that can equip'), classHTML)}
@@ -240,7 +316,9 @@
       ${ST.sec(tr('Habilidade / efeito especial', 'Skill / special effect'), skill)}
       ${ST.sec(tr('Marcos do projeto', 'Blueprint milestones'), upgradeList(i.milestones, (u) => u.req + '×'), tr('Desbloqueados ao fabricar o item N vezes.', 'Unlocked after crafting the item N times.'))}
       ${ST.sec(tr('Forjado nas Estrelas', 'Starforged'), upgradeList(i.starforged, (u) => u.req + '×'))}
-      ${ST.sec(tr('Ascensão', 'Ascension'), upgradeList(i.ascension, (u) => u.cost + ' <i class="ic ic-shard"></i>'), tr('<i class="ic ic-shard"></i> = Estilhaços de Ascensão por etapa.', '<i class="ic ic-shard"></i> = Ascension Shards per step.'))}
+      ${ST.sec(tr('Ascensão', 'Ascension'), upgradeList(i.ascension, (u) => `${u.cost} ${SHARD()}`), `${SHARD()} ${tr('Estilhaços de Ascensão por etapa.', 'Ascension Shards per step.')}`)}
+      ${ST.sec(tr('Transcendência', 'Transcendence'), upgradeList(i.transcendence || [], (u) => `${u.cost} ${SEAL()}`),
+        `${SEAL()} ${tr('Selos da Transcendência por etapa. Liberada no nível 50 do comerciante.', 'Transcendence Seals per step. Unlocks at merchant level 50.')}`)}
       ${ST.sec(tr('Faixa de preço no Mercado', 'Market price range'), trade, tr('Preço mínimo – máximo em ouro, por qualidade.', 'Minimum – maximum price in gold, per quality.'))}
       ${ST.sec(`${tr('Usado como componente em', 'Used as component in')} (${used.length})`, usedHTML)}
       ${src ? ST.sec(tr('Onde conseguir', 'Where to get'), ST.sourcesHTML(src), `<a href="#/onde/${i.uid}">${tr('Ver todas as fontes', 'See every source')}</a>`) : ''}
@@ -252,10 +330,34 @@
     await ST.itemsIndex();
     const i = IDX.by.get(uid);
     if (!i) return ST.drawer.open(ST.notFound());
+    vpState.mode = 'base'; vpState.step = 3; vpState.ms = false;
     ST.drawer.open(await detailHTML(i), i.name);
   });
   // botões da ficha: lista de fabricação e comparador
+  const vpState = { mode: 'base', step: 3, ms: false };
+  const vpRender = (root) => {
+    const i = IDX.by.get(root.dataset.uid);
+    const max = vpState.mode === 'asc' ? i.ascension.length : vpState.mode === 'tr' ? (i.transcendence || []).length : 0;
+    vpState.step = Math.min(vpState.step, max || 3);
+    root.querySelectorAll('[data-mode]').forEach((x) => { x.classList.toggle('on', x.dataset.mode === vpState.mode); x.setAttribute('aria-selected', x.dataset.mode === vpState.mode); });
+    const stepsEl = root.querySelector('.vp-steps');
+    stepsEl.hidden = vpState.mode === 'base';
+    stepsEl.querySelectorAll('[data-step]').forEach((x) => { x.hidden = +x.dataset.step > max; x.classList.toggle('on', +x.dataset.step === vpState.step); });
+    const body = root.querySelector('.vp-body');
+    body.innerHTML = valuesPanel(i, vpState.mode, vpState.step, vpState.ms);
+    body.classList.remove('flash'); void body.offsetWidth; body.classList.add('flash');
+  };
+  document.getElementById('detail').addEventListener('change', (e) => {
+    const root = e.target.closest('.vp');
+    if (root && e.target.matches('[data-ms]')) { vpState.ms = e.target.checked; vpRender(root); }
+  });
   document.getElementById('detail').addEventListener('click', (e) => {
+    const vp = e.target.closest('.vp');
+    if (vp) {
+      const m = e.target.closest('[data-mode]'), st = e.target.closest('[data-step]');
+      if (m) { vpState.mode = m.dataset.mode; vpState.step = 3; vpRender(vp); return; }
+      if (st) { vpState.step = +st.dataset.step; vpRender(vp); return; }
+    }
     const b = e.target.closest('[data-act]');
     if (!b) return;
     if (b.dataset.act === 'list') { const n = ST.listAdd(b.dataset.uid, 1); b.innerHTML = `${ST.ic('check')} ${ST.tr('Na lista', 'In list')} (${n}) · <u>${ST.tr('abrir', 'open')}</u>`; b.onclick = () => (location.hash = '#/lista'); }

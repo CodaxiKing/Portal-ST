@@ -98,7 +98,8 @@ passa a mostrar itens novos, removidos e alterados.
 - O montador interpola os atributos da classe entre os níveis 1, 40, 50 e 100 e não considera habilidades,
   encantamentos nem elementos.
 - Prateleiras, mesas, balcões e baús de loja são modelos 3D sem ícone 2D no jogo.
-- Itens com `releaseAt` no futuro ainda não foram lançados (veja a página Lançamentos). Datas em 2099 significam "sem data".
+- Itens com `releaseAt` no futuro ainda não foram lançados: ficam na aba "Em breve" da lista de itens (e fora das outras abas e do ranking de lucro). Datas em 2099 significam "sem data".
+- As 6 melhorias especiais de cada projeto são divididas em Ascensão (1–3, Estilhaços) e Transcendência (4–6, Selos; aumentam atributos). A ficha do item tem um seletor Base / Ascensão / Transcendência com a etapa 1–3.
 - Encantamentos: o bônus de afinidade (×1,5; "Todos" ×1,25) vem das constantes do jogo; o bônus de valor elemental não entra na conta.
 - Custos de construções da cidade estão em pontos de investimento, como no jogo; a conversão para ouro depende do tier.
 - Preços de mercado e simulação exata de combate não existem nos arquivos locais.
