@@ -570,17 +570,61 @@ def build_events(tables, T):
                           "desc": clean(T.get(f"community_event_intro_description_{uid}")),
                           "progress": clean(T.get(f"community_event_progress_description_{uid}")),
                           "icon": f"icon_news_header_{uid}_community_event", "min": r.get("minContribution")})
-    ev_icons = {x["icon"] for x in recurring} | {x["icon"] for x in community} | {
+    king, king_icons = _king(tables, T, c)
+    ev_icons = king_icons | {x["icon"] for x in recurring} | {x["icon"] for x in community} | {
         "icon_lostcityofgold_puregold", "icon_goldcity_endless_event_bronze", "icon_goldcity_endless_event_silver",
         "icon_goldcity_endless_event_gold", "icon_news_header_goldcity", "icon_quest_goldcity_boss", "icon_global_grand_prize_goldcity_blueprint",
         "icon_news_header_community_event", "icon_news_header_titantower"}
     return {
-        "recurring": recurring, "community": community,
+        "recurring": recurring, "community": community, "king": king,
         "goldcity": {"info": info("goldcity"), "k": {k: num(v) for k, v in c.items() if re.search(r"goldcity|lcog|pure_?gold", k)}},
         "caravan": {"pools": pools, "days": days, "maps": maps, "shapes": shapes, "k": {x: num(c.get(x)) for x in ck}},
         "tower": {"mods": mods, "tomb": tomb, "curse": {k: c.get(f"tomb_curse_{k}_percentage") for k in ("hp", "atk", "def")},
                   "spiritQuestMult": num(c.get("spirit_quest_restriction_bonus_multiplier")) or 2},
     }, ev_icons
+
+
+def _king(tables, T, c):
+    """Capricho do Rei: regras dos pedidos (sorteio por tipo) e a loja de Fichas de Antiguidade. Cada projeto, móvel,
+    visual ou decoração com preço em fichas entra no sorteio da loja depois do lançamento: capriceDelay dias, ou
+    quest_event_king_antique_shard_shop_delay_seasonal (180) quando não tem (unidade em dias deduzida dos dados)."""
+    import datetime as _dt
+    pairs = lambda s: [[a, num(b)] for a, b in (x.split(",") for x in str(s or "").split(";") if "," in x)]
+    delay_def = num(c.get("quest_event_king_antique_shard_shop_delay_seasonal")) or 180
+    shop, icons = [], set()
+    srcs = [("items", "item", lambda u, r: item_name(T, u)),
+            ("furniture", "furniture", lambda u, r: T.first(f"{u}_name", f"{r.get('family') or u}_name", default=u)),
+            ("customizations", "look", lambda u, r: T.first(f"customization_{str(r.get('type', '')).lower()}_{u}", f"customization_{u}", default=u)),
+            ("wallDecorations", "deco", lambda u, r: T.first(f"decoration_wall_{u}_name", default=u)),
+            ("floorDecorations", "deco", lambda u, r: T.first(f"decoration_floor_{u}_name", default=u))]
+    for table, kind, name in srcs:
+        for uid, r in tables.get(table, {}).items():
+            if not isinstance(r, dict) or not r.get("shardPrice") or r.get("prohibited"):
+                continue
+            rel = str(r.get("releaseAt") or "")[:10]
+            if not rel or rel >= "2090":
+                continue
+            delay = num(r.get("capriceDelay")) or delay_def
+            enter = (_dt.date.fromisoformat(rel) + _dt.timedelta(days=delay)).isoformat()
+            shop.append({"u": uid, "k": kind, "n": name(uid, r), "t": r.get("tier") or 0, "p": num(r.get("shardPrice")),
+                         "r": rel, "d": delay, "e": enter, "x": r.get("excl")})
+            icons.add(uid)
+    shop.sort(key=lambda x: (x["e"], x["k"], x["n"]))
+    k = lambda key: num(c.get(f"quest_event_king_{key}"))
+    rules = {
+        "types": pairs(c.get("quest_event_king_itemtype_weights")), "premiumTypes": pairs(c.get("quest_event_king_itemtype_premium_weights")),
+        "cats": pairs(c.get("quest_event_king_itemcategory_weights")), "premiumCats": pairs(c.get("quest_event_king_itemcategory_premium_weights")),
+        "slots": [k("slot1_cycle"), k("slot2_cycle"), k("slot3_cycle")], "hot": k("hotitem_cycle"), "usedReset": k("used_list_reset"),
+        "q": [1, k("uncommon_mult"), k("flawless_mult"), k("epic_mult"), k("legd_mult")],
+        "freePack": c.get("quest_event_king_free_pack_content"), "freePackCycle": k("free_pack_cycle"),
+        "shop": {"max": k("antique_shard_shop_max_item"), "vip": k("antique_shard_shop_vip_slot"), "minTier0": k("antique_shard_shop_min_tier_slot_0"),
+                 "price": k("antique_shard_shop_default_price"), "reroll": k("antique_shard_shop_reroll_cost"), "minLevel": k("antique_shard_minimum_user_level"),
+                 "cycle": k("antique_shard_shop_cycle"), "delay": delay_def, "sameRes": num(c.get("quest_event_king_same_resource_weight_mult"))},
+        "info": clean(T.get("quest_event_king_caprices_info_text")), "name": T.first("kings_caprice_name", "kings_caprice", default="King's Caprice"),
+    }
+    trophies = [{"u": f"tkctrophy{m}1", "n": T.get(f"tkctrophy{m}1_name", m)} for m in ("bronze", "silver", "gold")]
+    icons |= {t["u"] for t in trophies} | {"antique_shard", "icon_event_reward_dialog"}
+    return {"rules": rules, "shop": shop, "trophies": trophies}, icons
 
 
 SECTIONS["events"] = build_events

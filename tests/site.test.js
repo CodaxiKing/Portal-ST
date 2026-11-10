@@ -58,6 +58,15 @@ test('eventos: recorrentes e de comunidade com ícone; Cidade Perdida de Ouro co
   assert.ok(ST.eventrewards.events.find((e) => e.id === 'goldcity').families.length > 0, 'trilhas de recompensa');
 });
 
+test('Capricho do Rei: loja com data de entrada = lançamento + atraso, e regras dos pedidos', () => {
+  const K = ST.events.king;
+  assert.ok(K.shop.length > 1000, 'itens na loja');
+  for (const x of K.shop) assert.strictEqual(x.e, ST.addDays(x.r, x.d), x.u);
+  assert.strictEqual(K.shop.find((x) => x.u === 'fairytalesword').e, '2026-11-15', 'Contos de Fadas: 19/05 + 180 dias');
+  assert.deepStrictEqual(K.rules.slots, [3600, 7200, 10800]);
+  assert.ok(K.rules.types.length >= 20 && K.rules.shop.max === 6);
+});
+
 test('busca: inclui passes, histórias, skins e eventos de login', () => {
   const kinds = new Set(ST.search.map((e) => e[0]));
   for (const k of ['i', 'k', 'a', 'h', 'n', 'l']) assert.ok(kinds.has(k), 'tipo ' + k);

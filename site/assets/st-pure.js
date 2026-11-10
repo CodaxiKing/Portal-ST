@@ -40,6 +40,7 @@
 
   /* Já está nos arquivos, mas a data de lançamento ainda não chegou (2099 = sem data definida). */
   ST.today = () => new Date().toISOString().slice(0, 10);
+  ST.addDays = (d, n) => { const x = new Date(d + "T12:00:00Z"); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
   ST.isUnreleased = (i) => !!i.releaseAt && String(i.releaseAt).slice(0, 10) > ST.today();
 
   /* Projeto desbloqueado segundo um perfil de "Minha conta" (sem perfil ativo: tudo liberado). */

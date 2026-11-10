@@ -906,3 +906,6 @@ a.cvs-card:hover{transform:translateY(-2px)}.cvs-card.on{border-color:var(--acce
 .cvs-want{position:absolute;left:0;right:0;bottom:4%;display:flex;justify-content:center;gap:2px;flex-wrap:wrap;padding:0 10%}
 .cvs-want img{width:18px;height:18px;object-fit:contain;filter:drop-shadow(0 1px 1px rgba(0,0,0,.6))}
 .cvs-cap{font-size:.8rem;color:var(--muted);padding:0 4px}.cvs-cap b{color:var(--text)}
+
+.k-caprice{color:#c9a14a}
+.kc-tro img{width:22px;height:22px;object-fit:contain}

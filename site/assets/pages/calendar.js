@@ -27,7 +27,7 @@
   const KIND = {
     item: ['Item', 'Item'], furniture: ['Móvel', 'Furniture'], skin: ['Skin de item', 'Item skin'], fskin: ['Skin de móvel', 'Furniture skin'],
     deco: ['Decoração', 'Decoration'], look: ['Visual de herói', 'Hero look'], pet: ['Mascote', 'Pet'], login: ['Evento de login', 'Login event'],
-    community: ['Evento de comunidade', 'Community event'],
+    community: ['Evento de comunidade', 'Community event'], caprice: ['Loja do Capricho do Rei', 'King’s Caprice shop'],
   };
   const KIND_IC = { item: 'swords', furniture: 'box', skin: 'star', fskin: 'star', deco: 'star', look: 'star', pet: 'star', login: 'calendar' };
   const noDate = (d) => !d || d >= '2090';
@@ -52,8 +52,11 @@
         const g = loginByTheme.get(c.theme) || loginByTheme.get(c.id);
         if (g) all.push({ d: g.d, k: 'community', u: ST.icon(c.icon) ? c.icon : 'icon_news_header_community_event', n: c.name, comm: c, href: '#/comunidade-eventos?id=' + c.id });
       });
+      // loja de Fichas do Capricho do Rei: data em que cada projeto entra no sorteio (só dos últimos 30 dias em diante)
+      const capFrom = ST.addDays(ST.today(), -30);
+      ((evs.king || {}).shop || []).forEach((x) => { if (x.e >= capFrom) all.push({ d: x.e, k: 'caprice', u: x.u, n: x.n, href: '#/capricho' }); });
       // eventos primeiro, depois quem tem ícone (para a grade e a lista mostrarem os ícones dos eventos)
-      const PRI = { login: 0, community: 0.5, item: 1, furniture: 2, skin: 3, fskin: 4, deco: 5, look: 6, pet: 7 };
+      const PRI = { login: 0, community: 0.5, item: 1, caprice: 8, furniture: 2, skin: 3, fskin: 4, deco: 5, look: 6, pet: 7 };
       all.sort((a, b) => (PRI[a.k] ?? 9) - (PRI[b.k] ?? 9) || (ST.icon(b.u) ? 1 : 0) - (ST.icon(a.u) ? 1 : 0));
       const EV = (e) => e.k === 'login' || e.k === 'community';
       const icons = (list, n) => list.filter((e) => ST.icon(e.u)).slice(0, n);
