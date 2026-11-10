@@ -11,7 +11,7 @@ Lê as tabelas JSON de `ShopTitan_Data/resources.assets` e os sprites dos bundle
   site/img/items/<nome>.webp     ícones
   site/p/<pt|en>/...             páginas estáticas (buscadores e prévias de link)
   site/og/<uid>.jpg              imagens de prévia
-  site/sitemap.xml, robots.txt   quando houver --base-url (ou "baseUrl" em config.json)
+  site/robots.txt                sempre (bloqueia robôs de IA); site/sitemap.xml quando houver --base-url
 
 Opções extras: --base-url https://...  --no-pages  --force-og
 
@@ -34,7 +34,7 @@ from st.notify import notify_events, notify_patch
 from st.items import build_items
 from st.search import build_search
 from st.sections import SECTIONS
-from st.static import PAGE_LANGS, build_app_icons, build_og, build_pages
+from st.static import PAGE_LANGS, build_app_icons, build_og, build_pages, write_robots
 from st.snapshots import save_and_diff
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -112,6 +112,7 @@ def main():
         "gameVersion": version, "langs": list(LANGS), "baseUrl": base_url,
     })
     build_app_icons(SITE)
+    write_robots(SITE, base_url)  # sempre: bloqueio de robôs de IA mesmo sem páginas estáticas
     if not a.no_pages:
         hm = run_hm_static()
         for lang in pages_data:

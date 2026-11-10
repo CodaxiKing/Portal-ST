@@ -160,6 +160,24 @@ def _write(path, html):
         f.write(html)
 
 
+# Robôs de IA e de raspagem que não podem entrar (buscadores normais, como Google e Bing, continuam liberados).
+BLOCKED_BOTS = ("GPTBot", "ChatGPT-User", "OAI-SearchBot", "ClaudeBot", "Claude-User", "Claude-SearchBot", "anthropic-ai",
+                "CCBot", "Google-Extended", "PerplexityBot", "Perplexity-User", "Bytespider", "Amazonbot", "Applebot-Extended",
+                "meta-externalagent", "meta-webindexer", "FacebookBot", "cohere-ai", "Diffbot", "ImagesiftBot", "Omgilibot",
+                "Timpibot", "YouBot", "MJ12bot", "AhrefsBot", "SemrushBot", "DotBot", "DataForSeoBot", "PetalBot")
+
+
+def write_robots(site, base=""):
+    """robots.txt: bloqueia robôs de IA/raspagem e libera o resto (com o sitemap quando há URL pública)."""
+    lines = []
+    for bot in BLOCKED_BOTS:
+        lines += [f"User-agent: {bot}", "Disallow: /", ""]
+    lines += ["User-agent: *", "Allow: /"]
+    if base:
+        lines.append(f"Sitemap: {base.rstrip('/')}/sitemap.xml")
+    _write(os.path.join(site, "robots.txt"), "\n".join(lines) + "\n")
+
+
 def build_pages(site, by_lang, base):
     """by_lang[lang] = {"items": ..., "classes": [...], "champions": [...], "quests": [...]}"""
     urls = []
@@ -207,7 +225,7 @@ def build_pages(site, by_lang, base):
         sm = ['<?xml version="1.0" encoding="UTF-8"?>', '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
               f"<url><loc>{h(b)}</loc></url>"] + [f"<url><loc>{h(b + u)}</loc></url>" for u in urls] + ["</urlset>"]
         _write(os.path.join(site, "sitemap.xml"), "\n".join(sm))
-        _write(os.path.join(site, "robots.txt"), f"User-agent: *\nAllow: /\nSitemap: {b}sitemap.xml\n")
+        write_robots(site, base)
     log(f"páginas estáticas: {len(urls)}")
     return urls
 

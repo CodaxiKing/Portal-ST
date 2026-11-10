@@ -125,6 +125,14 @@ node tests/engine.test.js
 Seis testes do motor com números conferidos no jogo (fórmula de poder, Livro de Coleção, crítico/dano crítico/elemento do
 build real, melhor build do Astromante, Astromante em 1º, nenhuma troca de item/runa/espírito que melhore alguma classe).
 
+## Robôs de IA e raspagem
+
+- `site/robots.txt` é gerado em toda extração e pede para robôs de IA e de raspagem (GPTBot, ClaudeBot, CCBot, Perplexity,
+  Bytespider, Ahrefs, Semrush…) não entrarem; Google, Bing e os outros buscadores continuam liberados (com o sitemap
+  quando há `baseUrl`). A lista fica em `BLOCKED_BOTS`, em `extractor/st/static.py`.
+- Na VPS, o `deploy/Caddyfile.example` barra esses robôs de fato (resposta 403 pelo User-Agent, inclusive `curl`, `wget`
+  e bibliotecas de raspagem) e manda o cabeçalho `X-Robots-Tag: noai, noimageai`. No GitHub Pages só o `robots.txt` vale.
+
 ## Tamanho dos dados
 
 Cada idioma tem ~7 MB de dados, mas o visitante só baixa o idioma dele e só as seções da página aberta. O maior arquivo
