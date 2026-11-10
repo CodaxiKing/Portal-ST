@@ -65,6 +65,20 @@
       }).join('');
       const days = C.days.slice().sort((a, b) => a.family.localeCompare(b.family) || a.day - b.day);
       const themeName = (id) => (C.pools.find((p) => p.id === id) || {}).name || id;
+      // "tela" de um dia: moldura do tema (metade esquerda + espelho), faixa com o nome, categorias pedidas e a grade do carroção
+      const used = new Set(C.days.map((x) => x.map));
+      const unused = Object.entries(C.maps).filter(([id]) => !used.has(id)).sort((a, b) => a[0].localeCompare(b[0], undefined, { numeric: true }));
+      const scene = (th, m, label, on) => {
+        const bg = ST.icon('img_caravanBG_' + (th || 'default')), ban = ST.icon('img_caravan_minigame_banner_' + (th || 'default'));
+        const cells = String((m && m.map) || '').split(',');
+        const p = th && C.pools.find((x) => x.id === th);
+        const inner = `<div class="cvs-scene">${bg ? `<img class="cvs-bg l" src="${bg}" alt=""><img class="cvs-bg r" src="${bg}" alt="">` : ''}
+          <div class="cvs-ban">${ban ? `<img src="${ban}" alt="">` : ''}<span>${esc(p ? p.name.replace(/^(A )?Caravana (d[aoe]s? |do |de )?/i, '') : label)}</span></div>
+          <div class="cvs-map" style="--w:${(m && m.w) || 1}">${cells.map((c) => `<i class="${c === '1' ? 'on' : ''}"></i>`).join('')}</div>
+          ${p ? `<div class="cvs-want">${p.wanted.map((c) => `<span title="${esc(catName(c))}">${catIcon(c)}</span>`).join('')}</div>` : ''}</div>
+          <div class="cvs-cap"><b>${esc(label)}</b> · ${(m && m.n) || '?'} ${tr('quad.', 'sq.')}${m ? ` · ${m.w}×${m.l}` : ''}</div>`;
+        return th ? `<a class="cvs-card ${on ? 'on' : ''}" href="#/caravana${qs(o, { t: th })}">${inner}</a>` : `<div class="cvs-card">${inner}</div>`;
+      };
       el.innerHTML = ST.pageHead(t('caravan'), tr('Caravana de Pharoway (Stahl): cada dia pede “Itens Procurados” de algumas categorias. Aqui estão os itens que mais rendem em cada categoria pedida, pela qualidade e faixa de tier escolhidas.',
         'Pharoway Caravan (Stahl): each day asks for “Wanted Items” from a few categories. These are the items that pay the most in each requested category, for the chosen quality and tier range.')) +
         controls(o, tiers) +
@@ -81,7 +95,13 @@
               `Scores here are relative: item value × quality (×${dec(priceMult, 2)} price) × wanted bonus. The exact Voucher conversion is not in the files. “/sq.” helps pick what fits best in the grid.`))}
           ${ST.sec(tr('Calendário dos dias', 'Day schedule'), `<div class="list">${days.map((x) => `<a class="row link" href="#/caravana${qs(o, { t: x.theme })}"><span class="cv-rank">${x.day}</span>
             <div class="grow">${esc(themeName(x.theme))}</div><div class="r">${esc(x.family.replace('caravan', tr('rota ', 'route ')))} · ${(C.maps[x.map] || {}).n || '?'} ${tr('quad.', 'sq.')}</div></a>`).join('')}</div>`)}
-        </div>`;
+        </div>
+        ${ST.sec(tr('Telas das caravanas', 'Caravan screens'), `<div class="cvs-routes">${[...new Set(days.map((x) => x.family))].map((fam) => `<div class="cvs-route"><h4>${esc(fam.replace('caravan', tr('Rota ', 'Route ')))}</h4>
+          <div class="cvs-grid">${days.filter((x) => x.family === fam).map((x) => scene(x.theme, C.maps[x.map], `${tr('Dia', 'Day')} ${x.day}`, x.theme === theme.id)).join('')}</div></div>`).join('')}</div>`
+          + (unused.length ? `<h4 class="cvs-h">${tr('Grades nos arquivos que ainda não estão em nenhum dia', 'Grids in the files not used by any day yet')} (${unused.length})</h4>
+          <div class="cvs-grid">${unused.map(([id, m]) => scene('', m, id.replace('caravan', '#'), false)).join('')}</div>` : ''),
+          tr('Montadas com as imagens e as grades dos arquivos do jogo: fundo e faixa do tema, e os quadrados livres do carroção. As rotas se alternam e cada uma tem 5 dias; a data de cada rota vem do servidor da Kabam, não dos arquivos. Grades sem dia podem ser de caravanas futuras (ou antigas).',
+            'Built from the game files’ images and grids: theme background and banner, and the wagon’s free squares. Routes alternate and each has 5 days; each route’s date comes from Kabam’s server, not the files. Grids without a day may belong to future (or old) caravans.'))}`;
       bind(el, o, '#/caravana', () => ({ t: theme.id }));
     },
   });

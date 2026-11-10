@@ -887,3 +887,22 @@ a.hm-card2:hover { transform: translateY(-3px); box-shadow: var(--shadow-lift); 
 .lite *,.lite *::before,.lite *::after{animation:none!important;transition:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
 .lite .glow,.lite [class*="glow"]::before,.lite [class*="glow"]::after{display:none!important}
 .linkish{background:none;border:0;padding:0;color:inherit;text-decoration:underline;cursor:pointer;font:inherit}
+
+/* telas da Caravana */
+.cvs-routes{display:grid;gap:18px}
+.cvs-route h4,.cvs-h{margin:6px 0 10px}
+.cvs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+.cvs-card{display:grid;gap:6px;color:inherit;text-decoration:none;border-radius:16px;padding:6px;border:1px solid var(--line);background:var(--card);transition:transform .25s cubic-bezier(.16,1,.3,1),border-color .25s}
+a.cvs-card:hover{transform:translateY(-2px)}.cvs-card.on{border-color:var(--accent)}
+.cvs-scene{position:relative;aspect-ratio:5/4;border-radius:12px;overflow:hidden;background:#6b4a32}
+.cvs-bg{position:absolute;top:0;height:100%;width:50%;object-fit:cover}
+.cvs-bg.l{left:0;object-position:left top}.cvs-bg.r{right:0;object-position:left top;transform:scaleX(-1)}
+.cvs-ban{position:absolute;left:50%;top:3%;width:86%;transform:translateX(-50%);display:grid;place-items:center}
+.cvs-ban img{width:100%;display:block}
+.cvs-ban span{position:absolute;inset:0;display:grid;place-items:center;padding:0 14%;color:#fff;font-weight:700;font-size:.8rem;text-align:center;text-shadow:0 1px 2px rgba(0,0,0,.6);line-height:1.1}
+.cvs-map{position:absolute;left:50%;top:56%;transform:translate(-50%,-50%);display:grid;grid-template-columns:repeat(var(--w),1fr);gap:2px;width:62%;padding:6px;border-radius:8px;background:rgba(40,24,14,.55)}
+.cvs-map i{aspect-ratio:1;border-radius:2px}
+.cvs-map i.on{background:#f3dfb4;box-shadow:inset 0 0 0 1px rgba(90,60,30,.5)}
+.cvs-want{position:absolute;left:0;right:0;bottom:4%;display:flex;justify-content:center;gap:2px;flex-wrap:wrap;padding:0 10%}
+.cvs-want img{width:18px;height:18px;object-fit:contain;filter:drop-shadow(0 1px 1px rgba(0,0,0,.6))}
+.cvs-cap{font-size:.8rem;color:var(--muted);padding:0 4px}.cvs-cap b{color:var(--text)}
