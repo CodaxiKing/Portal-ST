@@ -283,8 +283,14 @@
     const elOptions = (x) => {
       if (!o.en) return [null];
       const opts = new Set(heroEls.slice(0, 2));
+      // elemento do item (afinidade): testa as melhores runas de CADA elemento de afinidade (por atributos e por valor de elemento)
       const affs = x.it.elementAffinity.map((a) => a.id);
-      const aff = anyEls.find((e) => affs.includes(e.el)); if (aff) opts.add(aff);
+      for (const id of affs) {
+        const list = id === 'all' ? anyEls : anyEls.filter((e) => e.el === id);
+        list.slice(0, 2).forEach((e) => opts.add(e));
+        const topVal = list.reduce((m, e) => (!m || e.val > m.val ? e : m), null);
+        if (topVal) opts.add(topVal);
+      }
       if (anyEls[0]) opts.add(anyEls[0]);
       return [...opts];
     };
@@ -443,6 +449,39 @@
     'Computed only from game data: stats × quality (item_power constants), Starforged, Ascension + Transcendence, enchantments with affinity (affinity_stat_bonus), hero element (enchantments and the items’ own element of the same element) unlocking skill tiers, innate skill + level-unlocked skill slots, item-type bonuses (also on evasion/crit when the skill affects secondary stats), ATK per element point, spirits ("this item only" effects per item) and Collection book (best class card). Power = ATK×0.8×(1 + crit×(crit dmg−1)) + DEF×1.2 + HP×5 + shield×3 + threat×(DEF×0.008 + HP×0.025). Not included: champions, seeds and boosters, which depend on the quest.');
   const qExtra = (o) => (o.tower && o.cr && o.cr !== 'off' ? { cr: o.cr } : {});
 
+  /* Para cada espaço: poder com a melhor runa do elemento do HERÓI × com a melhor runa do elemento do ITEM (afinidade),
+     mantendo o resto do build. Mostra qual rende mais e quanto. */
+  function runeCheck(b, P) {
+    if (!b.gear.some((g) => g && g.el)) return '';
+    const best = (k, list) => {
+      let top = null;
+      for (const e of list) {
+        const gear = b.gear.slice(); gear[k] = { ...b.gear[k], el: e };
+        const p = evaluate(b.ctx, gear, b.chosen).power;
+        if (!top || p > top.p) top = { e, p };
+      }
+      return top;
+    };
+    const rows = b.gear.map((g, k) => {
+      if (!g) return '';
+      const affs = g.x.it.elementAffinity.map((a) => a.id);
+      const heroL = P.elements.filter((e) => e.el === b.c.element);
+      const itemL = affs.includes('all') ? P.elements : P.elements.filter((e) => affs.includes(e.el));
+      const h = best(k, heroL), it = itemL.length ? best(k, itemL) : null;
+      const cell = (x) => (x ? `<span class="cell-item"><span class="hm-rune">${img(x.e.e.uid)}<em>${elIcon(x.e.el)}</em></span><span>${esc(x.e.e.name)}<br><span class="small muted">${nf(Math.round(x.p))}</span></span></span>` : `<span class="muted">${tr('sem afinidade', 'no affinity')}</span>`);
+      const win = !it ? 'hero' : it.p > h.p + 0.5 ? 'item' : h.p > it.p + 0.5 ? 'hero' : 'tie';
+      const diff = it ? Math.abs(it.p - h.p) : 0;
+      const verdict = win === 'tie' ? `<span class="muted">${tr('igual', 'same')}</span>`
+        : `<b class="ok">${win === 'item' ? tr('elemento do item', 'item element') : tr('elemento do herói', 'hero element')}</b>${it ? `<div class="small muted">+${nf(Math.round(diff))} (${dec(diff / Math.min(h.p, it.p) * 100, 2)}%)</div>` : ''}`;
+      return `<tr><td><span class="cell-item">${img(g.x.it.uid)}<span>${esc(g.x.it.name)}<br><span class="small muted">${affs.map((a) => elIcon(a)).join(' ') || '—'}</span></span></span></td>
+        <td>${cell(h)}</td><td>${cell(it)}</td><td>${verdict}</td></tr>`;
+    }).join('');
+    return ST.sec(tr('Runa: elemento do herói × elemento do item', 'Rune: hero element × item element'),
+      `<div class="table-wrap"><table class="data-table"><thead><tr><th>${t('items')}</th><th>${tr('Melhor runa do herói', 'Best hero rune')} ${elIcon(b.c.element)}</th><th>${tr('Melhor runa do item (afinidade)', 'Best item rune (affinity)')}</th><th>${tr('Rende mais', 'Gives more')}</th></tr></thead><tbody>${rows}</tbody></table></div>`,
+      tr('Troca só a runa daquele espaço e mantém o resto do build. A runa do elemento do item ganha o bônus de afinidade (atributos ×1,5 e +5 de elemento); a do herói soma elemento para liberar o tier das habilidades. O Hypermax já escolhe a melhor; esta tabela mostra a conta.',
+        'Swaps only that slot’s rune and keeps the rest of the build. The item-element rune gets the affinity bonus (stats ×1.5 and +5 element); the hero rune adds element to unlock skill tiers. Hypermax already picks the best; this table shows the math.'));
+  }
+
   function card(b, rank, o) {
     return `<a class="hm-card2" href="${o.href || `#/${o.route}/${b.c.uid}${optQuery(o, qExtra(o))}`}">
       <div class="hm-h"><div class="hm-cls">${img(b.c.icon)}</div><div class="hm-hn"><b>${esc(b.c.name)}</b>
@@ -583,6 +622,7 @@
           <div class="hm-detail">${card(b, rankOf(b), o)}
             <div>${ST.sec(tr('Habilidades', 'Skills'), skillRows ? `<div class="list">${skillRows}</div>` : `<p class="muted">${t('none')}</p>`)}
               ${ST.sec(tr('Equipamento', 'Gear'), `<div class="table-wrap"><table class="data-table"><thead><tr><th>${t('items')}</th><th>${tr('Elemento', 'Element')}</th><th>${tr('Espírito', 'Spirit')}</th></tr></thead><tbody>${gearRows}</tbody></table></div>`)}
+              ${runeCheck(b, P)}
               ${ST.stats([ST.stat(tr('Poder no placar', 'Leaderboard power'), nf(Math.round(b.power))),
                 ST.stat(tr('Poder no perfil do herói', 'Hero profile power'), nf(Math.round(b.profile.power))),
                 ST.stat(tr('ATQ / DEF / PV no perfil', 'ATK / DEF / HP on profile'), `${short(Math.round(b.profile.atk))} / ${short(Math.round(b.profile.def))} / ${short(Math.round(b.profile.hp))}`),
