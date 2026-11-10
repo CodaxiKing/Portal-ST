@@ -273,7 +273,7 @@
     document.querySelectorAll('[data-nav]').forEach((a) => a.classList.toggle('active', a.dataset.nav === (def.nav || head)));
     const act = document.querySelector('[data-nav].active');
     if (act) ST.openNavGroup(+act.closest('.nav-group').dataset.g);
-    else if (!document.querySelector('.nav-group.open')) ST.openNavGroup(0);
+    else if (!ST.navTouched && !document.querySelector('.nav-group.open')) ST.openNavGroup(0);
     document.title = (def.title ? def.title() + ' · ' : '') + 'Portal Shop Titans';
     el.innerHTML = ST.skeleton();
     try {
@@ -312,11 +312,15 @@
   function shell() {
     // menu em sanfona: só um grupo aberto por vez
     document.getElementById('nav').innerHTML = NAV.map(([g, links], gi) => `<div class="nav-group" data-g="${gi}">
-      <button class="nav-title" type="button" aria-expanded="false" aria-controls="ng${gi}"><span>${ST.t(g)}</span><span class="nav-count">${links.length}</span>${ST.ic('down', 'nav-chev')}</button>
+      <button class="nav-title" type="button" aria-expanded="false" aria-controls="ng${gi}"><span>${ST.t(g)}</span><span class="nav-count">${links.length}</span>${ST.ic('chev', 'nav-chev')}</button>
       <div class="nav-links" id="ng${gi}"><div>${links.map(([p, k]) => `<a href="#/${p}" data-nav="${p}" tabindex="-1">${ST.t(k)}</a>`).join('')}</div></div></div>`).join('');
     document.getElementById('nav').addEventListener('click', (e) => {
       const b = e.target.closest('.nav-title');
-      if (b) ST.openNavGroup(+b.parentElement.dataset.g);
+      if (!b) return;
+      // clicar no grupo aberto fecha; em outro, abre esse e fecha o anterior
+      const g = b.parentElement;
+      ST.navTouched = true;
+      ST.openNavGroup(g.classList.contains('open') ? -1 : +g.dataset.g);
     });
     const sel = document.getElementById('langSel');
     const avail = (ST.meta && ST.meta.langs) || ['pt', 'en'];
