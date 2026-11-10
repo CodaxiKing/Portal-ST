@@ -136,8 +136,8 @@
   ST.need = (...names) => Promise.all(names.map((n) => {
     if (!loaded[n]) {
       // meta.js sempre fresco; os demais versionados pela data da extração (evita cache velho após re-extrair)
-      const shared = ['diff', 'icons', 'meta', 'community', 'notes', 'caravan'].includes(n);
-      const v = n === 'meta' || n === 'community' || n === 'notes' || n === 'caravan' ? Date.now() : encodeURIComponent((ST.meta && ST.meta.generatedAt) || '');
+      const shared = ['diff', 'icons', 'meta', 'notes', 'caravan'].includes(n);
+      const v = n === 'meta' || n === 'notes' || n === 'caravan' ? Date.now() : encodeURIComponent((ST.meta && ST.meta.generatedAt) || '');
       loaded[n] = loadScript(`${shared ? `data/${n}.js` : `data/${lang}/${n}.js`}?v=${v}`).then(() => ST[n]);
     }
     return loaded[n];
@@ -295,7 +295,7 @@
       ['guilda', 'guild'], ['progressao', 'progression'], ['historias', 'stories'], ['skins', 'skins'], ['novidades', 'updates']]],
     ['rewardsNav', [['passes', 'passes'], ['recompensas', 'evRewards'], ['quadro', 'bounties'], ['loja', 'store'], ['expansoes', 'expansions'], ['sorte', 'luck']]],
     ['eventsNav', [['calendario', 'calendar'], ['cidadeouro', 'goldcity'], ['capricho', 'caprice'], ['comunidade-eventos', 'commEvents'], ['caravana', 'caravan'], ['invasao', 'airship'], ['tumba', 'tomb']]],
-    ['communityNav', [['hypermax', 'hypermax'], ['lancamentos', 'releases'], ['guildas', 'guilds'], ['players', 'players']]],
+    ['communityNav', [['hypermax', 'hypermax'], ['lancamentos', 'releases']]],
     ['tools', [['simulador', 'simulator'], ['qualidade', 'qualityCalc'], ['lucro', 'profit'], ['onde', 'whereToGet'],
       ['montador', 'builder'], ['grupos', 'partyByArea'], ['plano', 'craftPlan'], ['melhorias', 'upgradeCalc'], ['planejador', 'talentPlanner'], ['custos', 'upgradeCosts']]],
   ];

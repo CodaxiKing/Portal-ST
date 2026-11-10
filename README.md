@@ -29,12 +29,8 @@ Também no banco de dados: **Histórias** dos campeões (diálogos) e **Skins** 
   com o ícone do evento e as recompensas de cada dia. Eventos de comunidade do mesmo tema aparecem na mesma data (aproximada);
   Cidade Perdida de Ouro, Torre dos Titãs, Invasão Dracônica e Caravana ficam em "Eventos recorrentes" (sem data nos arquivos).
 
-**Comunidade (cadastrada no portal):**
-- **Guildas**: busca, membros, cargos, investimento total e por membro, níveis das construções da cidade, histórico e card de última atualização.
+**Comunidade:**
 - **Lançamentos**: itens e móveis com data de lançamento, incluindo os que ainda vão sair.
-- **Jogadores**: busca, guilda, nível, ouro investido, poder, histórico de atualizações.
-- Os dados ficam no navegador até você clicar em **Exportar arquivo** e substituir `site/data/community.js` (é esse arquivo que vai publicado).
-  Jogadores e guildas não existem nos arquivos do jogo; ficam nos servidores da Kabam.
 
 **Ferramentas:**
 - **Simulador de missão**: 400 simulações do grupo contra uma área ou andar da Tumba (com a maldição da profundidade):

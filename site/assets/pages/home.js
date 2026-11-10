@@ -14,7 +14,6 @@
     comparar: ['Até quatro itens lado a lado, com o melhor valor destacado.', 'Up to four items side by side, best value highlighted.'],
     onde: ['Melhor área para farmar cada material.', 'Best area to farm each material.'],
     encantamentos: ['Elementos e espíritos com bônus de afinidade.', 'Elements and spirits with affinity bonuses.'],
-    guildas: ['Pesquise guildas, membros e investimentos.', 'Search guilds, members and investments.'],
     players: ['Jogadores, nível, investimento e histórico.', 'Players, level, investment and history.'],
     passes: ['Recompensas e tarefas de cada passe.', 'Rewards and tasks of every pass.'],
     recompensas: ['Recompensas por pontos dos eventos de missão.', 'Points rewards of quest events.'],

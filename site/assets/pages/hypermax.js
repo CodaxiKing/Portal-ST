@@ -10,7 +10,7 @@
    - poder = ATQ×0,8×(1 + crítico×(dano crítico − 1)) + DEF×1,2 + PV×5 + escudo×3 + ameaça×(DEF×0,008 + PV×0,025) + escudo×evasão×0,025 */
 (() => {
   const { t, tr, esc, nf, img, short, dec } = ST;
-  ST.addI18n({ pt: { hypermax: 'Hypermax' }, en: { hypermax: 'Hypermax' } });
+  ST.addI18n({ pt: { hypermax: 'Hypermax', communityNav: 'Comunidade' }, en: { hypermax: 'Hypermax', communityNav: 'Community' } });
   const QN = [['Normal', 'Common'], ['Superior', 'Uncommon'], ['Magistral', 'Flawless'], ['Épico', 'Epic'], ['Lendário', 'Legendary']];
   const LEVELS = [50, 40, 35, 23, 100];
 
