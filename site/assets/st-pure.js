@@ -51,6 +51,89 @@
     return i.tier <= (a.maxTier || 0) && (!a.merchant || !i.level || i.level <= a.merchant + 5);
   };
 
+  /* ---------------------------------------------------------------- Caravana */
+  /* Ordem dos dias (rota 1 dias 1–5, rota 2 dias 1–5, …) e a data de cada um a partir de um dia marcado.
+     anchor = {date: 'AAAA-MM-DD', uid: 'caravan1_03', gap: dias sem caravana entre uma rota e outra}. */
+  ST.caravanOrder = (days) => days.slice().sort((a, b) => a.family.localeCompare(b.family, undefined, { numeric: true }) || a.day - b.day);
+  ST.caravanProject = function (days, anchor, from, count) {
+    const seq = ST.caravanOrder(days), n = seq.length, gap = Math.max(0, +(anchor && anchor.gap) || 0);
+    const k0 = seq.findIndex((x) => x.uid === (anchor && anchor.uid));
+    if (k0 < 0 || !anchor.date) return [];
+    // posição de cada dia num ciclo com "gap" dias vazios depois de cada rota
+    const fams = [...new Set(seq.map((x) => x.family))];
+    const slots = [];
+    fams.forEach((f) => { seq.filter((x) => x.family === f).forEach((x) => slots.push(x)); for (let g = 0; g < gap; g++) slots.push(null); });
+    const L = slots.length, s0 = slots.indexOf(seq[k0]);
+    const diff = (a, b) => Math.round((Date.parse(a + 'T12:00:00Z') - Date.parse(b + 'T12:00:00Z')) / 86400000);
+    const out = [];
+    for (let i = 0; out.length < count && i < count * 4 + L; i++) {
+      const date = ST.addDays(from, i);
+      const off = diff(date, anchor.date);
+      const x = slots[(((s0 + off) % L) + L) % L];
+      if (x) out.push({ date, day: x });
+    }
+    return n ? out : [];
+  };
+
+  /* Monta o carroção: encaixa itens (formatos do caravanItems) na grade do dia, até maxItems lugares com até "stack"
+     cópias em cada um. cands: [{id, s (pontos por cópia), sh: {w, l, map}, cats: [categorias procuradas que ele cumpre]}].
+     Guloso com várias ordens (densidade, valor, procurados primeiro) + reinícios aleatórios; fica com o melhor total. */
+  const shapeCells = (sh) => {
+    const m = String(sh.map || '1').split(','), w = +sh.w || 1, l = +sh.l || 1, out = [];
+    for (let r = 0; r < l; r++) for (let c = 0; c < w; c++) if (m[r * w + c] === '1') out.push([r, c]);
+    return out.length ? out : [[0, 0]];
+  };
+  const rotations = (cells, rotate) => {
+    const norm = (cs) => { const mr = Math.min(...cs.map((x) => x[0])), mc = Math.min(...cs.map((x) => x[1])); return cs.map(([r, c]) => [r - mr, c - mc]).sort((a, b) => a[0] - b[0] || a[1] - b[1]); };
+    const out = [norm(cells)];
+    if (rotate) { let cur = cells; for (let k = 0; k < 3; k++) { cur = cur.map(([r, c]) => [c, -r]); out.push(norm(cur)); } }
+    const seen = new Set();
+    return out.filter((cs) => { const key = JSON.stringify(cs); if (seen.has(key)) return false; seen.add(key); return true; });
+  };
+  ST.caravanPack = function (grid, cands, opt) {
+    const W = +grid.w, H = +grid.l, cellsMap = String(grid.map || '').split(',').map((x) => x === '1');
+    const maxItems = opt.maxItems || 10, stack = opt.stack || 1, wanted = opt.wanted || [], allBonus = opt.allBonus || 0;
+    const C = cands.map((x) => ({ ...x, rots: rotations(shapeCells(x.sh), opt.rotate), n: shapeCells(x.sh).length }));
+    const tryPlace = (free, it) => {
+      for (const rot of it.rots) for (let r = 0; r < H; r++) for (let c = 0; c < W; c++) {
+        let ok = true;
+        for (const [dr, dc] of rot) { const rr = r + dr, cc = c + dc; if (rr >= H || cc >= W || !free[rr * W + cc]) { ok = false; break; } }
+        if (ok) return rot.map(([dr, dc]) => (r + dr) * W + (c + dc));
+      }
+      return null;
+    };
+    const run = (order) => {
+      const free = cellsMap.slice(), placed = [];
+      for (const it of order) {
+        if (placed.length >= maxItems) break;
+        if (!opt.repeat && placed.some((p) => p.id === it.id)) continue;
+        const cells = tryPlace(free, it);
+        if (!cells) continue;
+        cells.forEach((k) => (free[k] = false));
+        placed.push({ id: it.id, cells, s: it.s * stack, cats: it.cats });
+      }
+      const covered = wanted.filter((w) => placed.some((p) => p.cats.includes(w)));
+      const all = wanted.length > 0 && covered.length === wanted.length;
+      const base = placed.reduce((a, p) => a + p.s, 0);
+      return { placements: placed, base, total: base * (all ? 1 + allBonus : 1), allWanted: all, covered, used: placed.reduce((a, p) => a + p.cells.length, 0) };
+    };
+    const byDensity = C.slice().sort((a, b) => b.s / b.n - a.s / a.n), byValue = C.slice().sort((a, b) => b.s - a.s);
+    const wantedFirst = [];
+    wanted.forEach((w) => { const best = byDensity.find((x) => x.cats.includes(w) && !wantedFirst.includes(x)); if (best) wantedFirst.push(best); });
+    const orders = [byDensity, byValue, [...wantedFirst, ...byDensity], [...wantedFirst, ...byValue]];
+    let seed = 7;
+    const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    const top = byDensity.slice(0, 40);
+    for (let k = 0; k < (opt.iters ?? 150); k++) {
+      const o = top.slice().sort((a, b) => b.s / b.n * (0.6 + rnd()) - a.s / a.n * (0.6 + rnd()));
+      orders.push(rnd() < 0.5 ? [...wantedFirst, ...o] : o);
+    }
+    let best = null;
+    for (const o of orders) { const r = run(o); if (!best || r.total > best.total) best = r; }
+    best.free = cellsMap.filter(Boolean).length;
+    return best;
+  };
+
   /* iCalendar (RFC 5545) com eventos de dia inteiro: [{uid, date: 'AAAA-MM-DD', title, desc}] */
   const icsEsc = (s) => String(s || '').replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
   const fold = (line) => { // linhas de no máximo 75 caracteres

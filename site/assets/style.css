@@ -912,3 +912,27 @@ a.cvs-card:hover{transform:translateY(-2px)}.cvs-card.on{border-color:var(--acce
 .cvs-strip{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
 .cvs-strip .cvs-ban span{font-size:.68rem}.cvs-strip .cvs-want img{width:14px;height:14px}
 @media (max-width:860px){.cvs-strip{grid-template-columns:repeat(5,160px);overflow-x:auto;padding-bottom:4px}}
+
+/* Caravana: hoje e montador */
+.cvt-days{display:grid;grid-template-columns:repeat(10,minmax(96px,1fr));gap:8px;overflow-x:auto;padding-bottom:4px}
+.cvt-day{display:grid;gap:2px;justify-items:center;text-align:center;padding:8px 6px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:inherit;text-decoration:none;font-size:.78rem}
+.cvt-day img{width:100%;max-width:110px}.cvt-day b{font-family:var(--mono)}.cvt-day small{color:var(--muted)}
+.cvt-day.now{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--card))}
+.cvs-date{font-family:var(--mono);font-size:.72rem;color:var(--muted)}.cvs-date.now{color:var(--accent);font-weight:700}
+.cvp{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:18px;align-items:start}
+.cvp-grid{display:grid;grid-template-columns:repeat(var(--w),1fr);gap:3px;padding:10px;border-radius:14px;background:#5a3c26;max-width:520px}
+.cvp-grid i{aspect-ratio:1;border-radius:4px;display:grid;place-items:center;font-style:normal}
+.cvp-grid i.x{background:transparent}.cvp-grid i.f{background:#f3dfb4;opacity:.55}
+.cvp-grid i.p{background:var(--c);box-shadow:inset 0 0 0 1px rgba(0,0,0,.25)}
+.cvp-grid i.p b{font:700 .75rem var(--mono);color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.6)}
+.cvp-n{min-width:22px;height:22px;border-radius:6px;display:grid;place-items:center;background:var(--c);color:#fff;font:700 .75rem var(--mono)}
+.k-caravan{color:#d7a24a}
+@media (max-width:860px){.cvp{grid-template-columns:1fr}.cvt-days{grid-template-columns:repeat(10,110px)}}
+.cvt-form[hidden]{display:none}
+
+/* dragões */
+.dr-grid{display:grid;grid-template-columns:auto repeat(var(--n),minmax(0,1fr));gap:6px;align-items:center}
+.dr-h{font-size:.6rem;color:var(--muted);text-align:center;text-transform:uppercase;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dr-age{font-size:.8rem;font-weight:600;padding-right:6px}
+.dr-cell{aspect-ratio:1;border-radius:10px;background:var(--bg-2);display:grid;place-items:center;overflow:hidden}
+.dr-cell img{width:100%;height:100%;object-fit:contain}

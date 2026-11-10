@@ -67,6 +67,26 @@ test('Capricho do Rei: loja com data de entrada = lançamento + atraso, e regras
   assert.ok(K.rules.types.length >= 20 && K.rules.shop.max === 6);
 });
 
+test('Caravana: datas a partir do dia marcado (com e sem pausa entre rotas)', () => {
+  const D = ST.events.caravan.days;
+  const p = ST.caravanProject(D, { date: '2026-11-10', uid: 'caravan1_03', gap: 0 }, '2026-11-10', 12);
+  assert.deepStrictEqual(p.slice(0, 4).map((x) => x.day.uid), ['caravan1_03', 'caravan1_04', 'caravan1_05', 'caravan2_01']);
+  assert.strictEqual(p[10].day.uid, 'caravan1_03', 'ciclo de 10 dias');
+  const g = ST.caravanProject(D, { date: '2026-11-10', uid: 'caravan1_05', gap: 2 }, '2026-11-10', 3);
+  assert.deepStrictEqual(g.map((x) => x.date), ['2026-11-10', '2026-11-13', '2026-11-14'], '2 dias sem caravana depois da rota');
+});
+
+test('Caravana: montador respeita a grade, o formato e o limite de lugares', () => {
+  const C = ST.events.caravan, grid = C.maps.caravan01, free = String(grid.map).split(',');
+  const items = ST.items.items.filter((i) => i.value > 0 && !['z', 'm', 'ma'].includes(i.type)).slice(0, 300);
+  const cands = items.map((i) => ({ id: i.uid, s: i.value, sh: C.shapes[i.uid] || C.shapes[i.type] || { w: 1, l: 1, map: '1' }, cats: [] }));
+  const r = ST.caravanPack(grid, cands, { maxItems: 10, stack: 3, wanted: [], rotate: false, repeat: true, iters: 30 });
+  assert.ok(r.placements.length <= 10 && r.placements.length > 0);
+  const used = new Set();
+  for (const pl of r.placements) for (const c of pl.cells) { assert.strictEqual(free[c], '1', 'só quadrados livres'); assert.ok(!used.has(c), 'sem sobreposição'); used.add(c); }
+  for (const pl of r.placements) assert.strictEqual(pl.cells.length, String((cands.find((x) => x.id === pl.id).sh.map || '1')).split(',').filter((x) => x === '1').length, 'formato inteiro');
+});
+
 test('busca: inclui passes, histórias, skins e eventos de login', () => {
   const kinds = new Set(ST.search.map((e) => e[0]));
   for (const k of ['i', 'k', 'a', 'h', 'n', 'l']) assert.ok(kinds.has(k), 'tipo ' + k);

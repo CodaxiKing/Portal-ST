@@ -571,17 +571,34 @@ def build_events(tables, T):
                           "progress": clean(T.get(f"community_event_progress_description_{uid}")),
                           "icon": f"icon_news_header_{uid}_community_event", "min": r.get("minContribution")})
     king, king_icons = _king(tables, T, c)
+    dragon, dragon_icons = _dragon(c)
+    king_icons |= dragon_icons
     ev_icons = king_icons | {x["icon"] for x in recurring} | {x["icon"] for x in community} | {
         "icon_lostcityofgold_puregold", "icon_goldcity_endless_event_bronze", "icon_goldcity_endless_event_silver",
         "icon_goldcity_endless_event_gold", "icon_news_header_goldcity", "icon_quest_goldcity_boss", "icon_global_grand_prize_goldcity_blueprint",
         "icon_news_header_community_event", "icon_news_header_titantower"}
     return {
-        "recurring": recurring, "community": community, "king": king,
+        "recurring": recurring, "community": community, "king": king, "dragon": dragon,
         "goldcity": {"info": info("goldcity"), "k": {k: num(v) for k, v in c.items() if re.search(r"goldcity|lcog|pure_?gold", k)}},
         "caravan": {"pools": pools, "days": days, "maps": maps, "shapes": shapes, "k": {x: num(c.get(x)) for x in ck}},
         "tower": {"mods": mods, "tomb": tomb, "curse": {k: c.get(f"tomb_curse_{k}_percentage") for k in ("hp", "atk", "def")},
                   "spiritQuestMult": num(c.get("spirit_quest_restriction_bonus_multiplier")) or 2},
     }, ev_icons
+
+
+def _dragon(c):
+    """Invasão Dracônica: só regras e retratos estão nos arquivos locais (vida e poder dos dragões vêm do servidor)."""
+    ages = ["young", "adult", "greater", "elder", "ancient"]
+    colors = ["red", "blue", "green", "white", "black", "gold"]
+    icons = {f"icon_dragoninvasion_{a}_{v}{col}_portrait" for a in ages for col in colors for v in ("", "mechadragon_")}
+    icons |= {"icon_dragoninvasion_airship", "icon_dragoninvasion_assault", "icon_global_dragoninvasion_airshippower", "icon_dragoninvasion_dragon_small"}
+    g = lambda k: num(c.get(f"quest_event_dragon_{k}"))
+    pairs = [[num(a), num(b)] for a, b in (x.split(",") for x in str(c.get("character_power_dragon_invasion_curve") or "").split(";") if "," in x)]
+    rules = {"prep": g("preparation_duration"), "attack": g("attack_duration"), "cycles": g("default_cycles"), "dragons": g("dragon_count"),
+             "heroes": g("adventurer_max"), "boosters": g("booster_max"), "heal": g("heal_time"),
+             "limits": {"easy": g("item_limit_easy"), "medium": g("item_limit_medium"), "hard": g("item_limit_hard"), "extreme": g("item_limit_extreme")},
+             "usedReset": g("used_list_reset"), "minLevel": num(c.get("dragon_invasion_min_level")), "curve": pairs}
+    return {"ages": ages, "colors": colors, "rules": rules}, icons
 
 
 def _king(tables, T, c):
