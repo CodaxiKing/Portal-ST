@@ -31,30 +31,24 @@ Também no banco de dados: **Histórias** dos campeões (diálogos) e **Skins** 
 
 **Comunidade (cadastrada no portal):**
 - **Guildas**: busca, membros, cargos, investimento total e por membro, níveis das construções da cidade, histórico e card de última atualização.
+- **Lançamentos**: itens e móveis com data de lançamento, incluindo os que ainda vão sair.
 - **Jogadores**: busca, guilda, nível, ouro investido, poder, histórico de atualizações.
 - Os dados ficam no navegador até você clicar em **Exportar arquivo** e substituir `site/data/community.js` (é esse arquivo que vai publicado).
   Jogadores e guildas não existem nos arquivos do jogo; ficam nos servidores da Kabam.
 
 **Ferramentas:**
-- **Minha conta**: projetos (até o tier X + exceções) e nível dos trabalhadores; lucro, Caravana, Invasão, Hypermax, Tumba e
-  simulador passam a usar só o que você tem (com um botão para desligar). Salvo no navegador.
 - **Simulador de missão**: 400 simulações do grupo contra uma área ou andar da Tumba (com a maldição da profundidade):
   chance de sucesso, chance de morte e nota SSS–D; “Melhor grupo” testa combinações dos heróis mais fortes. Modelo aproximado.
 - **Calculadora de qualidade**: chance de cada qualidade por fabricação (constantes do jogo + bônus do projeto e extras).
 - **Busca global** (Ctrl+K ou `/`): itens, classes, campeões, habilidades, missões, baús, móveis, mascotes, talentos,
   passes, histórias, skins, eventos de login e as próprias páginas do menu.
-- **Calculadora de fabricação**: árvore completa de materiais, com marcos, Forjado nas Estrelas e ascensão.
-- **Lista de fabricação**: vários itens somados; salva no navegador e compartilhável por link.
-- **Comparador**: até 4 itens lado a lado, com o melhor valor destacado.
 - **Ranking de lucro**: ouro/h, XP/h e ouro por recurso, ajustados pelo nível do trabalhador.
 - **Onde conseguir**: melhor área de missão (quantidade por hora) e baús para cada material.
-- **Encantamentos**: elementos e espíritos por equipamento, com o bônus de afinidade das constantes do jogo.
 - **Montador de herói**: mesmo motor do Hypermax. Em cada espaço: item, qualidade, runa de elemento e espírito; habilidades
   dos espaços liberados; Forjado nas Estrelas, Ascensão/Transcendência e Livro de Coleção. Mostra poder no perfil e no placar,
   a tabela de cálculo e as missões ao alcance. “Carregar build Hypermax” preenche o melhor build da classe. O build fica no
   link e pode ser compartilhado como imagem (PNG gerado no navegador); o Hypermax também tem os dois botões.
 - **Hypermax** (em Comunidade; calculado num Web Worker, sem travar a página): ficha de herói por classe com o equipamento, os encantamentos (elemento + espírito) e as habilidades (inata, espaços por nível, espíritos) de maior poder; ranking das 42 classes com HP, ATQ, DEF, escudo, evasão, crítico, dano crítico, ameaça e elemento.
-- **Comparar builds**: dois links do montador lado a lado, com a diferença de cada atributo e as peças trocadas.
 - **Grupos por área**: para cada área de missão, até que nível o grupo mais forte (Hypermax ou só os seus itens) chega.
 - **Plano de fabricação**: horas fora + espaços de fabricação → a fila que mais rende ouro ou XP, com limite opcional de recursos.
 - **Custo de melhorias**: vários itens com a meta de Ascensão, Transcendência e Forjado → Estilhaços, Selos, fabricações e atributos.
@@ -62,7 +56,6 @@ Também no banco de dados: **Histórias** dos campeões (diálogos) e **Skins** 
 - **Notas por item**: na ficha do item; ficam no navegador e podem ser exportadas para `site/data/notes.js` (notas da guilda).
 - **Planejador de talentos**: pontos por árvore, custo total e bônus; o plano fica no link.
 - **Custos de melhoria**: soma de vários níveis de móveis, construções, guilda e pontos de talento.
-- **Lançamentos**: itens e móveis com data de lançamento, incluindo os que ainda vão sair.
 
 **Para fora do site:**
 - Uma página estática por item, classe, campeão e área (`site/p/pt|en/...`), indexável por buscadores. As páginas de

@@ -1,4 +1,4 @@
-/* Ferramentas: calculadora de fabricação, ranking de lucro e montador de herói. */
+/* Ferramentas: ranking de lucro (e ST.effective, usado também pelo plano de fabricação). */
 (() => {
   const { t, tr, esc, nf, short, dur, pct, dec, img, icon } = ST;
 
@@ -26,72 +26,6 @@
     return { res, comps, time, value };
   }
   ST.effective = effective;
-
-  const itemPicker = (items, current, id = 'pick') => `<input class="inp" id="${id}" list="${id}-list" placeholder="${tr('Digite o nome do item…', 'Type an item name…')}" value="${esc(current ? current.name : '')}" style="min-width:260px">
-    <datalist id="${id}-list">${items.map((i) => `<option value="${esc(i.name)}">T${i.tier} · ${esc(ST.typeName(i.type))}</option>`).join('')}</datalist>`;
-
-  // ================================================================ calculadora
-  ST.page('calculadora', {
-    nav: 'calculadora', title: () => t('calculator'),
-    async render(el, [uid], query) {
-      const { d, by } = await ST.itemsIndex();
-      const craftable = d.items.filter((i) => !i.nonCraftable && (i.resources.length || i.components.length));
-      const item = by.get(uid);
-      const opt = { qty: Math.max(1, +(query.get('qty') || 1)), ms: query.get('ms') !== '0', sf: query.get('sf') === '1', asc: query.get('asc') === '1', expand: query.get('x') !== '0' };
-      const ctl = `<div class="form-row">
-        <label class="field">${t('items')}${itemPicker(craftable, item)}</label>
-        <label class="field">${t('qty')}<input type="number" id="qty" min="1" value="${opt.qty}"></label>
-        <label class="check"><input type="checkbox" id="ms" ${opt.ms ? 'checked' : ''}> ${tr('Marcos do projeto', 'Milestones')}</label>
-        <label class="check"><input type="checkbox" id="sf" ${opt.sf ? 'checked' : ''}> ${tr('Forjado nas Estrelas', 'Starforged')}</label>
-        <label class="check"><input type="checkbox" id="asc" ${opt.asc ? 'checked' : ''}> ${tr('Ascensão', 'Ascension')}</label>
-        <label class="check"><input type="checkbox" id="x" ${opt.expand ? 'checked' : ''}> ${tr('Fabricar sub-itens', 'Craft sub-items')}</label></div>`;
-      if (!item) {
-        el.innerHTML = ST.pageHead(t('calculator'), tr('Escolha um item para ver todos os materiais, do item final até os recursos brutos.', 'Pick an item to see every material, from the final item down to raw resources.')) + ctl;
-      } else {
-        const totals = { res: {}, quest: {}, crafts: {}, time: 0, workerTime: {}, value: 0 };
-        const add = (o, k, v) => (o[k] = (o[k] || 0) + v);
-        const expand = (it, qty, depth) => {
-          const e = effective(it, opt);
-          totals.time += e.time * qty;
-          if (e.time) it.workers.forEach((w) => add(totals.workerTime, w.id, e.time * qty));
-          if (depth > 0) add(totals.crafts, it.uid, qty);
-          e.res.filter((r) => r.qty > 0).forEach((r) => add(totals.res, r.id, r.qty * qty));
-          const kids = e.comps.filter((c) => c.qty > 0).map((c) => {
-            const sub = by.get(c.id);
-            const n = c.qty * qty;
-            if (sub && opt.expand && !sub.nonCraftable && (sub.resources.length || sub.components.length) && depth < 8) {
-              return `<li>${expand(sub, n, depth + 1)}</li>`;
-            }
-            add(totals.quest, c.id, n);
-            return `<li><span class="node">${img(c.id)} ${esc(ST.refName(c.id))} <b>× ${nf(n)}</b>${sub ? '' : ` <span class="small muted">${tr('drop de missão', 'quest drop')}</span>`}</span></li>`;
-          });
-          return `<span class="node">${img(it.uid)} <a href="#/item/${it.uid}">${esc(it.name)}</a> <b>× ${nf(qty)}</b>
-            <span class="small muted">${[...e.res.filter((r) => r.qty > 0).map((r) => `${nf(r.qty * qty)} ${esc(ST.refName(r.id))}`), e.time ? dur(e.time * qty) : ''].filter(Boolean).join(' · ')}</span></span>
-            ${kids.length ? `<ul>${kids.join('')}</ul>` : ''}`;
-        };
-        const tree = expand(item, opt.qty, 0);
-        const eTop = effective(item, opt);
-        const list = (o, fmt) => Object.entries(o).sort((a, b) => b[1] - a[1]).map(([k, v]) => `<div class="row">${icon(k) ? `<img src="${icon(k)}" alt="">` : ''}<div class="grow">${by.has(k) ? `<a href="#/item/${k}">${esc(ST.refName(k))}</a>` : esc(ST.refName(k))}</div><div class="r">${fmt(v)}</div></div>`).join('');
-        el.innerHTML = ST.pageHead(t('calculator'), '') + ctl + `
-          ${ST.stats([ST.stat(tr('Valor de venda', 'Sale value'), nf(Math.round(eTop.value * opt.qty)) + ' <i class="ic ic-coin"></i>', 'gold'),
-            ST.stat(tr('Tempo total de fabricação', 'Total crafting time'), dur(totals.time)), ST.stat(tr('Fabricações intermediárias', 'Intermediate crafts'), nf(Object.values(totals.crafts).reduce((a, b) => a + b, 0)))])}
-          <div class="two-col">
-            ${ST.sec(tr('Recursos brutos', 'Raw resources'), `<div class="list">${list(totals.res, nf)}</div>`)}
-            ${ST.sec(tr('Componentes (drops e itens não expandidos)', 'Components (drops and unexpanded items)'), Object.keys(totals.quest).length ? `<div class="list">${list(totals.quest, nf)}</div>` : `<p class="muted">${t('none')}</p>`)}
-            ${ST.sec(tr('Itens intermediários a fabricar', 'Intermediate items to craft'), Object.keys(totals.crafts).length ? `<div class="list">${list(totals.crafts, nf)}</div>` : `<p class="muted">${t('none')}</p>`)}
-            ${ST.sec(tr('Tempo por trabalhador', 'Time per worker'), `<div class="list">${list(totals.workerTime, dur)}</div>`, tr('Soma sequencial, sem bônus de nível do trabalhador.', 'Sequential sum, without worker level bonuses.'))}
-          </div>
-          ${ST.sec(tr('Árvore de fabricação', 'Crafting tree'), `<div class="tree"><ul><li>${tree}</li></ul></div>`)}`;
-      }
-      const sync = () => ST.setQuery({ qty: el.querySelector('#qty').value !== '1' ? el.querySelector('#qty').value : '', ms: el.querySelector('#ms').checked ? '' : '0',
-        sf: el.querySelector('#sf').checked ? '1' : '', asc: el.querySelector('#asc').checked ? '1' : '', x: el.querySelector('#x').checked ? '' : '0' });
-      el.querySelectorAll('#qty,#ms,#sf,#asc,#x').forEach((n) => n.addEventListener('change', () => { sync(); ST.rerender(); }));
-      el.querySelector('#pick').addEventListener('change', (e) => {
-        const it = craftable.find((i) => i.name === e.target.value);
-        if (it) { const qs = location.hash.split('?')[1]; location.hash = `#/calculadora/${it.uid}${qs ? '?' + qs : ''}`; }
-      });
-    },
-  });
 
   // ================================================================ lucro
   ST.page('lucro', {

@@ -3,12 +3,12 @@
 (() => {
   const { t, tr, esc, nf, short, dur, img, dec } = ST;
   ST.addI18n({
-    pt: { craftPlan: 'Plano de fabricação', upgradeCalc: 'Custo de melhorias', buildCompare: 'Comparar builds', partyByArea: 'Grupos por área', buildCard: 'Ficha de build' },
-    en: { craftPlan: 'Crafting plan', upgradeCalc: 'Upgrade costs (items)', buildCompare: 'Compare builds', partyByArea: 'Parties by area', buildCard: 'Build card' },
-    es: { craftPlan: 'Plan de fabricación', upgradeCalc: 'Coste de mejoras', buildCompare: 'Comparar builds', partyByArea: 'Grupos por zona', buildCard: 'Ficha de build' },
-    fr: { craftPlan: 'Plan de fabrication', upgradeCalc: 'Coût des améliorations', buildCompare: 'Comparer des builds', partyByArea: 'Groupes par zone', buildCard: 'Fiche de build' },
-    de: { craftPlan: 'Herstellungsplan', upgradeCalc: 'Verbesserungskosten', buildCompare: 'Builds vergleichen', partyByArea: 'Gruppen nach Gebiet', buildCard: 'Build-Karte' },
-    it: { craftPlan: 'Piano di creazione', upgradeCalc: 'Costo potenziamenti', buildCompare: 'Confronta build', partyByArea: 'Gruppi per zona', buildCard: 'Scheda build' },
+    pt: { craftPlan: 'Plano de fabricação', upgradeCalc: 'Custo de melhorias', partyByArea: 'Grupos por área', buildCard: 'Ficha de build' },
+    en: { craftPlan: 'Crafting plan', upgradeCalc: 'Upgrade costs (items)', partyByArea: 'Parties by area', buildCard: 'Build card' },
+    es: { craftPlan: 'Plan de fabricación', upgradeCalc: 'Coste de mejoras', partyByArea: 'Grupos por zona', buildCard: 'Ficha de build' },
+    fr: { craftPlan: 'Plan de fabrication', upgradeCalc: 'Coût des améliorations', partyByArea: 'Groupes par zone', buildCard: 'Fiche de build' },
+    de: { craftPlan: 'Herstellungsplan', upgradeCalc: 'Verbesserungskosten', partyByArea: 'Gruppen nach Gebiet', buildCard: 'Build-Karte' },
+    it: { craftPlan: 'Piano di creazione', upgradeCalc: 'Costo potenziamenti', partyByArea: 'Gruppi per zona', buildCard: 'Scheda build' },
   });
   const cur = (sprite, ic) => (ST.icon(sprite) ? `<img class="cur-img" src="${ST.icon(sprite)}" alt="">` : ST.ic(ic));
   const SHARD = () => cur('bp_upgrade', 'shard'), SEAL = () => cur('bp_upgrade02', 'seal');
@@ -139,42 +139,13 @@
     },
   });
 
-  // ================================================================ comparador de builds
-  const toQuery = (link) => new URLSearchParams(String(link || '').split('?')[1] || '');
-  ST.page('comparar-builds', {
-    nav: 'comparar-builds', title: () => t('buildCompare'),
-    async render(el, args, query) {
-      const A = query.get('a') || '', B = query.get('b') || '';
-      const RA = A ? await ST.buildFromQuery(toQuery(A)) : null, RB = B ? await ST.buildFromQuery(toQuery(B)) : null;
-      const stats = [['power', tr('Poder no placar', 'Leaderboard power'), (b) => b.power], ['profile', tr('Poder no perfil', 'Profile power'), (b) => b.profile.power],
-        ['atk', t('atk'), (b) => b.atk], ['def', t('def'), (b) => b.def], ['hp', t('hp'), (b) => b.hp], ['crit', tr('Crítico', 'Crit'), (b) => Math.min(b.crit, 1) * 100],
-        ['cm', tr('Dano crítico', 'Crit dmg'), (b) => b.cm], ['eva', tr('Evasão', 'Evasion'), (b) => b.eva * 100], ['E', tr('Elemento', 'Element'), (b) => b.E]];
-      const diff = (a, b) => { const dlt = b - a; const p = a ? (dlt / a) * 100 : 0; return dlt === 0 ? '<span class="muted">=</span>' : `<span class="${dlt > 0 ? 'ok' : 'bad'}">${dlt > 0 ? '+' : ''}${nf(Math.round(dlt * 100) / 100)} (${dlt > 0 ? '+' : ''}${dec(p, 1)}%)</span>`; };
-      const gearDiff = RA && RB ? RA.b.gear.map((g, k) => ({ k, a: g, b: RB.b.gear[k] })).filter((x) => (x.a && x.a.x.it.uid) !== (x.b && x.b.x.it.uid) || (x.a && x.a.el && x.a.el.e.uid) !== (x.b && x.b.el && x.b.el.e.uid) || (x.a && x.a.sp && x.a.sp.e.uid) !== (x.b && x.b.sp && x.b.sp.e.uid)) : [];
-      const gname = (g) => (g ? `${img(g.x.it.uid)} ${esc(g.x.it.name)}${g.el ? ` · ${esc(g.el.e.name)}` : ''}${g.sp ? ` · ${esc(g.sp.e.name)}` : ''}` : '—');
-      el.innerHTML = ST.pageHead(t('buildCompare'), tr('Cole dois links do Montador (botão “Copiar link do build”) para ver os builds lado a lado e a diferença de cada atributo.',
-        'Paste two Builder links (“Copy build link” button) to see the builds side by side and the difference in each stat.')) + `
-        <div class="form-row"><label class="field" style="flex:1">Build A<input class="inp" id="la" value="${esc(A)}" placeholder="#/montador?c=…"></label>
-          <label class="field" style="flex:1">Build B<input class="inp" id="lb" value="${esc(B)}" placeholder="#/montador?c=…"></label>
-          <button class="chip primary" id="cmp">${tr('Comparar', 'Compare')}</button></div>
-        ${RA || RB ? `<div class="two-col">${[RA, RB].map((R, i) => (R ? `<div>${ST.hmUI.card(R.b, i ? 'B' : 'A', { ...R.o, href: (i ? B : A).replace(/^.*#/, '#') })}</div>` : '<div></div>')).join('')}</div>` : ''}
-        ${RA && RB ? ST.sec(tr('Diferença (B − A)', 'Difference (B − A)'), `<div class="table-wrap"><table class="data-table"><thead><tr><th></th><th class="num">A</th><th class="num">B</th><th class="num">B − A</th></tr></thead><tbody>${stats.map(([k, label, f]) =>
-          `<tr><td>${label}</td><td class="num">${nf(Math.round(f(RA.b) * 100) / 100)}</td><td class="num">${nf(Math.round(f(RB.b) * 100) / 100)}</td><td class="num">${diff(f(RA.b), f(RB.b))}</td></tr>`).join('')}</tbody></table></div>`)
-          + (gearDiff.length ? ST.sec(tr('Peças diferentes', 'Different pieces'), `<div class="list">${gearDiff.map((x) => `<div class="row"><div class="grow"><div>A: ${gname(x.a)}</div><div>B: ${gname(x.b)}</div></div></div>`).join('')}</div>`) : '') : ''}`;
-      el.querySelector('#cmp').addEventListener('click', () => {
-        const clean = (v) => { const s = v.trim(); const i = s.indexOf('#/'); return i >= 0 ? s.slice(i) : s; };
-        ST.setQuery({ a: clean(el.querySelector('#la').value), b: clean(el.querySelector('#lb').value) }); ST.rerender();
-      });
-    },
-  });
-
   // ================================================================ grupos por área de missão
   ST.page('grupos', {
     nav: 'grupos', title: () => t('partyByArea'),
     async render(el) {
       const [zones] = await ST.need('quests');
-      el.innerHTML = ST.pageHead(t('partyByArea'), tr('Para cada área de missão: o nível mais alto que o grupo mais forte (Hypermax, ou só os seus itens com “Minha conta” ligada) alcança, e quem entra no grupo.',
-        'For each quest area: the highest level the strongest party reaches (Hypermax, or only your items with “My account” on), and who is in it.')) +
+      el.innerHTML = ST.pageHead(t('partyByArea'), tr('Para cada área de missão: o nível mais alto que o grupo mais forte (Hypermax) alcança, e quem entra no grupo.',
+        'For each quest area: the highest level the strongest party reaches (Hypermax), and who is in it.')) +
         `<div class="hm-progress"><div class="hm-pbar"><i style="--w:30%"></i></div><span class="small muted">${tr('Calculando os heróis…', 'Computing heroes…')}</span></div>`;
       const hash = location.hash;
       const builds = await ST.hmBuildsCached(false);
@@ -186,8 +157,8 @@
         const party = builds.slice(0, (top || lv[0]).party || 4);
         return { z, ok: ok.length, total: lv.length, top, next, party };
       });
-      el.innerHTML = ST.pageHead(t('partyByArea'), tr('Para cada área de missão: o nível mais alto que o grupo mais forte alcança e quem entra no grupo. Usa o motor do Hypermax; com “Minha conta” ligada, só os seus itens.',
-        'For each quest area: the highest level the strongest party reaches and who is in it. Uses the Hypermax engine; with “My account” on, only your items.')) +
+      el.innerHTML = ST.pageHead(t('partyByArea'), tr('Para cada área de missão: o nível mais alto que o grupo mais forte alcança e quem entra no grupo. Usa o motor do Hypermax.',
+        'For each quest area: the highest level the strongest party reaches and who is in it. Uses the Hypermax engine.')) +
         ST.table(rows, [
           { key: 'z', label: tr('Área', 'Area'), sort: (r) => r.z.name, fmt: (r) => `<a class="cell-item" href="#/missoes/${r.z.id}">${img(r.z.icon)}<span>${esc(r.z.name)}</span></a>` },
           { key: 'ok', label: tr('Níveis', 'Levels'), num: true, fmt: (r) => `<span class="${r.ok === r.total ? 'ok' : r.ok ? '' : 'bad'}">${r.ok}/${r.total}</span>` },

@@ -1,4 +1,4 @@
-/* Minha conta (perfil salvo no navegador), simulador de missão com montador de grupo e calculadora de qualidade. */
+/* Simulador de missão com montador de grupo e calculadora de qualidade. */
 (() => {
   const { t, tr, esc, nf, short, dur, img, dec } = ST;
   ST.addI18n({
@@ -10,71 +10,21 @@
   const KEY = 'st_account';
   const read = () => { try { return JSON.parse(localStorage.getItem(KEY)) || null; } catch (e) { return null; } };
   const write = (a) => { try { localStorage.setItem(KEY, JSON.stringify(a)); } catch (e) {} };
+  // "Minha conta" foi removida: o filtro por conta fica sempre desligado (as ferramentas usam todos os projetos)
   ST.account = {
-    get: read,
-    active: () => { const a = read(); return !!(a && a.on); },
+    get: () => null,
+    active: () => false,
     /* projeto desbloqueado? (sem perfil ativo: tudo liberado) */
     has(i) { return ST.profileHas(read(), i); },
     workerLevel(id) { const a = read(); return (a && a.on && a.workers && a.workers[id]) || null; },
   };
-  const toggleHTML = (on) => (ST.account.get() ? `<label class="check acc-tg"><input type="checkbox" data-acc ${on ? 'checked' : ''}> ${tr('Só o que eu tenho (Minha conta)', 'Only what I own (My account)')}</label>` : '');
+  const toggleHTML = (on) => (false && ST.account.get() ? `<label class="check acc-tg"><input type="checkbox" data-acc ${on ? 'checked' : ''}> ${tr('Só o que eu tenho (Minha conta)', 'Only what I own (My account)')}</label>` : '');
   ST.accountToggle = toggleHTML;
   ST.bindAccountToggle = (el) => {
     const c = el.querySelector('[data-acc]');
     if (c) c.addEventListener('change', () => { const a = read() || {}; a.on = c.checked; write(a); ST._hmCaches = {}; ST.rerender(); });
   };
 
-  ST.page('conta', {
-    nav: 'conta', title: () => t('account'),
-    async render(el) {
-      const { d, by } = await ST.itemsIndex();
-      const [w] = await ST.need('workers');
-      const a = read() || { on: true, maxTier: 0, merchant: 0, workers: {}, extra: [], hidden: [], heroes: [] };
-      const tiers = [...new Set(d.items.map((i) => i.tier))].filter(Boolean).sort((x, y) => x - y);
-      const maxW = (w.wlevels || []).length || 40;
-      const owned = d.items.filter((i) => ST.account.has(i) || !a.on);
-      el.innerHTML = ST.pageHead(t('account'), tr('Diga o que você já tem no jogo. As ferramentas (lucro, Caravana, Invasão, Hypermax, Tumba, simulador) passam a considerar só os seus projetos e trabalhadores. Fica salvo neste navegador.',
-        'Tell the portal what you already have in the game. The tools (profit, Caravan, Invasion, Hypermax, Tomb, simulator) then only use your blueprints and workers. Saved in this browser.')) + `
-        <form class="acc-form" id="acc">
-          <label class="check"><input type="checkbox" name="on" ${a.on ? 'checked' : ''}> ${tr('Usar meu perfil nas ferramentas', 'Use my profile in the tools')}</label>
-          <div class="form-row">
-            <label class="field">${tr('Nível do comerciante', 'Merchant level')}<input class="inp" type="number" min="0" max="120" name="merchant" value="${a.merchant || ''}"><span class="small muted">${tr('Opcional: esconde projetos de nível muito acima do seu.', 'Optional: hides blueprints far above your level.')}</span></label>
-            <label class="field">${tr('Tenho todos os projetos até o tier', 'I own every blueprint up to tier')}<select class="inp" name="maxTier"><option value="0">—</option>${tiers.map((x) => `<option ${x === a.maxTier ? 'selected' : ''}>${x}</option>`).join('')}</select></label>
-          </div>
-          ${ST.sec(tr('Exceções', 'Exceptions'), `<div class="form-row"><label class="field">${tr('Também tenho (acima do tier)', 'I also own (above the tier)')}<input class="inp" list="acc-items" id="addx" placeholder="${tr('Nome do projeto…', 'Blueprint name…')}"></label>
-            <label class="field">${tr('Não tenho (abaixo do tier)', 'I do not own (below the tier)')}<input class="inp" list="acc-items" id="addh" placeholder="${tr('Nome do projeto…', 'Blueprint name…')}"></label></div>
-            <datalist id="acc-items">${d.items.map((i) => `<option value="${esc(i.name)}">T${i.tier}</option>`).join('')}</datalist>
-            <div class="tags">${(a.extra || []).map((u) => by.get(u)).filter(Boolean).map((i) => `<span class="chip-item">${img(i.uid)}<span>+ ${esc(i.name)}</span><button type="button" class="acc-x" data-rmx="${i.uid}" aria-label="x">${ST.ic('close')}</button></span>`).join('')}
-            ${(a.hidden || []).map((u) => by.get(u)).filter(Boolean).map((i) => `<span class="chip-item acc-no">${img(i.uid)}<span>− ${esc(i.name)}</span><button type="button" class="acc-x" data-rmh="${i.uid}" aria-label="x">${ST.ic('close')}</button></span>`).join('')}</div>`)}
-          ${ST.sec(tr('Nível dos trabalhadores', 'Worker levels'), `<div class="acc-workers">${w.workers.map((x) => `<label class="field small"><span class="acc-wk">${img(x.icon)}${esc(x.name)}</span>
-            <input class="inp" type="number" min="1" max="${maxW}" name="w_${x.uid}" value="${(a.workers || {})[x.uid] || ''}"></label>`).join('')}</div>`, tr('Usado no ranking de lucro: o tempo de fabricação cai conforme o nível de cada trabalhador.', 'Used in the profit ranking: crafting time drops with each worker level.'))}
-          <div class="tags"><button class="chip primary" type="submit">${tr('Salvar perfil', 'Save profile')}</button><button class="chip" type="button" id="accClear">${tr('Apagar perfil', 'Delete profile')}</button>
-            <span class="small muted" id="accMsg"></span></div>
-        </form>
-        ${ST.stats([ST.stat(tr('Projetos considerados', 'Blueprints counted'), `${nf(owned.length)} / ${nf(d.items.length)}`), ST.stat(tr('Trabalhadores com nível', 'Workers with level'), nf(Object.keys(a.workers || {}).length))])}`;
-      const f = el.querySelector('#acc');
-      const save = (extra = {}) => {
-        const fd = new FormData(f);
-        const workers = {};
-        for (const [k, v] of fd.entries()) if (k.startsWith('w_') && v) workers[k.slice(2)] = Math.max(1, Math.min(maxW, +v));
-        write({ ...a, ...extra, on: !!fd.get('on'), merchant: +fd.get('merchant') || 0, maxTier: +fd.get('maxTier') || 0, workers });
-        ST._hmCaches = {};
-      };
-      f.addEventListener('submit', (e) => { e.preventDefault(); save(); el.querySelector('#accMsg').textContent = tr('Perfil salvo.', 'Profile saved.'); setTimeout(() => ST.rerender(), 400); });
-      const addBy = (inp, key) => inp.addEventListener('change', () => {
-        const it = d.items.find((i) => i.name === inp.value); if (!it) return;
-        save({ [key]: [...new Set([...(a[key] || []), it.uid])] }); ST.rerender();
-      });
-      addBy(el.querySelector('#addx'), 'extra'); addBy(el.querySelector('#addh'), 'hidden');
-      el.querySelectorAll('[data-rmx],[data-rmh]').forEach((b) => b.addEventListener('click', () => {
-        const key = b.dataset.rmx ? 'extra' : 'hidden', u = b.dataset.rmx || b.dataset.rmh;
-        save({ [key]: (a[key] || []).filter((x) => x !== u) }); ST.rerender();
-      }));
-      el.querySelector('#accClear').addEventListener('click', () => { if (confirm(tr('Apagar o perfil deste navegador?', 'Delete the profile from this browser?'))) { localStorage.removeItem(KEY); ST._hmCaches = {}; ST.rerender(); } });
-    },
-  });
-
-  // ---------------------------------------------------------------- simulador de missão
   /* Modelo aproximado (o jogo também simula 50 vezes; regras de combate exatas não estão nos arquivos):
      heróis atacam em ordem; monstro ataca um alvo escolhido pela ameaça (ou todos, no ataque em área);
      acerto = 1 − (evasão − precisão do monstro); dano recebido × multiplicador de defesa (DEF do herói vs DEF-alvo da missão:

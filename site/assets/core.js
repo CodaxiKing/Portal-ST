@@ -295,9 +295,9 @@
       ['guilda', 'guild'], ['progressao', 'progression'], ['historias', 'stories'], ['skins', 'skins'], ['novidades', 'updates']]],
     ['rewardsNav', [['passes', 'passes'], ['recompensas', 'evRewards'], ['quadro', 'bounties'], ['loja', 'store'], ['expansoes', 'expansions'], ['sorte', 'luck']]],
     ['eventsNav', [['calendario', 'calendar'], ['cidadeouro', 'goldcity'], ['capricho', 'caprice'], ['comunidade-eventos', 'commEvents'], ['caravana', 'caravan'], ['invasao', 'airship'], ['tumba', 'tomb']]],
-    ['communityNav', [['hypermax', 'hypermax'], ['guildas', 'guilds'], ['players', 'players']]],
-    ['tools', [['conta', 'account'], ['simulador', 'simulator'], ['qualidade', 'qualityCalc'], ['calculadora', 'calculator'], ['lista', 'craftList'], ['comparar', 'compare'], ['lucro', 'profit'], ['onde', 'whereToGet'],
-      ['encantamentos', 'enchantPlanner'], ['montador', 'builder'], ['comparar-builds', 'buildCompare'], ['grupos', 'partyByArea'], ['plano', 'craftPlan'], ['melhorias', 'upgradeCalc'], ['planejador', 'talentPlanner'], ['custos', 'upgradeCosts'], ['lancamentos', 'releases']]],
+    ['communityNav', [['hypermax', 'hypermax'], ['lancamentos', 'releases'], ['guildas', 'guilds'], ['players', 'players']]],
+    ['tools', [['simulador', 'simulator'], ['qualidade', 'qualityCalc'], ['lucro', 'profit'], ['onde', 'whereToGet'],
+      ['montador', 'builder'], ['grupos', 'partyByArea'], ['plano', 'craftPlan'], ['melhorias', 'upgradeCalc'], ['planejador', 'talentPlanner'], ['custos', 'upgradeCosts']]],
   ];
   ST.NAV = NAV;
   ST.openNavGroup = (gi) => {

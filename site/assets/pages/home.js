@@ -56,7 +56,7 @@
     montador: ['Classe, nível e equipamento: veja os atributos finais, o poder e quais missões o grupo alcança.',
       'Class, level and gear: see final stats, power and which quests the party can reach.'],
   };
-  const FEATURED = ['conta', 'simulador', 'calculadora'];
+  const FEATURED = ['hypermax', 'simulador', 'calendario'];
   // ícones do mosaico (os que não existirem são ignorados)
   const MOSAIC = ['aegiraxe', 'cc_sundragon', 'anubisstaff', 'celestialhelm', 'arcadesword', 'aegirshield', 'blossombow', 'castlestaff',
     'berserkerhelm', 'cc_moondragon', 'artifactsword', 'battleaxe', 'chest_forest', 'shortsword', 'beeshield', 'christmasstaff'];
@@ -90,7 +90,7 @@
               'Items, heroes, quests, chests and talents read from the local install, plus crafting, profit and hero-building calculators.')}</p>
             <div class="hero-acts">
               <a class="btn primary" href="#/itens">${tr('Explorar itens', 'Browse items')} ${ST.ic('right')}</a>
-              <a class="btn" href="#/calculadora">${ST.ic('hammer')} ${t('calculator')}</a>
+              <a class="btn" href="#/hypermax">${ST.ic('star')} ${t('hypermax')}</a>
             </div>
             <div class="hero-stats">
               <div><b data-count="items">${num('items')}</b><span>${t('items')}</span></div>

@@ -278,10 +278,7 @@
       ${i.desc ? `<p class="d-desc">${clean(i.desc)}</p>` : ''}
       ${ST.tags(tags)}
       ${ty.effect ? `<p class="note">${clean(ty.effect).replace('{0}', '')}</p>` : ''}
-      <div class="tags" style="margin-top:12px">${!i.nonCraftable && (i.resources.length || i.components.length) ? `<a class="chip" href="#/calculadora/${i.uid}"><i class="ic ic-hammer"></i> ${t('calculator')}</a>
-        <button class="chip" data-act="list" data-uid="${i.uid}">${tr('Adicionar à lista', 'Add to list')}</button>` : ''}
-        <button class="chip" data-act="cmp" data-uid="${i.uid}">${tr('Comparar', 'Compare')}</button>
-        ${['weapon', 'armor', 'accessory'].includes(i.cat) && (i.elementAffinity.length || i.spiritAffinity.length) ? `<a class="chip" href="#/encantamentos?m=item&i=${i.uid}">${tr('Encantamentos', 'Enchantments')}</a>` : ''}
+      <div class="tags" style="margin-top:12px">
         <a class="chip" href="p/${ST.ui}/item/${i.uid}.html" title="${tr('Página para compartilhar', 'Shareable page')}">${tr('Compartilhar', 'Share')}</a></div>
       ${hasUp ? `<section class="sec vp" data-uid="${i.uid}"><h3>${tr('Valores', 'Values')}</h3>
         <div class="seg" role="tablist">${[['base', 'Base'], ['asc', tr('Ascensão', 'Ascension')], ['tr', tr('Transcendência', 'Transcendence')]]
@@ -344,9 +341,5 @@
       if (m) { vpState.mode = m.dataset.mode; vpState.step = 3; vpRender(vp); return; }
       if (st) { vpState.step = +st.dataset.step; vpRender(vp); return; }
     }
-    const b = e.target.closest('[data-act]');
-    if (!b) return;
-    if (b.dataset.act === 'list') { const n = ST.listAdd(b.dataset.uid, 1); b.innerHTML = `${ST.ic('check')} ${ST.tr('Na lista', 'In list')} (${n}) · <u>${ST.tr('abrir', 'open')}</u>`; b.onclick = () => (location.hash = '#/lista'); }
-    if (b.dataset.act === 'cmp') location.hash = ST.compareAdd(b.dataset.uid);
   });
 })();
