@@ -909,3 +909,6 @@ a.cvs-card:hover{transform:translateY(-2px)}.cvs-card.on{border-color:var(--acce
 
 .k-caprice{color:#c9a14a}
 .kc-tro img{width:22px;height:22px;object-fit:contain}
+.cvs-strip{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.cvs-strip .cvs-ban span{font-size:.68rem}.cvs-strip .cvs-want img{width:14px;height:14px}
+@media (max-width:860px){.cvs-strip{grid-template-columns:repeat(5,160px);overflow-x:auto;padding-bottom:4px}}

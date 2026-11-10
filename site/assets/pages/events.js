@@ -81,6 +81,10 @@
       };
       el.innerHTML = ST.pageHead(t('caravan'), tr('Caravana de Pharoway (Stahl): cada dia pede “Itens Procurados” de algumas categorias. Aqui estão os itens que mais rendem em cada categoria pedida, pela qualidade e faixa de tier escolhidas.',
         'Pharoway Caravan (Stahl): each day asks for “Wanted Items” from a few categories. These are the items that pay the most in each requested category, for the chosen quality and tier range.')) +
+        ST.sec(tr('Padrão das caravanas (caravanDays)', 'Caravan pattern (caravanDays)'), `<div class="cvs-routes">${[...new Set(days.map((x) => x.family))].map((fam) => `<div class="cvs-route"><h4>${esc(fam.replace('caravan', tr('Rota ', 'Route ')))}</h4>
+          <div class="cvs-strip">${days.filter((x) => x.family === fam).map((x) => scene(x.theme, C.maps[x.map], `${tr('Dia', 'Day')} ${x.day}`, x.theme === theme.id)).join('')}</div></div>`).join('')}</div>`,
+          tr('O arquivo caravanDays define, para cada rota e dia, o tema (categorias pedidas) e a grade do carroção usada. As rotas se alternam e cada uma tem 5 dias; a data de início vem do servidor da Kabam. Clique num dia para ver os melhores itens dele.',
+            'The caravanDays file sets, for each route and day, the theme (wanted categories) and the wagon grid used. Routes alternate and each has 5 days; the start date comes from Kabam’s server. Click a day to see its best items.')) +
         controls(o, tiers) +
         ST.tabs(C.pools.map((p) => [`#/caravana${qs(o, { t: p.id })}`, esc(p.name.replace(/^(A )?Caravana (d[aoe]s? |do |de )?/i, ''))]), `#/caravana${qs(o, { t: theme.id })}`) +
         `<div class="cv-grid">${sections}</div>
@@ -96,12 +100,9 @@
           ${ST.sec(tr('Calendário dos dias', 'Day schedule'), `<div class="list">${days.map((x) => `<a class="row link" href="#/caravana${qs(o, { t: x.theme })}"><span class="cv-rank">${x.day}</span>
             <div class="grow">${esc(themeName(x.theme))}</div><div class="r">${esc(x.family.replace('caravan', tr('rota ', 'route ')))} · ${(C.maps[x.map] || {}).n || '?'} ${tr('quad.', 'sq.')}</div></a>`).join('')}</div>`)}
         </div>
-        ${ST.sec(tr('Telas das caravanas', 'Caravan screens'), `<div class="cvs-routes">${[...new Set(days.map((x) => x.family))].map((fam) => `<div class="cvs-route"><h4>${esc(fam.replace('caravan', tr('Rota ', 'Route ')))}</h4>
-          <div class="cvs-grid">${days.filter((x) => x.family === fam).map((x) => scene(x.theme, C.maps[x.map], `${tr('Dia', 'Day')} ${x.day}`, x.theme === theme.id)).join('')}</div></div>`).join('')}</div>`
-          + (unused.length ? `<h4 class="cvs-h">${tr('Grades nos arquivos que ainda não estão em nenhum dia', 'Grids in the files not used by any day yet')} (${unused.length})</h4>
-          <div class="cvs-grid">${unused.map(([id, m]) => scene('', m, id.replace('caravan', '#'), false)).join('')}</div>` : ''),
-          tr('Montadas com as imagens e as grades dos arquivos do jogo: fundo e faixa do tema, e os quadrados livres do carroção. As rotas se alternam e cada uma tem 5 dias; a data de cada rota vem do servidor da Kabam, não dos arquivos. Grades sem dia podem ser de caravanas futuras (ou antigas).',
-            'Built from the game files’ images and grids: theme background and banner, and the wagon’s free squares. Routes alternate and each has 5 days; each route’s date comes from Kabam’s server, not the files. Grids without a day may belong to future (or old) caravans.'))}`;
+        ${unused.length ? ST.sec(`${tr('Grades nos arquivos que ainda não estão em nenhum dia', 'Grids in the files not used by any day yet')} (${unused.length})`,
+          `<div class="cvs-grid">${unused.map(([id, m]) => scene('', m, id.replace('caravan', '#'), false)).join('')}</div>`,
+          tr('Grades que existem nos arquivos mas que nenhum dia do caravanDays usa: podem ser de caravanas futuras (ou antigas).', 'Grids in the files that no caravanDays entry uses: they may belong to future (or old) caravans.')) : ''}`;
       bind(el, o, '#/caravana', () => ({ t: theme.id }));
     },
   });
