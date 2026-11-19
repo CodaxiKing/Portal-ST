@@ -1,0 +1,4 @@
+# só o site e o Caddyfile entram na imagem
+*
+!site
+!deploy/Caddyfile.docker

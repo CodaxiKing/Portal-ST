@@ -30,3 +30,14 @@ sudo systemctl reload caddy
 
 Recomendação: use uma conta da Steam só para isso (o jogo é grátis), porque a sessão fica salva no servidor.
 Aviso no Discord: coloque `"discordWebhook": "https://discord.com/api/webhooks/..."` em `extractor/config.json`.
+
+## Coolify / Docker
+
+O `Dockerfile` na raiz monta uma imagem com o Caddy servindo a pasta `site/` (regras em `deploy/Caddyfile.docker`,
+iguais às do `Caddyfile.example`). No Coolify: Build Pack **Dockerfile**, Base Directory `/`, Ports Exposes **80**.
+O domínio e o HTTPS ficam no proxy do Coolify. A imagem só publica o que já está em `site/` no repositório;
+a extração dos dados continua sendo feita fora dela (`extractor/update.sh` ou `update.ps1`, com push).
+
+```bash
+docker build -t portal-st . && docker run --rm -p 8080:80 portal-st   # http://localhost:8080
+```
