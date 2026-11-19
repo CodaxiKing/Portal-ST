@@ -75,6 +75,9 @@ ST.addI18n({
   },
 });
 
+/* GERADO: idiomas adicionais */
+ST.addI18n({});
+
 /* Textos longos das páginas: carregados só para o idioma escolhido (antes das páginas, por isso document.write). */
 (() => {
   if (ST.lang === 'pt' || ST.lang === 'en') return; // português e inglês vêm no próprio código das páginas
