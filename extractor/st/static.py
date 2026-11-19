@@ -75,7 +75,7 @@ def _page(lang, title, desc, body, rel, canonical, alternates, og_image, base):
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400..700&family=Geist+Mono:wght@400..600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{rel}assets/style.css"><link rel="stylesheet" href="{rel}assets/static.css">
 </head><body class="static">
-<header class="topbar"><div class="topbar-inner"><a class="brand" href="{rel}index.html?lang={lang}#/"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 2.8 20 7v6.2c0 4.2-3.4 7-8 8-4.6-1-8-3.8-8-8V7z"/><path d="M12 7.5v9M8.5 11h7"/></svg></span><span>{U['home']}</span></a></div></header>
+<header class="topbar"><div class="topbar-inner"><a class="brand" href="{rel}index.html?lang={lang}#/"><img class="brand-logo" src="{rel}img/brand/logo-sm.webp" alt="Portal ST" width="72" height="48"><span>{U['home']}</span></a></div></header>
 <main class="static-main">{body}</main>
 <footer class="foot">{U['fan']}</footer>
 </body></html>"""
@@ -285,8 +285,29 @@ def og_item(icon_path, it, out):
     im.save(out, "JPEG", quality=80, optimize=True, progressive=True)
 
 
-def og_default(out):
+def _logo(site):
+    """Logo do portal (site/img/brand/logo.webp), ou None se o arquivo não existir."""
+    from PIL import Image
+    path = os.path.join(site, "img", "brand", "logo.webp")
+    return Image.open(path).convert("RGBA") if os.path.exists(path) else None
+
+
+def _fit(logo, w, h):
+    from PIL import Image
+    k = min(w / logo.width, h / logo.height)
+    return logo.resize((max(1, round(logo.width * k)), max(1, round(logo.height * k))), Image.LANCZOS)
+
+
+def og_default(out, logo=None):
     im, d = _base_canvas()
+    if logo:
+        lg = _fit(logo, 760, 470)
+        im.paste(lg, ((1200 - lg.width) // 2, 40), lg)
+        txt = "Shop Titans · Items · Heroes · Quests · Calculators"
+        f = _font(FONT_REG, 30)
+        d.text(((1200 - d.textlength(txt, font=f)) / 2, 548), txt, font=f, fill=MUTED)
+        im.save(out, "JPEG", quality=85, optimize=True)
+        return
     d.polygon([(300, 170), (420, 230), (420, 330), (300, 460), (180, 330), (180, 230)], outline=GOLD, width=10)
     d.line([(300, 250), (300, 390)], fill=GOLD, width=10)
     d.line([(245, 305), (355, 305)], fill=GOLD, width=10)
@@ -305,8 +326,9 @@ def build_og(site, items, force=False):
         sig = json.load(open(sig_path, encoding="utf-8"))
     except (OSError, ValueError):
         sig = {}
-    if force or not os.path.exists(os.path.join(folder, "default.jpg")):
-        og_default(os.path.join(folder, "default.jpg"))
+    default, logo_path = os.path.join(folder, "default.jpg"), os.path.join(site, "img", "brand", "logo.webp")
+    if force or not os.path.exists(default) or (os.path.exists(logo_path) and os.path.getmtime(logo_path) > os.path.getmtime(default)):
+        og_default(default, _logo(site))
     made = 0
     for it in items["items"]:
         key = hashlib.sha1(json.dumps([it["tier"], it["level"], it["value"], it["stats"]], sort_keys=True).encode()).hexdigest()[:10]
@@ -325,8 +347,15 @@ def build_app_icons(site):
     from PIL import Image, ImageDraw
     folder = os.path.join(site, "icons")
     os.makedirs(folder, exist_ok=True)
+    logo = _logo(site)
     for size, pad in ((192, 0), (512, 0), (512, 0.12)):
         im = Image.new("RGB", (size, size), BG)
+        name = f"icon-{size}{'-maskable' if pad else ''}.png"
+        if logo:  # logo centralizada no fundo escuro (a versão maskable tem mais margem)
+            lg = _fit(logo, size * (0.74 if pad else 0.94), size * (0.74 if pad else 0.94))
+            im.paste(lg, ((size - lg.width) // 2, (size - lg.height) // 2), lg)
+            im.save(os.path.join(folder, name), "PNG", optimize=True)
+            continue
         d = ImageDraw.Draw(im)
         s = size / 512
         inset = int(size * pad)

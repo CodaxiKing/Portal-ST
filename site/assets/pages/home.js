@@ -84,6 +84,7 @@
 
       el.innerHTML = `<section class="home-hero">
           <div>
+            <img class="hero-logo" src="img/brand/logo.webp" alt="Portal ST" width="900" height="607">
             <span class="eyebrow"><span class="pulse"></span>${tr('Dados do jogo', 'Game data')} v${esc(ver)}${when ? `<span class="eb-date"> · ${esc(when)}</span>` : ''}</span>
             <h1>${tr('Todo o Shop Titans, <em>direto dos arquivos</em> do jogo.', 'All of Shop Titans, <em>straight from</em> the game files.')}</h1>
             <p>${tr('Itens, heróis, missões, baús e talentos lidos da instalação local, mais calculadoras de fabricação, lucro e montagem de heróis.',

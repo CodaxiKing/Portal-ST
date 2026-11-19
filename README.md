@@ -92,6 +92,11 @@ shoptitans-portal/
    └─ img/items/*.webp
 ```
 
+## Logo
+
+A logo fica em `site/img/brand/logo.webp` (e `logo-sm.webp`, usada no cabeçalho). Os ícones do app (`site/icons/`) e a
+prévia padrão (`site/og/default.jpg`) são gerados a partir dela em toda extração; para trocar a logo, substitua esses dois arquivos.
+
 ## Publicar (GitHub Pages)
 
 O workflow `.github/workflows/pages.yml` publica a pasta `site/` a cada push na `main`.
