@@ -1,0 +1,79 @@
+# Atualiza os dados do jogo sozinho: a cada 6 h confere o build público do Shop Titans na Steam;
+# se mudou, baixa o jogo com o SteamCMD, roda o extrator e faz commit + push na main
+# (o Coolify, ou o GitHub Pages, publica a partir desse push).
+#
+# Conta da Steam: tenta "anonymous". Se a Steam recusar, crie em Settings > Secrets and variables > Actions
+# os segredos STEAM_USER e STEAM_PASS de uma conta só para isso, com o Shop Titans na biblioteca e SEM Steam Guard.
+name: Atualizar dados do jogo
+
+on:
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Extrair mesmo que o build não tenha mudado"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-data
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Conferir o build público na Steam
+        id: check
+        env:
+          FORCE: ${{ inputs.force }}
+        run: |
+          last="$(cat extractor/.last_build 2>/dev/null || true)"
+          build="$(curl -fsS --max-time 30 https://api.steamcmd.net/v1/info/1258080 | jq -r '.data["1258080"].depots.branches.public.buildid // empty' || true)"
+          echo "último extraído: ${last:-nenhum} · build na Steam: ${build:-desconhecido}"
+          if [ -n "$build" ] && [ "$build" = "$last" ] && [ "$FORCE" != "true" ]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Instalar o SteamCMD
+        if: steps.check.outputs.run == 'true'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq lib32gcc-s1 rsync fonts-dejavu
+          mkdir -p "$HOME/steamcmd"
+          curl -fsSL https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz | tar xz -C "$HOME/steamcmd"
+
+      - uses: actions/setup-python@v5
+        if: steps.check.outputs.run == 'true'
+        with:
+          python-version: "3.12"
+
+      - name: Baixar o jogo, extrair e publicar
+        if: steps.check.outputs.run == 'true'
+        env:
+          STEAM_USER: ${{ secrets.STEAM_USER }}
+          STEAM_PASS: ${{ secrets.STEAM_PASS }}
+          GAME_DIR: ${{ runner.temp }}/shoptitans
+          GIT_PUSH: "1"
+          FORCE: ${{ inputs.force && '1' || '0' }}
+        run: |
+          export STEAMCMD="$HOME/steamcmd/steamcmd.sh"
+          [ -n "$STEAM_USER" ] || unset STEAM_USER STEAM_PASS
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          bash extractor/update.sh
+
+      - name: Mostrar o log se falhar
+        if: failure()
+        run: tail -n 80 extractor/update.log || true
