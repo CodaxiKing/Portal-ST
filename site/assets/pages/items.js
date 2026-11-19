@@ -48,8 +48,8 @@
     if (s.atk) out.push(`<span class="s-atk">${t('atk')} ${nf(s.atk)}</span>`);
     if (s.def) out.push(`<span class="s-def">${t('def')} ${nf(s.def)}</span>`);
     if (s.hp) out.push(`<span class="s-hp">${t('hp')} ${nf(s.hp)}</span>`);
-    if (s.eva) out.push(`<span class="s-eva">ESQ ${pct(s.eva)}</span>`);
-    if (s.crit) out.push(`<span class="s-crit">CRIT ${pct(s.crit)}</span>`);
+    if (s.eva) out.push(`<span class="s-eva">${tr('ESQ', 'EVA')} ${pct(s.eva)}</span>`);
+    if (s.crit) out.push(`<span class="s-crit">${tr('CRÍT', 'CRIT')} ${pct(s.crit)}</span>`);
     return out.join('');
   };
   const cardHTML = (i, d) => `<a class="card" href="#/item/${i.uid}">
@@ -89,7 +89,7 @@
             <option value="tier">${t('sortBy')}: ${t('tier')}</option><option value="value">${t('value')}</option>
             <option value="atk">${t('atk')}</option><option value="def">${t('def')}</option><option value="hp">${t('hp')}</option>
             <option value="time">${t('time')}</option><option value="name">${t('name')}</option></select>
-          <button class="chip" id="dir" aria-label="Ordem"><i class="ic ic-down"></i></button>
+          <button class="chip" id="dir" aria-label="${tr('Ordem', 'Order')}"><i class="ic ic-down"></i></button>
           <div class="view-toggle"><button class="chip" data-view="grid">${t('grid')}</button><button class="chip" data-view="table">${t('table')}</button></div>
         </section>
         <p class="count" id="count"></p>
@@ -127,7 +127,7 @@
         const none = !state.list.length;
         $('#empty').hidden = !none;
         if (none) $('#empty').innerHTML = ST.empty(tr('Nenhum item com esses filtros', 'No items match these filters'),
-          state.q ? tr(`Nada encontrado para “${esc(state.q)}”. Tente outro termo ou amplie o tier.`, `Nothing found for “${esc(state.q)}”. Try another term or widen the tier range.`)
+          state.q ? ST.trf(`Nada encontrado para “{0}”. Tente outro termo ou amplie o tier.`, `Nothing found for “{0}”. Try another term or widen the tier range.`, esc(state.q))
             : tr('Amplie o intervalo de tier ou escolha outra categoria.', 'Widen the tier range or pick another category.'),
           `<button class="chip primary" id="clearF">${tr('Limpar filtros', 'Clear filters')}</button>`);
       };

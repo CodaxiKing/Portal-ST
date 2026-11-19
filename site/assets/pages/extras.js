@@ -14,6 +14,7 @@
     marketsell: ['Vender no mercado', 'Sell on market'], kingsell: ['Vender ao rei', 'Sell to the King'], fulfillchampionrequest: ['Pedidos de campeões', 'Champion requests'],
     craftsuperioritems: ['Fabricar itens superiores', 'Craft superior items'], quest: ['Missões', 'Quests'], itemsell: ['Vender itens', 'Sell items'],
     fusion: ['Fundir itens', 'Fuse items'], craftitem: ['Fabricar', 'Craft'], craft: ['Fabricar', 'Craft'], sell: ['Vender', 'Sell'], suggest: ['Sugerir', 'Suggest'],
+    craftitemtiers: ['Fabricar (soma dos tiers)', 'Craft (sum of tiers)'], craftitemgold: ['Fabricar (valor em ouro)', 'Craft (gold value)'], resources: ['Coletar recursos', 'Gather resources'],
     enchant: ['Encantar', 'Enchant'], openchest: ['Abrir baús', 'Open chests'], investcity: ['Investir na cidade', 'Invest in the city'],
   };
   const taskName = (type, sub) => {
@@ -42,7 +43,7 @@
       const tab = query.get('v') || 'rewards';
       const groups = {};
       cur.tasks.forEach((x) => (groups[x.family] = groups[x.family] || []).push(x));
-      el.innerHTML = ST.pageHead(t('passes'), tr(`${P.passes.length} passes nos arquivos do jogo: recompensas grátis e do acesso completo, e as tarefas que dão pontos.`, `${P.passes.length} passes in the game files: free and full-access rewards, and the tasks that give points.`)) +
+      el.innerHTML = ST.pageHead(t('passes'), ST.trf(`{0} passes nos arquivos do jogo: recompensas grátis e do acesso completo, e as tarefas que dão pontos.`, `{0} passes in the game files: free and full-access rewards, and the tasks that give points.`, P.passes.length)) +
         `<div class="form-row">${pickTabs(P.passes, cur, '#/passes', tr('Passe', 'Pass'))}</div>` +
         ST.tabs([[`#/passes?id=${cur.id}`, tr('Recompensas', 'Rewards')], [`#/passes?id=${cur.id}&v=tasks`, tr('Tarefas', 'Tasks')], [`#/passes?id=${cur.id}&v=community`, tr('Eventos de comunidade', 'Community events')]],
           `#/passes?id=${cur.id}${tab === 'rewards' ? '' : '&v=' + tab}`) +

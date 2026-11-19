@@ -92,11 +92,11 @@ test('busca: inclui passes, histórias, skins e eventos de login', () => {
   for (const k of ['i', 'k', 'a', 'h', 'n', 'l']) assert.ok(kinds.has(k), 'tipo ' + k);
 });
 
-test('traduções: es/fr/de/it cobrem os textos das páginas (ST.tr)', () => {
+test('traduções: os 11 idiomas além de pt/en cobrem os textos das páginas (ST.tr)', () => {
   const fs = require('fs');
   const dir = path.join(SITE, 'assets');
   const files = fs.readdirSync(path.join(dir, 'pages')).map((f) => path.join(dir, 'pages', f)).concat([path.join(dir, 'core.js'), path.join(dir, 'search.js')]);
-  const re = /tr\(\s*(["'`])((?:\\.|(?!\1).)*)\1\s*,\s*(["'`])((?:\\.|(?!\3).)*)\3\s*\)/gs;
+  const re = /trf?\(\s*(["'`])((?:\\.|(?!\1).)*)\1\s*,\s*(["'`])((?:\\.|(?!\3).)*)\3\s*[,)]/gs;
   const en = new Set();
   for (const f of files) {
     const s = fs.readFileSync(f, 'utf8');
@@ -108,7 +108,7 @@ test('traduções: es/fr/de/it cobrem os textos das páginas (ST.tr)', () => {
   }
   const TR = {};
   ST.addTr = (l, d) => (TR[l] = d);
-  for (const l of ['es', 'fr', 'de', 'it']) {
+  for (const l of ['es', 'fr', 'de', 'it', 'ru', 'uk', 'tk', 'ja', 'ko', 'zh', 'zh_tr']) {
     require(path.join(dir, 'i18n', l + '.js'));
     const missing = [...en].filter((x) => !TR[l][x]);
     if (missing.length) console.log(`   ${l}: ${missing.length} texto(s) sem tradução:\n     - ${missing.join('\n     - ')}`);

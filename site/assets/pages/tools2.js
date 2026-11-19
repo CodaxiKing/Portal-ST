@@ -121,7 +121,7 @@
               ${rk ? `<span class="tp-v">${esc(rk.value)}</span>` : ''}</div></div></div>`; }).join('')}</div>
         </div><div>
           ${ST.stats([ST.stat(tr('Pontos gastos', 'Points spent'), nf(pts)), ST.stat(tr('Ouro dos nós', 'Node gold'), short(gold) + ' ' + coin, 'gold'), ST.stat(tr('Gemas dos nós', 'Node gems'), nf(gems) + ' ' + gem)])}
-          ${ST.sec(tr('Custo dos pontos', 'Point cost'), `<p class="small">${tr(`Comprar ${nf(pts)} pontos, na ordem da tabela do jogo:`, `Buying ${nf(pts)} points, in the game table order:`)} <b>${short(ptCost.g)}</b> ${coin} · <b>${nf(ptCost.m)}</b> ${gem}</p>`,
+          ${ST.sec(tr('Custo dos pontos', 'Point cost'), `<p class="small">${ST.trf(`Comprar {0} pontos, na ordem da tabela do jogo:`, `Buying {0} points, in the game table order:`, nf(pts))} <b>${short(ptCost.g)}</b> ${coin} · <b>${nf(ptCost.m)}</b> ${gem}</p>`,
             pts > tree.points.length ? tr('Mais pontos do que a tabela do jogo lista.', 'More points than the game table lists.') : '')}
           ${ST.sec(tr('Bônus escolhidos', 'Chosen bonuses'), picked.length ? `<div class="list">${picked.map(({ tt, n, r }) => `<div class="row">${img(n.icon)}<div class="grow">${esc(n.title)} <span class="muted small">${esc(tt.name)}</span></div><div class="r">${esc(n.ranks[r - 1].value)}</div></div>`).join('')}</div>` : `<p class="muted">${t('none')}</p>`)}
           ${picked.length ? `<p><button class="chip" id="reset">${tr('Zerar plano', 'Reset plan')}</button></p>` : ''}
@@ -213,7 +213,7 @@
           <div class="tiles">${list.map((x) => `<a class="tile" href="${x.href}"><div class="thumb">${img(x.icon)}</div><div class="tile-body">
             <div class="tile-title">${esc(x.name)}</div><div class="tile-sub">${esc(x.sub)}</div>
             <div class="small" style="margin-top:4px;font-family:var(--mono)">${undated(x) ? '—' : new Date(x.date + 'T12:00').toLocaleDateString(ST.locale)}${
-              !undated(x) && x.date > today ? ` <span class="badge">${tr(`em ${days(x.date)} d`, `in ${days(x.date)} d`)}</span>` : ''}</div></div></a>`).join('')}</div>`).join('')
+              !undated(x) && x.date > today ? ` <span class="badge">${ST.trf(`em {0} d`, `in {0} d`, days(x.date))}</span>` : ''}</div></div></a>`).join('')}</div>`).join('')
           : ST.empty(tr('Nada por aqui', 'Nothing here'), tr('Não há itens com data nesse filtro.', 'No dated items in this filter.'), '', { icon: 'box' }));
     },
   });

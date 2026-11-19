@@ -1,5 +1,5 @@
-/* Termos da interface (menu, títulos e rótulos comuns) em mais idiomas. Os textos longos das páginas ficam em
-   inglês nesses idiomas; os nomes do jogo (itens, classes, habilidades…) já vêm traduzidos dos arquivos do jogo. */
+/* Termos da interface (menu, títulos e rótulos comuns) nos idiomas além de português e inglês. Os textos das páginas
+   ficam em assets/i18n/<idioma>.js; os nomes do jogo (itens, classes, habilidades…) já vêm traduzidos dos arquivos do jogo. */
 ST.addI18n({
   es: {
     home: 'Inicio', db: 'Base de datos', tools: 'Herramientas', items: 'Objetos', champions: 'Campeones', classes: 'Clases',
@@ -77,7 +77,7 @@ ST.addI18n({
 
 /* Textos longos das páginas: carregados só para o idioma escolhido (antes das páginas, por isso document.write). */
 (() => {
-  if (!['es', 'fr', 'de', 'it'].includes(ST.lang)) return;
+  if (ST.lang === 'pt' || ST.lang === 'en') return; // português e inglês vêm no próprio código das páginas
   const me = document.currentScript && document.currentScript.getAttribute('src');
   const v = me && me.includes('?v=') ? me.split('?v=')[1] : '';
   document.write(`<script src="assets/i18n/${ST.lang}.js?v=${v}"><\/script>`);

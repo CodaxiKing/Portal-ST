@@ -67,8 +67,8 @@
       version: 'Game version', grid: 'Grid', table: 'Table', sortBy: 'Sort', ofItems: 'of', results: 'results',
     },
   };
-  // idiomas extras da interface (es, fr, de, it…): assets/i18n.js traz os termos do menu e os rótulos comuns;
-  // os textos longos das páginas (ST.tr) ficam em inglês nesses idiomas
+  // demais idiomas da interface: assets/i18n.js traz os termos do menu e os rótulos comuns;
+  // os textos das páginas (ST.tr) ficam em assets/i18n/<idioma>.js
   ST.I18N = I18N;
   ST.t = (k, ...args) => {
     let s = (I18N[lang] && I18N[lang][k]) ?? (I18N[ui] && I18N[ui][k]) ?? I18N.en[k] ?? k;
@@ -81,6 +81,8 @@
   const TRX = {};
   ST.addTr = (l, dict) => Object.assign((TRX[l] = TRX[l] || {}), dict);
   ST.tr = (pt, en) => (ui === 'pt' ? pt : (TRX[lang] && TRX[lang][en]) || en);
+  // texto com valores: ST.trf('Pelo menos 1 em {0}', 'At least 1 in {0}', n) — a tradução usa os mesmos {0}, {1}…
+  ST.trf = (pt, en, ...args) => ST.tr(pt, en).replace(/\{(\d+)\}/g, (m, i) => (i in args ? args[i] : m));
 
   // ---------------------------------------------------------------- formatação
   const locale = ST.locale;
@@ -325,6 +327,9 @@
       ST.navTouched = true;
       ST.openNavGroup(g.classList.contains('open') ? -1 : +g.dataset.g);
     });
+    // rótulos acessíveis do cabeçalho (o index.html traz o texto em português)
+    const aria = { menuBtn: ST.tr('Menu', 'Menu'), searchBtn: ST.tr('Buscar', 'Search'), langSel: ST.tr('Idioma', 'Language'), themeBtn: ST.t('theme'), nav: ST.tr('Seções', 'Sections'), closeBtn: ST.t('close') };
+    for (const [id, txt] of Object.entries(aria)) { const n = document.getElementById(id); if (n) n.setAttribute('aria-label', txt); }
     const sel = document.getElementById('langSel');
     const avail = (ST.meta && ST.meta.langs) || ['pt', 'en'];
     sel.innerHTML = avail.filter((l) => LANG_INFO[l]).map((l) => `<option value="${l}" ${l === lang ? 'selected' : ''}>${LANG_INFO[l][0]}</option>`).join('');

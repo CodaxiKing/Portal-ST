@@ -53,7 +53,7 @@
       ? results.map((e, i) => `<a class="gs-row ${i === 0 ? 'on' : ''}" href="${e.href}" data-i="${i}">
           <span class="gs-ic">${e.icon && ST.icon(e.icon) ? img(e.icon) : ST.ic(e.k === 'g' ? 'right' : e.k === 'l' ? 'calendar' : 'star')}</span><span class="gs-main"><b>${esc(e.name)}</b><span>${esc(e.sub || '')}</span></span>
           <span class="gs-kind">${tr(...KIND[e.k])}</span></a>`).join('')
-      : ST.empty(tr('Nada encontrado', 'Nothing found'), tr(`Nenhum resultado para “${esc(q)}”.`, `No results for “${esc(q)}”.`));
+      : ST.empty(tr('Nada encontrado', 'Nothing found'), ST.trf(`Nenhum resultado para “{0}”.`, `No results for “{0}”.`, esc(q)));
   }
 
   function move(d) {

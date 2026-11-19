@@ -175,6 +175,16 @@ STAT_FIELDS = {
 }
 ABS_LABEL = {"atkAbs": "atk", "defAbs": "def", "hpAbs": "hp"}
 
+# demais idiomas: st/lbl_i18n.json ({idioma: {chave: texto}}); o que faltar cai no inglês
+try:
+    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "lbl_i18n.json"), encoding="utf-8") as _f:
+        for _lang, _d in json.load(_f).items():
+            if _lang not in ("pt", "en"):
+                LBL[_lang] = {**LBL["en"], **{k: v for k, v in _d.items() if k in LBL["en"] and v}}
+except (OSError, ValueError):
+    pass
+
+
 def lbl(lang):
     """Rótulos do extrator no idioma; idiomas sem tradução própria usam inglês."""
     return LBL.get(lang, LBL["en"])

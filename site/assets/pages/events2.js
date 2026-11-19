@@ -76,8 +76,7 @@
       const top = builds.slice(0, 5);
       el.querySelector('#gcParty').innerHTML = ST.sec(tr('Melhor grupo (Hypermax)', 'Best party (Hypermax)'),
         `<div class="hm-grid">${top.map((b, i) => ST.hmUI.card(b, i + 1, { ...HM_OPT, href: '#/hypermax/' + b.c.uid })).join('')}</div>`,
-        tr(`Poder somado: ${nf(Math.round(top.reduce((a, b) => a + b.power, 0)))}. Os 5 heróis mais fortes pelo motor do Hypermax (qualidade Lendária, melhorias completas).`,
-          `Total power: ${nf(Math.round(top.reduce((a, b) => a + b.power, 0)))}. The 5 strongest heroes by the Hypermax engine (Legendary, full upgrades).`));
+        ST.trf(`Poder somado: {0}. Os 5 heróis mais fortes pelo motor do Hypermax (qualidade Lendária, melhorias completas).`, `Total power: {0}. The 5 strongest heroes by the Hypermax engine (Legendary, full upgrades).`, nf(Math.round(top.reduce((a, b) => a + b.power, 0)))));
       drawLevels(top);
     },
   });

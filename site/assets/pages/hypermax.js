@@ -588,7 +588,7 @@
         { key: 'monsterHp', label: tr('PV do chefe', 'Boss HP'), num: true, fmt: (r) => short(r.monsterHp) },
         { key: 'dmg', label: tr('Dano', 'Damage'), num: true, fmt: (r) => nf(r.dmg) },
         { key: 'ok', label: tr('Top 4 daqui', 'Top 4 here'), num: true, fmt: (r) => (party >= r.power * r.party ? `<span class="ok">${ST.ic('check')}</span>` : '—'), sort: (r) => r.power }]),
-        tr(`Os 4 melhores de Heróis da Tumba somam ${nf(Math.round(party))} de poder. "Top 4" compara com poder recomendado × tamanho do grupo.`, `The top 4 in Tomb heroes add up to ${nf(Math.round(party))} power. "Top 4" compares with recommended power × party size.`))}
+        ST.trf(`Os 4 melhores de Heróis da Tumba somam {0} de poder. "Top 4" compara com poder recomendado × tamanho do grupo.`, `The top 4 in Tomb heroes add up to {0} power. "Top 4" compares with recommended power × party size.`, nf(Math.round(party))))}
       ${ST.sec(tr('Maldição da Tumba (chefes)', 'Tomb\'s Curse (bosses)'), ST.table(curseRows, [
         { key: 'dp', label: tr('A partir da profundidade', 'From depth'), num: true },
         { key: 'hp', label: tr('PV', 'HP'), num: true, fmt: (r) => `+${r.hp}%` }, { key: 'def', label: tr('Defesa', 'Defense'), num: true, fmt: (r) => `+${r.def}%` },

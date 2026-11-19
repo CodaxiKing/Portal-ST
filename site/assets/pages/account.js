@@ -188,7 +188,7 @@
         ${ST.table(rows, [
           { key: 'nm', label: tr('Qualidade', 'Quality') }, { key: 'base', label: tr('Base do jogo', 'Game base'), num: true, fmt: (r) => dec(r.base * 100, 3) + '%' },
           { key: 'p', label: tr('Por fabricação', 'Per craft'), num: true, fmt: (r) => dec(r.p * 100, 3) + '%' },
-          { key: 'atLeast', label: tr(`Pelo menos 1 em ${n}`, `At least 1 in ${n}`), num: true, fmt: (r) => dec(r.atLeast * 100, 1) + '%' },
+          { key: 'atLeast', label: ST.trf(`Pelo menos 1 em {0}`, `At least 1 in {0}`, n), num: true, fmt: (r) => dec(r.atLeast * 100, 1) + '%' },
           { key: 'exp', label: tr('Fabricações em média', 'Crafts on average'), num: true, fmt: (r) => nf(Math.round(r.exp)) }])}
         ${ups.length ? `<p class="note">${tr('Melhorias de qualidade do projeto', 'Blueprint quality upgrades')}: ${ups.map((u) => esc(u.text)).join(' · ')}</p>` : ''}`;
       const go = (o) => { const q = new URLSearchParams(query); for (const [k, v] of Object.entries(o)) if (v === '' || v === false) q.delete(k); else q.set(k, v === true ? '1' : v); location.hash = '#/qualidade?' + q.toString(); };
