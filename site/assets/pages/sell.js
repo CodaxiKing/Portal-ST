@@ -56,28 +56,38 @@
       const nameCell = (r) => `<a class="cell-item" href="#/item/${r.i.uid}">${img(r.i.uid)}<span>${esc(r.i.name)}<br><span class="small muted">${esc(ST.typeName(r.i.type))}</span></span></a>`;
       const cols0 = [{ key: 'name', label: t('name'), sort: (r) => r.i.name, fmt: nameCell }, { key: 'tier', label: 'T', num: true, sort: (r) => r.i.tier, fmt: (r) => r.i.tier }];
 
+      // energia da sobretaxa do item com os bônus escolhidos (as duas abas usam)
+      const energyOf = (i) => {
+        if (!i.energy || !(i.energy.surcharge > 0)) return null;
+        const full = i.energy.surcharge * sfOf(i, 'surchargeOneEnergy') * (1 + (active && i.type === o.act ? actEnergy : 0) + resBonus(i, 'EnergyCost'));
+        return Math.max(0, full) * (1 - loyChance);
+      };
+      const resOpts = [tr('Nenhuma', 'None'), tr('Normal', 'Normal'), tr('Potencializada', 'Empowered')];
+      const bonusCtl = (withBanners) => `<label class="check"><input type="checkbox" id="sf" ${o.sf ? 'checked' : ''}> ${tr('Forjado nas Estrelas', 'Starforged')}</label>
+          ${withBanners ? `<label class="field">${tr('Estandartes com “Maestria da sobretaxa”', 'Banners with “Surcharge Mastery”')}<input class="inp" type="number" id="ban" min="0" max="${banners.length}" value="${o.ban}" style="width:92px"></label>` : ''}
+          <label class="field">${tr('Estandarte ativo', 'Active banner')}<select class="inp" id="act"><option value="">${tr('Nenhum', 'None')}</option>${banners.map((b) => `<option value="${b.type}" ${b.type === o.act ? 'selected' : ''}>${esc(ST.typeName(b.type))}</option>`).join('')}</select></label>
+          <label class="field">${tr('Pesquisa avançada (tiers 14–16)', 'Advanced research (tiers 14–16)')}<select class="inp" id="res">${resOpts.map((x, k) => `<option value="${k}" ${k === o.res ? 'selected' : ''}>${x}</option>`).join('')}</select></label>
+          ${loyRanks.length ? `<label class="field">${esc(loyNode.title || tr('Fidelidade à marca', 'Brand Loyalty'))}<select class="inp" id="loy"><option value="0">${tr('Sem o talento', 'No talent')}</option>${loyRanks.map((r, k) => `<option value="${k + 1}" ${k + 1 === o.loy ? 'selected' : ''}>${tr('Nível', 'Rank')} ${k + 1} (${esc(r.value)})</option>`).join('')}</select></label>` : ''}`;
       let table, note, extra = '';
       if (view === 'xp') {
         const rows = base.filter((i) => i.xp > 0).map((i) => {
           const xp = i.xp * xpMult * (1 + resBonus(i, 'XpBonus'));
-          return { i, xp, value: i.value * priceMult, xpg: xp / (i.value * priceMult) * 1000, xph: i.time > 0 ? xp / i.time * 3600 : null };
+          return { i, xp, value: i.value * priceMult, energy: energyOf(i) };
         });
         table = ST.table(rows, [...cols0,
           { key: 'xp', label: tr('XP por venda', 'XP per sale'), num: true, cls: 'gold', fmt: (r) => nf(Math.round(r.xp)) },
           { key: 'value', label: t('value'), num: true, fmt: (r) => short(r.value) },
-          { key: 'xpg', label: tr('XP por mil de ouro', 'XP per 1,000 gold'), num: true, fmt: (r) => fx(r.xpg) },
-          { key: 'xph', label: tr('XP por hora de fabricação', 'XP per crafting hour'), num: true, fmt: (r) => (r.xph ? big(r.xph) : '—') },
+          { key: 'energy', label: tr('Energia da sobretaxa', 'Surcharge energy'), num: true, fmt: (r) => (r.energy != null ? fx(r.energy) : '—') },
         ], { sortKey: 'xp', sortDir: -1 });
-        extra = `<label class="field">${tr('Pesquisa avançada (XP, tiers 14–16)', 'Advanced research (XP, tiers 14–16)')}<select class="inp" id="res">${[tr('Nenhuma', 'None'), tr('Normal (+10%)', 'Normal (+10%)'), tr('Potencializada (+20%)', 'Empowered (+20%)')].map((x, k) => `<option value="${k}" ${k === o.res ? 'selected' : ''}>${x}</option>`).join('')}</select></label>`;
-        note = tr('XP de comerciante ganho ao vender o item para um cliente, multiplicado pela qualidade (constantes item_xp_*_mult do jogo: ×1,25 / ×2 / ×3 / ×5) e pela pesquisa avançada do tipo do item nos tiers 14–16. A sobretaxa e o desconto mudam o preço, não o XP. Encantamentos somam o XP deles ao item e não entram aqui; vender no mercado não dá XP.',
-          'Merchant XP earned when selling the item to a customer, multiplied by quality (game constants item_xp_*_mult: ×1.25 / ×2 / ×3 / ×5) and by the advanced research for the item type on tiers 14–16. Surcharge and discount change the price, not the XP. Enchantments add their own XP to the item and are not counted here; selling on the market gives no XP.');
+        extra = bonusCtl(false);
+        note = tr('XP de comerciante ganho ao vender o item para um cliente, multiplicado pela qualidade (constantes item_xp_*_mult do jogo: ×1,25 / ×2 / ×3 / ×5) e pela pesquisa avançada de XP do tipo do item nos tiers 14–16 (+10% normal, +20% potencializada). “Energia da sobretaxa” é quanto custa sobretaxar o item, já com os bônus marcados: Forjado nas Estrelas do item, estandarte ativo do tipo, pesquisa avançada de energia (−10% / −20%) e a chance do talento de sair de graça (média). A sobretaxa e o desconto mudam o preço, não o XP. Encantamentos somam o XP deles ao item e não entram aqui; vender no mercado não dá XP.',
+          'Merchant XP earned when selling the item to a customer, multiplied by quality (game constants item_xp_*_mult: ×1.25 / ×2 / ×3 / ×5) and by the item type’s advanced XP research on tiers 14–16 (+10% normal, +20% empowered). “Surcharge energy” is what it costs to surcharge the item, with the selected bonuses: the item’s Starforged, the active banner of its type, advanced energy research (−10% / −20%) and the talent’s chance of a free surcharge (on average). Surcharge and discount change the price, not the XP. Enchantments add their own XP to the item and are not counted here; selling on the market gives no XP.');
       } else {
         const rows = base.filter((i) => i.energy && i.energy.surcharge > 0).map((i) => {
           const value = i.value * priceMult * (1 + (active && i.type === o.act ? actValue : 0));
           const mult = surMult * sfOf(i, 'surchargeOne') * (1 + o.ban * banAllPer);
           const price = value * mult, gain = price - value;
-          const energyFull = i.energy.surcharge * sfOf(i, 'surchargeOneEnergy') * (1 + (active && i.type === o.act ? actEnergy : 0) + resBonus(i, 'EnergyCost'));
-          const energy = Math.max(0, energyFull) * (1 - loyChance);
+          const energy = energyOf(i);
           return { i, value, price, gain, energy, gpe: energy > 0 ? gain / energy : null, disc: i.energy.discount };
         });
         table = ST.table(rows, [...cols0,
@@ -88,11 +98,7 @@
           { key: 'gpe', label: tr('Ouro a mais por energia', 'Extra gold per energy'), num: true, cls: 'gold', fmt: (r) => (r.gpe != null ? big(r.gpe) : '—') },
           { key: 'disc', label: tr('Energia do desconto', 'Discount energy'), num: true, fmt: (r) => nf(r.disc) },
         ], { sortKey: 'gpe', sortDir: -1 });
-        extra = `<label class="check"><input type="checkbox" id="sf" ${o.sf ? 'checked' : ''}> ${tr('Forjado nas Estrelas', 'Starforged')}</label>
-          <label class="field">${tr('Estandartes com “Maestria da sobretaxa”', 'Banners with “Surcharge Mastery”')}<input class="inp" type="number" id="ban" min="0" max="${banners.length}" value="${o.ban}" style="width:92px"></label>
-          <label class="field">${tr('Estandarte ativo', 'Active banner')}<select class="inp" id="act"><option value="">${tr('Nenhum', 'None')}</option>${banners.map((b) => `<option value="${b.type}" ${b.type === o.act ? 'selected' : ''}>${esc(ST.typeName(b.type))}</option>`).join('')}</select></label>
-          <label class="field">${tr('Pesquisa avançada (energia, tiers 14–16)', 'Advanced research (energy, tiers 14–16)')}<select class="inp" id="res">${[tr('Nenhuma', 'None'), tr('Normal (−10%)', 'Normal (−10%)'), tr('Potencializada (−20%)', 'Empowered (−20%)')].map((x, k) => `<option value="${k}" ${k === o.res ? 'selected' : ''}>${x}</option>`).join('')}</select></label>
-          ${loyRanks.length ? `<label class="field">${esc(loyNode.title || tr('Fidelidade à marca', 'Brand Loyalty'))}<select class="inp" id="loy"><option value="0">${tr('Sem o talento', 'No talent')}</option>${loyRanks.map((r, k) => `<option value="${k + 1}" ${k + 1 === o.loy ? 'selected' : ''}>${tr('Nível', 'Rank')} ${k + 1} (${esc(r.value)})</option>`).join('')}</select></label>` : ''}`;
+        extra = bonusCtl(true);
         note = ST.trf('Sobretaxa vende pelo valor × {0} (constante visitor_surcharge_multiplier do jogo); “ouro a mais” é a diferença para a venda normal, e “por energia” mostra quais itens aproveitam melhor a sua energia. Bônus: Forjado nas Estrelas do próprio item (valor e energia da sobretaxa), +{1}% no valor da sobretaxa por estandarte com Maestria da sobretaxa, estandarte ativo (energia e valor do tipo), pesquisa avançada do tipo nos tiers 14–16 e a chance do talento de a sobretaxa sair de graça (média). Assumimos que os bônus de valor se multiplicam sobre o ×{0}; o jogo não diz se somam ou multiplicam.',
           'Surcharge sells at value × {0} (game constant visitor_surcharge_multiplier); “extra gold” is the difference to a normal sale, and “per energy” shows which items make the best use of your energy. Bonuses: the item’s own Starforged (surcharge value and energy), +{1}% surcharge value per banner with Surcharge Mastery, active banner (energy and value of that type), advanced research for the type on tiers 14–16 and the talent’s chance of a free surcharge (on average). We assume value bonuses multiply on top of ×{0}; the game does not say whether they add or multiply.',
           surMult, Math.round(banAllPer * 100));
@@ -112,7 +118,7 @@
         const g = (id) => el.querySelector('#' + id);
         const v = (id, def) => (g(id) && g(id).value !== String(def) ? g(id).value : '');
         ST.setQuery({ q: v('q', 0), tmax: v('tmax', tiers[tiers.length - 1]), cat: v('cat', ''), res: v('res', 0), soon: g('soon').checked ? '1' : '',
-          ...(view === 'sur' ? { sf: g('sf').checked ? '1' : '', ban: v('ban', 0), act: v('act', ''), loy: v('loy', 0) } : {}) });
+          sf: g('sf').checked ? '1' : '', act: v('act', ''), loy: v('loy', 0), ...(view === 'sur' ? { ban: v('ban', 0) } : {}) });
         ST.rerender();
       }));
     },
