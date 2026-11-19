@@ -430,6 +430,11 @@
     return o;
   };
 
+  // aviso no topo do Hypermax e dos Heróis da Tumba: os cálculos ainda estão sendo conferidos com o jogo
+  const BETA = () => `<div class="beta-note" role="note"><span class="beta-tag">${ST.ic('alert')} ${tr('Em testes', 'In testing')}</span>
+    <p>${tr('Estes cálculos ainda estão sendo conferidos com o jogo e podem ter erros: poder, atributos ou a escolha dos itens podem não bater com o que aparece no jogo. Use como referência e confira no jogo antes de gastar recursos.',
+      'These calculations are still being checked against the game and may contain errors: power, stats or gear picks can differ from what you see in the game. Use them as a reference and check in the game before spending resources.')}</p></div>`;
+
   const controls = (o) => `<div class="form-row hm-ctl">
       ${o.tower ? `<label class="field">${tr('Regra de crítico', 'Crit rule')}<select class="inp" data-o="cr" data-str>${Object.entries(CRIT_RULES).map(([k, r]) =>
         `<option value="${k}" ${k === (o.cr || 'off') ? 'selected' : ''}>${tr(r.pt, r.en)}</option>`).join('')}</select></label>` : ''}
@@ -625,6 +630,7 @@
         }).join('');
         const builder = `#/montador?c=${b.c.uid}&lv=${Math.min(b.lv, ST.maxLevel(b.c))}&` + b.gear.map((g, k) => (g ? `s${k}=${g.x.it.uid}:${o.q}:${g.el ? g.el.e.uid : ''}:${g.sp ? g.sp.e.uid : ''}` : '')).filter(Boolean).join('&') + `&sk=${b.chosen.map((f) => f.family).join(',')}` + (o.tr ? '' : '&tr=0') + (o.sf ? '' : '&sf=0') + (o.col ? '' : '&col=0');
         el.innerHTML = `<a class="crumb" href="${base}${optQuery(o, qExtra(o))}">${ST.ic('left')} ${title}</a>
+          ${BETA()}
           ${controls(o)}
           <div class="hm-detail">${card(b, rankOf(b), o)}
             <div>${ST.sec(tr('Habilidades', 'Skills'), skillRows ? `<div class="list">${skillRows}</div>` : `<p class="muted">${t('none')}</p>`)}
@@ -661,7 +667,7 @@
           'The best heroes for the Tomb of Titans. Tomb monsters negate crit (Adamantine Skin, No Weakness, Fortified), so the ranking uses power without crit, and the “Tomb-Born Malevolence” spirit counts double here.')
         : tr('O máximo teórico de cada classe: equipamento, encantamentos e habilidades que dão mais poder. Clique numa classe para ver os detalhes.',
           'The theoretical maximum for each class: the gear, enchantments and skills that give the most power. Click a class for details.')) +
-        controls(o) +
+        BETA() + controls(o) +
         (mode === 'tomb' ? `<div class="tags" style="margin-bottom:12px"><a class="chip" href="#/tumba">${ST.ic('info')} ${tr('Níveis, maldição e modificadores da Tumba', 'Tomb tiers, curse and modifiers')}</a></div>` : '') +
         ST.tabs([[base + optQuery(o, ex), t('all')], ...types.map(([k, n]) => [base + optQuery(o, { ...ex, ty: k }), esc(n)])], base + optQuery(o, { ...ex, ty: o.ty })) +
         `<div class="hm-grid">${shown.map((b) => card(b, rankOf(b), o)).join('')}</div><p class="note">${NOTE()}</p>`;
