@@ -297,7 +297,7 @@
       ['guilda', 'guild'], ['progressao', 'progression'], ['historias', 'stories'], ['skins', 'skins'], ['novidades', 'updates']]],
     ['rewardsNav', [['passes', 'passes'], ['recompensas', 'evRewards'], ['quadro', 'bounties'], ['loja', 'store'], ['expansoes', 'expansions'], ['sorte', 'luck']]],
     ['eventsNav', [['calendario', 'calendar'], ['cidadeouro', 'goldcity'], ['capricho', 'caprice'], ['comunidade-eventos', 'commEvents'], ['caravana', 'caravan'], ['invasao', 'airship'], ['tumba', 'tomb']]],
-    ['communityNav', [['hypermax', 'hypermax'], ['tumba-ranking', 'tombRank'], ['lancamentos', 'releases']]],
+    ['communityNav', [['hypermax', 'hypermax'], ['tumba-ranking', 'tombRank'], ['venda', 'sellRank'], ['lancamentos', 'releases']]],
     ['tools', [['simulador', 'simulator'], ['qualidade', 'qualityCalc'], ['lucro', 'profit'], ['onde', 'whereToGet'],
       ['montador', 'builder'], ['grupos', 'partyByArea'], ['plano', 'craftPlan'], ['melhorias', 'upgradeCalc'], ['planejador', 'talentPlanner'], ['custos', 'upgradeCosts']]],
   ];
