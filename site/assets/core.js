@@ -300,6 +300,8 @@
       ['montador', 'builder'], ['grupos', 'partyByArea'], ['plano', 'craftPlan'], ['melhorias', 'upgradeCalc'], ['planejador', 'talentPlanner'], ['custos', 'upgradeCosts']]],
   ];
   ST.NAV = NAV;
+  // ícone do jogo ao lado de cada grupo do menu
+  const NAV_ICON = { db: 'shortsword', rewardsNav: 'chest_goldcity', eventsNav: 'caravanbanner', communityNav: 'cc_sundragon', tools: 'custom_handheld_wallacehammer' };
   ST.openNavGroup = (gi) => {
     document.querySelectorAll('.nav-group').forEach((g) => {
       const on = +g.dataset.g === gi;
@@ -312,7 +314,7 @@
   function shell() {
     // menu em sanfona: só um grupo aberto por vez
     document.getElementById('nav').innerHTML = NAV.map(([g, links], gi) => `<div class="nav-group" data-g="${gi}">
-      <button class="nav-title" type="button" aria-expanded="false" aria-controls="ng${gi}"><span>${ST.t(g)}</span><span class="nav-count">${links.length}</span>${ST.ic('chev', 'nav-chev')}</button>
+      <button class="nav-title" type="button" aria-expanded="false" aria-controls="ng${gi}"><span class="nav-ico">${ST.icon(NAV_ICON[g]) ? `<img src="${ST.icon(NAV_ICON[g])}" alt="" loading="lazy">` : ''}</span><span class="nav-label">${ST.t(g)}</span></button>
       <div class="nav-links" id="ng${gi}"><div>${links.map(([p, k]) => `<a href="#/${p}" data-nav="${p}" tabindex="-1">${ST.t(k)}</a>`).join('')}</div></div></div>`).join('');
     document.getElementById('nav').addEventListener('click', (e) => {
       const b = e.target.closest('.nav-title');
