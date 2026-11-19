@@ -70,7 +70,7 @@ def _page(lang, title, desc, body, rel, canonical, alternates, og_image, base):
 <meta property="og:title" content="{h(title)}"><meta property="og:description" content="{h(desc)}">
 <meta property="og:image" content="{h(abs_(og_image))}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image"><meta name="theme-color" content="#101012">
-<link rel="icon" href="{rel}icons/icon-192.png"><link rel="manifest" href="{rel}manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="{rel}icons/favicon-32.png"><link rel="icon" type="image/png" sizes="64x64" href="{rel}icons/favicon-64.png"><link rel="manifest" href="{rel}manifest.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400..700&family=Geist+Mono:wght@400..600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{rel}assets/style.css"><link rel="stylesheet" href="{rel}assets/static.css">
@@ -348,6 +348,14 @@ def build_app_icons(site):
     folder = os.path.join(site, "icons")
     os.makedirs(folder, exist_ok=True)
     logo = _logo(site)
+    if logo:  # ícone da aba: miolo da logo (sem as pontas da faixa), fundo transparente, para ficar legível em 16–32 px
+        w = min(logo.width, round(logo.height * 1.2))
+        core = logo.crop(((logo.width - w) // 2, 0, (logo.width + w) // 2, logo.height))
+        for size in (32, 64):
+            lg = _fit(core, size, size)
+            fav = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+            fav.paste(lg, ((size - lg.width) // 2, (size - lg.height) // 2), lg)
+            fav.save(os.path.join(folder, f"favicon-{size}.png"), "PNG", optimize=True)
     for size, pad in ((192, 0), (512, 0), (512, 0.12)):
         im = Image.new("RGB", (size, size), BG)
         name = f"icon-{size}{'-maskable' if pad else ''}.png"
