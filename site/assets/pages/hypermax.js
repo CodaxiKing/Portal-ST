@@ -438,7 +438,7 @@
   };
 
   // aviso no topo do Hypermax e dos Heróis da Tumba: os cálculos ainda estão sendo conferidos com o jogo
-  const BETA = () => `<div class="beta-note" role="note"><span class="beta-tag">${ST.ic('alert')} ${tr('Em testes', 'In testing')}</span>
+  const BETA = () => `<div class="beta-note" role="note"><span class="beta-ic" title="${tr('Em testes', 'In testing')}" aria-label="${tr('Em testes', 'In testing')}">${ST.ic('alert')}</span>
     <p>${tr('Estes cálculos ainda estão sendo conferidos com o jogo e podem ter erros: poder, atributos ou a escolha dos itens podem não bater com o que aparece no jogo. Use como referência e confira no jogo antes de gastar recursos.',
       'These calculations are still being checked against the game and may contain errors: power, stats or gear picks can differ from what you see in the game. Use them as a reference and check in the game before spending resources.')}</p></div>`;
 
@@ -446,7 +446,10 @@
       ${o.tower ? `<label class="field">${tr('Regra de crítico', 'Crit rule')}<select class="inp" data-o="cr" data-str>${Object.entries(CRIT_RULES).map(([k, r]) =>
         `<option value="${k}" ${k === (o.cr || 'off') ? 'selected' : ''}>${tr(r.pt, r.en)}</option>`).join('')}</select></label>` : ''}
       <label class="field">${tr('Qualidade', 'Quality')}<select class="inp" data-o="q">${QN.map((n, k) => `<option value="${k}" ${k === o.q ? 'selected' : ''}>${tr(...n)}</option>`).join('')}</select></label>
-      <label class="field">${t('level')}<select class="inp" data-o="lv">${LEVELS.map((l) => `<option value="${l}" ${o.lv === l ? 'selected' : ''}>${l > 50 ? `${lvName(l)} (${tr('5ª habilidade', '5th skill')})` : l}</option>`).join('')}</select></label>
+      <div class="field">${tr('Alma Parangon', 'Paragon Soul')}<div class="seg hm-par-seg" role="group" title="${tr('Com a Alma Parangon o herói chega ao Parangon 50 e ganha a 5ª habilidade.', 'With the Paragon Soul the hero reaches Paragon 50 and gains the 5th skill.')}">
+        <button type="button" data-par="1" class="${o.lv > 50 ? 'on' : ''}" aria-pressed="${o.lv > 50}">${ST.icon('paragonsoul') ? `<img class="cur-img" src="${ST.icon('paragonsoul')}" alt="">` : ''}${tr('Com Parangon', 'With Paragon')}</button>
+        <button type="button" data-par="0" class="${o.lv > 50 ? '' : 'on'}" aria-pressed="${o.lv <= 50}">${tr('Sem Parangon', 'Without Paragon')}</button></div></div>
+      <label class="field">${t('level')}<select class="inp" data-o="lv" ${o.lv > 50 ? 'disabled' : ''}>${o.lv > 50 ? `<option selected>${lvName(o.lv)}</option>` : LEVELS.filter((l) => l <= 50).map((l) => `<option value="${l}" ${o.lv === l ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
       <label class="check"><input type="checkbox" data-o="sk" ${o.sk ? 'checked' : ''}> ${tr('Habilidades', 'Skills')}</label>
       <label class="check"><input type="checkbox" data-o="en" ${o.en ? 'checked' : ''}> ${tr('Encantamentos', 'Enchantments')}</label>
       <label class="check"><input type="checkbox" data-o="sf" ${o.sf ? 'checked' : ''}> ${tr('Forjado nas Estrelas', 'Starforged')}</label>
@@ -454,10 +457,20 @@
       <label class="check"><input type="checkbox" data-o="col" ${o.col ? 'checked' : ''}> ${tr('Livro de Coleção completo', 'Full Collection book')}</label>
       <label class="check"><input type="checkbox" data-o="soon" ${o.soon ? 'checked' : ''}> ${tr('Itens em breve', 'Upcoming items')}</label>
       ${ST.accountToggle ? ST.accountToggle(ST.account.active()) : ''}</div>`;
-  const bindControls = (el, o, base) => (ST.bindAccountToggle && ST.bindAccountToggle(el), el.querySelectorAll('[data-o]')).forEach((n) => n.addEventListener('change', () => {
-    o[n.dataset.o] = n.type === 'checkbox' ? n.checked : n.hasAttribute('data-str') ? n.value : +n.value;
-    location.hash = base + optQuery(o, { ty: o.ty, cr: o.tower && o.cr !== 'off' ? o.cr : '' });
-  }));
+  const bindControls = (el, o, base) => {
+    const go = () => { location.hash = base + optQuery(o, { ty: o.ty, cr: o.tower && o.cr !== 'off' ? o.cr : '' }); };
+    if (ST.bindAccountToggle) ST.bindAccountToggle(el);
+    el.querySelectorAll('[data-o]').forEach((n) => n.addEventListener('change', () => {
+      o[n.dataset.o] = n.type === 'checkbox' ? n.checked : n.hasAttribute('data-str') ? n.value : +n.value;
+      go();
+    }));
+    // com / sem a Alma Parangon: Parangon 50 (5 habilidades) ou nível 50 (4 habilidades)
+    el.querySelectorAll('[data-par]').forEach((n) => n.addEventListener('click', () => {
+      const lv = n.dataset.par === '1' ? 100 : 50;
+      if ((o.lv > 50) === (lv > 50)) return;
+      o.lv = lv; go();
+    }));
+  };
   const NOTE = () => tr('Calculado só com os dados do jogo: atributos × qualidade (constantes item_power), Forjado nas Estrelas, Ascensão + Transcendência, encantamentos com afinidade (affinity_stat_bonus), elemento do herói (encantamentos e elemento próprio dos itens do mesmo elemento) liberando o tier das habilidades, habilidade inata + habilidades dos espaços do nível, bônus por tipo de item (inclusive em evasão/crítico quando a habilidade afeta atributos secundários), ATQ por ponto de elemento, espíritos (efeitos “só no próprio item” por item) e Livro de Coleção (melhor carta da classe). Poder = ATQ×0,8×(1 + crítico×(dano crítico−1)) + DEF×1,2 + PV×5 + escudo×3 + ameaça×(DEF×0,008 + PV×0,025). Não entram: campeões, sementes e boosters, que dependem da missão.',
     'Computed only from game data: stats × quality (item_power constants), Starforged, Ascension + Transcendence, enchantments with affinity (affinity_stat_bonus), hero element (enchantments and the items’ own element of the same element) unlocking skill tiers, innate skill + level-unlocked skill slots, item-type bonuses (also on evasion/crit when the skill affects secondary stats), ATK per element point, spirits ("this item only" effects per item) and Collection book (best class card). Power = ATK×0.8×(1 + crit×(crit dmg−1)) + DEF×1.2 + HP×5 + shield×3 + threat×(DEF×0.008 + HP×0.025). Not included: champions, seeds and boosters, which depend on the quest.');
   const qExtra = (o) => (o.tower && o.cr && o.cr !== 'off' ? { cr: o.cr } : {});
@@ -641,7 +654,7 @@
           ${controls(o)}
           <div class="hm-detail">${card(b, rankOf(b), o)}
             <div>${ST.sec(tr('Habilidades', 'Skills'), skillRows ? `<div class="list">${skillRows}</div>` : `<p class="muted">${t('none')}</p>`,
-                fifth ? tr('A 5ª habilidade só existe com a Alma Parangon: o herói precisa estar no nível 50 e já promovido com a Alma de Titã; ao usar a Alma Parangon ele volta ao nível 1 e o 5º espaço libera quando chega de novo ao nível 50 (Parangon 50). O espaço tem as mesmas chances de raridade do 4º. Sem a Alma Parangon, escolha o nível 50 acima para ver o build com 4 habilidades.', 'The 5th skill only exists with the Paragon Soul: the hero must be level 50 and already promoted with a Titan Soul; after using the Paragon Soul it goes back to level 1 and the 5th slot unlocks when it reaches level 50 again (Paragon 50). The slot has the same rarity odds as the 4th. Without the Paragon Soul, pick level 50 above to see the build with 4 skills.') : '')}
+                fifth ? tr('A 5ª habilidade só existe com a Alma Parangon: o herói precisa estar no nível 50 e já promovido com a Alma de Titã; ao usar a Alma Parangon ele volta ao nível 1 e o 5º espaço libera quando chega de novo ao nível 50 (Parangon 50). O espaço tem as mesmas chances de raridade do 4º. Use o botão “Sem Parangon” acima para ver o build com 4 habilidades.', 'The 5th skill only exists with the Paragon Soul: the hero must be level 50 and already promoted with a Titan Soul; after using the Paragon Soul it goes back to level 1 and the 5th slot unlocks when it reaches level 50 again (Paragon 50). The slot has the same rarity odds as the 4th. Use the “Without Paragon” button above to see the build with 4 skills.') : '')}
               ${ST.sec(tr('Equipamento', 'Gear'), `<div class="table-wrap"><table class="data-table"><thead><tr><th>${t('items')}</th><th>${tr('Elemento', 'Element')}</th><th>${tr('Espírito', 'Spirit')}</th></tr></thead><tbody>${gearRows}</tbody></table></div>`)}
               ${runeCheck(b, P)}
               ${ST.stats([ST.stat(tr('Poder no placar', 'Leaderboard power'), nf(Math.round(b.power))),

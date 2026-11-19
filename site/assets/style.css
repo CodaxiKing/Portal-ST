@@ -946,12 +946,11 @@ a.cvs-card:hover{transform:translateY(-2px)}.cvs-card.on{border-color:var(--acce
 .ic-chev { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 5 7 7-7 7'/%3E%3C/svg%3E"); }
 
 /* aviso "em testes" (Hypermax e Heróis da Tumba) */
-.beta-note { display: flex; gap: 12px 14px; align-items: flex-start; flex-wrap: wrap; margin: 0 0 18px; padding: 12px 14px; border-radius: var(--radius);
+.beta-note { display: flex; gap: 12px; align-items: center; margin: 0 0 18px; padding: 12px 14px; border-radius: var(--radius);
   background: color-mix(in srgb, var(--crit) 9%, var(--card)); border: 1px solid color-mix(in srgb, var(--crit) 38%, transparent); }
-.beta-tag { flex: none; display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border-radius: 99px; font: 600 12px var(--sans);
-  color: var(--crit); background: color-mix(in srgb, var(--crit) 16%, transparent); white-space: nowrap; }
-.beta-tag .ic { width: 14px; height: 14px; }
-.beta-note p { flex: 1 1 320px; margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--text); }
+.beta-ic { flex: none; width: 30px; height: 30px; border-radius: 99px; display: grid; place-items: center; color: var(--crit); background: color-mix(in srgb, var(--crit) 16%, transparent); }
+.beta-ic .ic { width: 17px; height: 17px; }
+.beta-note p { flex: 1; min-width: 0; margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--text); }
 
 /* 5ª habilidade (espaço liberado pela Alma Parangon) */
 .hm-sk.par { box-shadow: 0 0 0 2px color-mix(in srgb, var(--gem) 75%, transparent); }
@@ -959,3 +958,5 @@ a.cvs-card:hover{transform:translateY(-2px)}.cvs-card.on{border-color:var(--acce
 .hm-par img { width: 16px; height: 16px; object-fit: contain; border-radius: 0; }
 .badge.par { display: inline-flex; align-items: center; gap: 4px; background: color-mix(in srgb, var(--gem) 16%, transparent); color: var(--gem); vertical-align: middle; }
 .badge.par img { width: 14px; height: 14px; object-fit: contain; }
+.hm-par-seg button { font: 550 13.5px var(--sans); color: var(--muted); }
+.hm-par-seg button.on { color: var(--text); }
