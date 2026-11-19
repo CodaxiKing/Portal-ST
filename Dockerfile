@@ -5,7 +5,8 @@ FROM caddy:2-alpine
 COPY deploy/Caddyfile.docker /etc/caddy/Caddyfile
 COPY site/ /srv/
 
-EXPOSE 80
+# 3000 é a porta padrão do "Ports Exposes" do Coolify; o Caddy atende nas duas para funcionar sem ajuste.
+EXPOSE 80 3000
 
 # /healthz responde 200 sem passar pelo bloqueio de robôs (que barra o User-Agent do wget).
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \

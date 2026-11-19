@@ -1,4 +1,4 @@
-# Caddy dentro do contêiner (Dockerfile na raiz). Escuta só em HTTP na porta 80:
+# Caddy dentro do contêiner (Dockerfile na raiz). Escuta só em HTTP, nas portas 80 e 3000 (padrão do Coolify):
 # o domínio e o HTTPS ficam no proxy da plataforma (Coolify/Traefik).
 # As regras são as mesmas do Caddyfile.example; mantenha a lista de robôs igual nos dois.
 {
@@ -6,7 +6,7 @@
 	admin off
 }
 
-:80 {
+:80, :3000 {
 	root * /srv
 	encode zstd gzip
 

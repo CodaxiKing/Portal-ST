@@ -34,7 +34,7 @@ Aviso no Discord: coloque `"discordWebhook": "https://discord.com/api/webhooks/.
 ## Coolify / Docker
 
 O `Dockerfile` na raiz monta uma imagem com o Caddy servindo a pasta `site/` (regras em `deploy/Caddyfile.docker`,
-iguais às do `Caddyfile.example`). No Coolify: Build Pack **Dockerfile**, Base Directory `/`, Ports Exposes **80**.
+iguais às do `Caddyfile.example`). No Coolify: Build Pack **Dockerfile**, Base Directory `/`, Ports Exposes **80** ou **3000** (o Caddy atende nas duas).
 O domínio e o HTTPS ficam no proxy do Coolify. A imagem só publica o que já está em `site/` no repositório;
 a extração dos dados continua sendo feita fora dela (`extractor/update.sh` ou `update.ps1`, com push).
 
