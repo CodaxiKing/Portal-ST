@@ -490,6 +490,21 @@ def build_progression(tables, T):
             "adventurer_extra_power_shieldhp_eva_mult", "quest_evasion_max", "item_power_uncommon_mult", "item_power_flawless_mult",
             "item_power_epic_mult", "item_power_legd_mult", "affinity_stat_bonus", "affinity_all_bonus_mult"]
     raw = ["hero_element_rank_and_value", "affinity_element_bonus"]
+    # venda na loja: sobretaxa, desconto, sugestão, energia e XP (ranking de lucro e de XP)
+    sell = re.compile(r"surcharge|discount|suggest|haggle|energy|merchant_xp|sell|_xp_|xp_mult|price|value_mult|quality_.*(value|xp)")
+    def _isnum(v):
+        try:
+            float(v)
+            return True
+        except (TypeError, ValueError):
+            return False
+    for k in c:
+        if not sell.search(k) or k in keep or k in raw:
+            continue
+        if _isnum(c.get(k)):
+            keep.append(k)
+        elif isinstance(c.get(k), str) and len(c.get(k)) < 300:
+            raw.append(k)
     return {
         "levels": table_rows(tables, "levels"),
         "friendship": table_rows(tables, "flevels"),
