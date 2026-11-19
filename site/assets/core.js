@@ -272,7 +272,7 @@
     currentPage = key;
     document.querySelectorAll('[data-nav]').forEach((a) => a.classList.toggle('active', a.dataset.nav === (def.nav || head)));
     const act = document.querySelector('[data-nav].active');
-    if (act) ST.openNavGroup(+act.closest('.nav-group').dataset.g);
+    if (act && act.closest('.nav-group')) ST.openNavGroup(+act.closest('.nav-group').dataset.g);
     else if (!ST.navTouched && !document.querySelector('.nav-group.open')) ST.openNavGroup(0);
     document.title = (def.title ? def.title() + ' · ' : '') + 'Portal Shop Titans';
     el.innerHTML = ST.skeleton();
@@ -315,7 +315,8 @@
     // menu em sanfona: só um grupo aberto por vez
     document.getElementById('nav').innerHTML = NAV.map(([g, links], gi) => `<div class="nav-group" data-g="${gi}">
       <button class="nav-title" type="button" aria-expanded="false" aria-controls="ng${gi}"><span class="nav-ico">${ST.icon(NAV_ICON[g]) ? `<img src="${ST.icon(NAV_ICON[g])}" alt="" loading="lazy">` : ''}</span><span class="nav-label">${ST.t(g)}</span></button>
-      <div class="nav-links" id="ng${gi}"><div>${links.map(([p, k]) => `<a href="#/${p}" data-nav="${p}" tabindex="-1">${ST.t(k)}</a>`).join('')}</div></div></div>`).join('');
+      <div class="nav-links" id="ng${gi}"><div>${links.map(([p, k]) => `<a href="#/${p}" data-nav="${p}" tabindex="-1">${ST.t(k)}</a>`).join('')}</div></div></div>`).join('')
+      + `<a class="nav-support" href="#/apoiar" data-nav="apoiar"><i class="ic ic-heart"></i>${ST.tr('Apoiar o site', 'Support the site')}</a>`;
     document.getElementById('nav').addEventListener('click', (e) => {
       const b = e.target.closest('.nav-title');
       if (!b) return;
@@ -364,8 +365,10 @@
       document.getElementById('verPill').title = m.gameVersion;
     }
     document.getElementById('foot').innerHTML = `${ST.t('footer')} · ${ST.t('version')}: ${ST.esc(m.gameVersion || '?')} · ${
-      m.generatedAt ? new Date(m.generatedAt).toLocaleString(locale) : ''} · ${ST.t('fan')} · <button class="linkish" id="liteBtn" type="button">${
+      m.generatedAt ? new Date(m.generatedAt).toLocaleString(locale) : ''} · ${ST.t('fan')} · <a href="#/apoiar">${ST.tr('Apoiar o site', 'Support the site')}</a> · <button class="linkish" id="liteBtn" type="button">${
       ST.tr('Modo leve', 'Lite mode')}: ${ST.lite ? ST.tr('ligado', 'on') : ST.tr('desligado', 'off')}</button>`;
+    const sp = document.querySelector('#supportBtn .sp-txt');
+    if (sp) { sp.textContent = ST.tr('Apoiar', 'Support'); sp.parentElement.title = ST.tr('Apoiar o site', 'Support the site'); }
     document.getElementById('liteBtn').addEventListener('click', () => {
       try { localStorage.setItem('st_lite', ST.lite ? '0' : '1'); } catch (e) { /* sem armazenamento */ }
       location.reload();
