@@ -7,7 +7,7 @@
     mascotes: 'doghouse', colecao: 'img_collectionbook_book_quality_epic_big', titulos: 'img_player_titles_01', guilda: 'icon_global_upgrade_rareresregen',
     progressao: 'icon_achievements_gold04', novidades: 'icon_event_reward_dialog', calculadora: 'custom_handheld_wallacehammer',
     lucro: 'img_shop_item_sitems_gold1', montador: 'icon_global_class_swordmaster_128', lista: 'goldshell', comparar: 'icon_global_quality_legendary',
-    onde: 'elvenwood', encantamentos: 't14fire', planejador: 'crystalegg', hypermax: 'cc_sundragon', caravana: 'caravanbanner', conta: 'img_player_titles_01', simulador: 'forest_boss', qualidade: 'icon_global_quality_legendary', passes: 'zephyrbow', recompensas: 'chest_goldcity', quadro: 'icon_achievements_gold04', loja: 'img_shop_item_sitems_gold1', expansoes: 'vertrack1', sorte: 'greatermoon', historias: 'cc_argon', skins: 'totempole01', guildas: 'icon_global_upgrade_rareresregen', players: 'img_player_titles_01', invasao: 'airshipcannon', tumba: 'chest_tomb', custos: 'timecrystal', lancamentos: 'wolf',
+    onde: 'elvenwood', encantamentos: 't14fire', planejador: 'crystalegg', hypermax: 'cc_sundragon', caravana: 'caravanbanner', conta: 'img_player_titles_01', simulador: 'forest_boss', qualidade: 'icon_global_quality_legendary', passes: 'zephyrbow', recompensas: 'chest_goldcity', quadro: 'icon_achievements_gold04', loja: 'img_shop_item_sitems_gold1', expansoes: 'vertrack1', sorte: 'greatermoon', historias: 'cc_argon', skins: 'totempole01', guildas: 'icon_global_upgrade_rareresregen', players: 'img_player_titles_01', invasao: 'airshipcannon', tumba: 'chest_tomb', 'tumba-ranking': 'chest_tomb', custos: 'timecrystal', lancamentos: 'wolf',
   };
   const DESC = {
     lista: ['Junte vários itens e veja todos os materiais somados.', 'Combine several items and see every material added up.'],
@@ -28,7 +28,8 @@
     qualidade: ['Chance de cada qualidade por fabricação.', 'Chance of each quality per craft.'],
     caravana: ['Itens que mais rendem em cada categoria pedida por Stahl.', 'Best-paying items for each category Stahl asks for.'],
     invasao: ['Itens mais fortes para abastecer as tropas da Aeronave.', 'Strongest items to supply the Airship troops.'],
-    tumba: ['Melhores heróis para a Tumba dos Titãs, sem crítico.', 'Best heroes for the Tomb of Titans, without crit.'],
+    tumba: ['Níveis, maldição e modificadores da Tumba dos Titãs.', 'Tiers, curse and modifiers of the Tomb of Titans.'],
+    'tumba-ranking': ['Melhores heróis para a Tumba dos Titãs, sem crítico.', 'Best heroes for the Tomb of Titans, without crit.'],
     hypermax: ['O equipamento de maior poder para cada classe.', 'The highest-power gear for every class.'],
     planejador: ['Distribua pontos nas árvores de talento.', 'Spend points across talent trees.'],
     custos: ['Custo somado de vários níveis de uma vez.', 'Total cost of several levels at once.'],

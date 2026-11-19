@@ -19,7 +19,7 @@ Também no banco de dados: **Histórias** dos campeões (diálogos) e **Skins** 
 **Eventos:**
 - **Caravana de Pharoway**: para cada tema/dia, os itens que mais rendem em cada categoria procurada, com formato na grade.
 - **Invasão Dracônica**: itens mais fortes para abastecer as tropas da Aeronave, no geral e por categoria.
-- **Tumba dos Titãs**: ranking de heróis sem crítico (os monstros anulam), espírito da Tumba dobrado, níveis, maldição e modificadores.
+- **Tumba dos Titãs**: níveis, maldição dos chefes e modificadores dos andares.
 - **Cidade Perdida de Ouro**: os 26 níveis da masmorra (poder, poder por herói, Ouro Puro, chefes), o melhor grupo pelo motor
   do Hypermax, baús, títulos e as trilhas de recompensa da guilda.
 - **Eventos de comunidade**: banner, descrição, tarefas que dão pontos e metas com recompensas; liga ao evento de login do mesmo tema.
@@ -30,6 +30,8 @@ Também no banco de dados: **Histórias** dos campeões (diálogos) e **Skins** 
   Cidade Perdida de Ouro, Torre dos Titãs, Invasão Dracônica e Caravana ficam em "Eventos recorrentes" (sem data nos arquivos).
 
 **Comunidade:**
+- **Ranking da Tumba** (`#/tumba-ranking`): ranking de heróis para a Tumba dos Titãs, sem crítico (os monstros anulam) e com o
+  espírito da Tumba dobrado; mesmo motor do Hypermax.
 - **Lançamentos**: itens e móveis com data de lançamento, incluindo os que ainda vão sair.
 
 **Ferramentas:**

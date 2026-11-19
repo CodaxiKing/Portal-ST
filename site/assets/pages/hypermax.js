@@ -1,5 +1,6 @@
 /* Hypermax: o máximo teórico de cada classe — equipamento, encantamentos e habilidades que dão mais poder.
-   Rotas: #/hypermax[/<classe>] e #/tumba[/<classe>] (mesmo motor, com as regras da Tumba dos Titãs).
+   Rotas: #/hypermax[/<classe>] e #/tumba-ranking[/<classe>] (mesmo motor, com as regras da Tumba dos Titãs);
+   #/tumba traz os níveis, a maldição e os modificadores da Tumba.
 
    Modelo (somente dados e constantes do jogo):
    - item: atributos × qualidade (item_power_*_mult) após Ascensão + Transcendência; bônus "% de itens do tipo X" das habilidades
@@ -421,7 +422,7 @@
     none: { pt: 'Sem modificador', en: 'No modifier' },
   };
   const withMode = (o, mode) => {
-    o.route = mode === 'tomb' ? 'tumba' : 'hypermax';
+    o.route = mode === 'tomb' ? 'tumba-ranking' : 'hypermax';
     if (mode === 'tomb') {
       const r = CRIT_RULES[o.cr] || CRIT_RULES.off;
       Object.assign(o, { tower: true, noCrit: !!r.noCrit, critAdj: r.critAdj || 0, critMultAdj: r.critMultAdj || 0 });
@@ -562,27 +563,19 @@
         { key: 'monsterHp', label: tr('PV do chefe', 'Boss HP'), num: true, fmt: (r) => short(r.monsterHp) },
         { key: 'dmg', label: tr('Dano', 'Damage'), num: true, fmt: (r) => nf(r.dmg) },
         { key: 'ok', label: tr('Top 4 daqui', 'Top 4 here'), num: true, fmt: (r) => (party >= r.power * r.party ? `<span class="ok">${ST.ic('check')}</span>` : '—'), sort: (r) => r.power }]),
-        tr(`Os 4 melhores desta página somam ${nf(Math.round(party))} de poder. "Top 4" compara com poder recomendado × tamanho do grupo.`, `The top 4 on this page add up to ${nf(Math.round(party))} power. "Top 4" compares with recommended power × party size.`))}
+        tr(`Os 4 melhores do Ranking da Tumba somam ${nf(Math.round(party))} de poder. "Top 4" compara com poder recomendado × tamanho do grupo.`, `The top 4 of the Tomb ranking add up to ${nf(Math.round(party))} power. "Top 4" compares with recommended power × party size.`))}
       ${ST.sec(tr('Maldição da Tumba (chefes)', 'Tomb\'s Curse (bosses)'), ST.table(curseRows, [
         { key: 'dp', label: tr('A partir da profundidade', 'From depth'), num: true },
         { key: 'hp', label: tr('PV', 'HP'), num: true, fmt: (r) => `+${r.hp}%` }, { key: 'def', label: tr('Defesa', 'Defense'), num: true, fmt: (r) => `+${r.def}%` },
         { key: 'atk', label: tr('Ataque', 'Attack'), num: true, fmt: (r) => `+${r.atk}%` }]), tr('Os itens “Maldição da Tumba” reduzem esses bônus em 30%, 50% ou 90%.', 'Tomb\'s Curse items reduce these bonuses by 30%, 50% or 90%.'))}
     </div>
-    ${ST.sec(tr('Modificadores que cortam o crítico', 'Modifiers that cut crit'), `<div class="list">${critMods.map(modRow).join('')}</div>`, tr('Por isso o ranking desta página ignora o crítico por padrão. Troque a regra acima para simular um modificador específico.', 'That is why this page ignores crit by default. Change the rule above to simulate a specific modifier.'))}
+    ${ST.sec(tr('Modificadores que cortam o crítico', 'Modifiers that cut crit'), `<div class="list">${critMods.map(modRow).join('')}</div>`, tr('Por isso o Ranking da Tumba ignora o crítico por padrão. Lá dá para trocar a regra e simular um modificador específico.', 'That is why the Tomb ranking ignores crit by default. There you can change the rule to simulate a specific modifier.'))}
     <details class="sec"><summary><b>${tr('Outros modificadores dos andares', 'Other floor modifiers')} (${others.length})</b></summary><div class="list" style="margin-top:8px">${others.map(modRow).join('')}</div></details>`;
   }
 
-  // ---------------------------------------------------------------- páginas (Hypermax e Tumba usam o mesmo motor)
-  function hmPage(mode) {
-    return async (el, [uid], query) => {
-      const [classes, skills, prog] = await ST.need('classes', 'skills', 'progression');
-      const ev = mode === 'tomb' ? (await ST.need('events'))[0] : null;
-      const { d } = await ST.itemsIndex();
-      const o = withMode(readOpts(query), mode);
-      if (mode === 'tomb') { o.cr = query.get('cr') || 'off'; withMode(o, mode); o.questMult = ev.tower.spiritQuestMult || 2; }
-      const K = prog.constants || {};
-      const P = prepare(d, skills, K, o);
-      if (uid && !classes.some((c) => c.uid === uid)) { el.innerHTML = ST.notFound(); return; }
+  // ---------------------------------------------------------------- páginas (Hypermax e Ranking da Tumba usam o mesmo motor)
+  // calcula (ou reaproveita) os builds das 42 classes; devolve null se o usuário saiu da página no meio do cálculo
+  async function allBuilds(el, mode, o, classes, P, skills, K) {
       const ck = JSON.stringify([mode, o.cr, o.q, o.lv, o.tr, o.sf, o.col, o.en, o.sk, o.soon, ST.account && ST.account.active() ? JSON.stringify(ST.account.get()) : '']);
       ST._hmCaches = ST._hmCaches || {};
       if (!ST._hmCaches[ck]) {
@@ -595,12 +588,26 @@
           if (t0) t0.textContent = `${done} / ${total}`;
         });
         ST._hmCaches[ck] = res.sort((a, b) => b.power - a.power);
-        if (location.hash !== myKey) return; // o usuário mudou de página enquanto calculava
+        if (location.hash !== myKey) return null; // o usuário mudou de página enquanto calculava
       }
-      const builds = ST._hmCaches[ck];
-      ST._hmCache = { k: ck, builds };
+      ST._hmCache = { k: ck, builds: ST._hmCaches[ck] };
+      return ST._hmCaches[ck];
+  }
+
+  function hmPage(mode) {
+    return async (el, [uid], query) => {
+      const [classes, skills, prog] = await ST.need('classes', 'skills', 'progression');
+      const ev = mode === 'tomb' ? (await ST.need('events'))[0] : null;
+      const { d } = await ST.itemsIndex();
+      const o = withMode(readOpts(query), mode);
+      if (mode === 'tomb') { o.cr = query.get('cr') || 'off'; withMode(o, mode); o.questMult = ev.tower.spiritQuestMult || 2; }
+      const K = prog.constants || {};
+      const P = prepare(d, skills, K, o);
+      if (uid && !classes.some((c) => c.uid === uid)) { el.innerHTML = ST.notFound(); return; }
+      const builds = await allBuilds(el, mode, o, classes, P, skills, K);
+      if (!builds) return;
       const rankOf = (b) => builds.indexOf(b) + 1;
-      const base = '#/' + o.route, title = mode === 'tomb' ? tr('Tumba dos Titãs', 'Tomb of Titans') : t('hypermax');
+      const base = '#/' + o.route, title = mode === 'tomb' ? t('tombRank') : t('hypermax');
 
       if (uid) {
         const b = builds.find((x) => x.c.uid === uid);
@@ -655,7 +662,7 @@
         : tr('O máximo teórico de cada classe: equipamento, encantamentos e habilidades que dão mais poder. Clique numa classe para ver os detalhes.',
           'The theoretical maximum for each class: the gear, enchantments and skills that give the most power. Click a class for details.')) +
         controls(o) +
-        (mode === 'tomb' ? tombInfo(ev, builds) + `<h2 class="group-title">${tr('Ranking de heróis para a Tumba', 'Hero ranking for the Tomb')}</h2>` : '') +
+        (mode === 'tomb' ? `<div class="tags" style="margin-bottom:12px"><a class="chip" href="#/tumba">${ST.ic('info')} ${tr('Níveis, maldição e modificadores da Tumba', 'Tomb tiers, curse and modifiers')}</a></div>` : '') +
         ST.tabs([[base + optQuery(o, ex), t('all')], ...types.map(([k, n]) => [base + optQuery(o, { ...ex, ty: k }), esc(n)])], base + optQuery(o, { ...ex, ty: o.ty })) +
         `<div class="hm-grid">${shown.map((b) => card(b, rankOf(b), o)).join('')}</div><p class="note">${NOTE()}</p>`;
       bindControls(el, o, base);
@@ -664,5 +671,26 @@
 
   ST.page('hypermax', { nav: 'hypermax', title: () => t('hypermax'), render: hmPage('hyper') });
   ST.addI18n({ pt: { tomb: 'Tumba dos Titãs' }, en: { tomb: 'Tomb of Titans' } });
-  ST.page('tumba', { nav: 'tumba', title: () => t('tomb'), render: hmPage('tomb') });
+  ST.addI18n({ pt: { tombRank: 'Ranking da Tumba' }, en: { tombRank: 'Tomb ranking' } });
+  ST.page('tumba-ranking', { nav: 'tumba-ranking', title: () => t('tombRank'), render: hmPage('tomb') });
+  // Tumba dos Titãs: níveis, maldição e modificadores. O ranking de heróis fica em #/tumba-ranking (Comunidade).
+  ST.page('tumba', {
+    nav: 'tumba', title: () => t('tomb'),
+    render: async (el, [uid], query) => {
+      // links antigos (#/tumba/<classe> ou com opções do ranking) vão para a página nova
+      if (uid || [...query.keys()].length) { location.replace('#/tumba-ranking' + (uid ? '/' + uid : '') + ([...query.keys()].length ? '?' + query.toString() : '')); return; }
+      const [classes, skills, prog] = await ST.need('classes', 'skills', 'progression');
+      const ev = (await ST.need('events'))[0];
+      const { d } = await ST.itemsIndex();
+      const o = readOpts(new URLSearchParams());
+      o.cr = 'off'; withMode(o, 'tomb'); o.questMult = ev.tower.spiritQuestMult || 2;
+      const K = prog.constants || {};
+      const builds = await allBuilds(el, 'tomb', o, classes, prepare(d, skills, K, o), skills, K);
+      if (!builds) return;
+      el.innerHTML = ST.pageHead(t('tomb'), tr('Níveis da Tumba, a maldição dos chefes e os modificadores dos andares. Os monstros da Tumba anulam o crítico (Pele Adamantina, Sem Fraquezas, Fortificado), e o espírito “Malevolência Nascida da Tumba” vale em dobro aqui.',
+        'Tomb tiers, the bosses\' curse and the floor modifiers. Tomb monsters negate crit (Adamantine Skin, No Weakness, Fortified), and the “Tomb-Born Malevolence” spirit counts double here.')) +
+        `<div class="tags" style="margin-bottom:12px"><a class="chip" href="#/tumba-ranking">${ST.ic('swords')} ${tr('Ver o ranking de heróis para a Tumba', 'See the hero ranking for the Tomb')}</a></div>` +
+        tombInfo(ev, builds);
+    },
+  });
 })();
