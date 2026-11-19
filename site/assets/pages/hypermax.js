@@ -13,12 +13,18 @@
   const { t, tr, esc, nf, img, short, dec } = ST;
   ST.addI18n({ pt: { hypermax: 'Hypermax', communityNav: 'Comunidade' }, en: { hypermax: 'Hypermax', communityNav: 'Community' } });
   const QN = [['Normal', 'Common'], ['Superior', 'Uncommon'], ['Magistral', 'Flawless'], ['Épico', 'Epic'], ['Lendário', 'Legendary']];
-  const LEVELS = [50, 40, 35, 23, 100];
+  // 100 = Parangon 50: herói promovido com a Alma Parangon que voltou ao nível 50 (libera o 5º espaço de habilidade)
+  const LEVELS = [100, 50, 40, 35, 23];
+  const lvName = (lv) => (lv > 50 ? `${tr('Parangon', 'Paragon')} ${lv - 50}` : String(lv));
+  ST.hmLvName = lvName;
+  // família da habilidade que ocupa o 5º espaço (só existe com a Alma Parangon), ou null
+  const fifthOf = (b) => ((b.c.skillSlots || []).length >= 5 && b.chosen.length >= 5 ? b.chosen[4].family : null);
+  const PARAGON_TAG = () => `<span class="badge par">${ST.icon('paragonsoul') ? `<img src="${ST.icon('paragonsoul')}" alt="">` : ''}${tr('5º espaço · Alma Parangon', '5th slot · Paragon Soul')}</span>`;
 
   function readOpts(q) {
     return {
       q: Math.min(4, Math.max(0, +(q.get('q') ?? 4))),
-      lv: +(q.get('lv') || 50),
+      lv: +(q.get('lv') || 100),
       tr: q.get('tr') !== '0',
       sf: q.get('sf') !== '0', // projeto Forjado nas Estrelas (marcos extras, ex.: atributos base +25%)
       col: q.get('col') !== '0', // Livro de Coleção: cartas da classe aumentam ATQ/DEF/PV (melhor valor)
@@ -31,7 +37,7 @@
   const optQuery = (o, extra = {}) => {
     const p = new URLSearchParams();
     if (o.q !== 4) p.set('q', o.q);
-    if (o.lv !== 50) p.set('lv', o.lv);
+    if (o.lv !== 100) p.set('lv', o.lv);
     if (!o.tr) p.set('tr', '0');
     if (!o.sf) p.set('sf', '0');
     if (!o.col) p.set('col', '0');
@@ -222,7 +228,7 @@
         <th class="num">${tr('× Qualidade', '× Quality')}</th><th class="num">${tr('Bônus de tipo', 'Type bonus')}</th>
         <th class="num">${tr('Item final', 'Final item')}</th><th class="num">${tr('Encantamentos', 'Enchantments')}</th></tr></thead><tbody>${rows}</tbody></table></div>
       <div class="list hm-sum">
-        ${row(`${tr('Herói', 'Hero')} (${t('level')} ${b.lv})`, three(T0.base))}
+        ${row(`${tr('Herói', 'Hero')} (${t('level')} ${lvName(b.lv)})`, three(T0.base))}
         ${T0.abs.atk || T0.abs.def || T0.abs.hp ? row(tr('Valores fixos das habilidades', 'Flat skill values'), '+ ' + three(T0.abs)) : ''}
         ${row(tr('Itens', 'Items'), '+ ' + three(sumItems))}
         ${row(tr('Encantamentos', 'Enchantments'), '+ ' + three(sumEnch))}
@@ -403,8 +409,9 @@
     ${statBox(t('def').toUpperCase(), nf(Math.round(b.def)))}${statBox(tr('ESCUDO', 'M.SHIELD'), nf(Math.round(b.shield)))}
     ${statBox(tr('EVA', 'EVA'), Math.round(b.eva * 100) + '%')}${statBox(tr('CRÍT', 'CRIT'), Math.round(Math.min(b.crit, 1) * 100) + '%')}
     ${statBox(tr('DANO CRÍT', 'CRIT DMG'), '×' + dec(b.cm, 2))}${statBox(tr('AMEAÇA', 'THREAT'), nf(b.aggro))}</div>`;
-  const skillRow = (b) => `<div class="hm-skills">${b.active.filter((a) => !a.spirit).map((a, k) =>
-    `<span class="hm-sk ${k === 0 && b.c.innate && a.f.family === b.c.innate.uid ? 'inn' : ''}" title="${esc(a.tt.name || a.f.name)} · T${a.tt.tier || 1}: ${esc((a.tt.effects || []).join(', '))}">${img(a.f.icon)}<i>${a.tt.tier || ''}</i></span>`).join('')}</div>`;
+  const skillRow = (b) => { const fifth = fifthOf(b); return `<div class="hm-skills">${b.active.filter((a) => !a.spirit).map((a, k) => {
+    const par = fifth && a.f.family === fifth;
+    return `<span class="hm-sk ${k === 0 && b.c.innate && a.f.family === b.c.innate.uid ? 'inn' : ''} ${par ? 'par' : ''}" title="${esc(a.tt.name || a.f.name)} · T${a.tt.tier || 1}: ${esc((a.tt.effects || []).join(', '))}${par ? ' · ' + esc(tr('5º espaço · Alma Parangon', '5th slot · Paragon Soul')) : ''}">${img(a.f.icon)}<i>${a.tt.tier || ''}</i>${par && ST.icon('paragonsoul') ? `<em class="hm-par"><img src="${ST.icon('paragonsoul')}" alt=""></em>` : ''}</span>`; }).join('')}</div>`; };
   const mainStat = (x) => { const c = x.core; const m = Math.max(c.atk * 0.8, c.def * 1.2, c.hp * 5); return m === c.atk * 0.8 ? 'atk' : m === c.def * 1.2 ? 'def' : 'hp'; };
   const gearCell = (g, o) => (g ? `<span class="hm-it q${g.q ?? o.q}" title="${esc(g.x.it.name)}${g.el ? ' · ' + esc(g.el.e.name) : ''}${g.sp ? ' · ' + esc(g.sp.e.name) : ''}">
       <span class="hm-tier">${g.x.it.tier}</span>${o.tr ? '<span class="hm-stars">★★★</span>' : ''}
@@ -439,7 +446,7 @@
       ${o.tower ? `<label class="field">${tr('Regra de crítico', 'Crit rule')}<select class="inp" data-o="cr" data-str>${Object.entries(CRIT_RULES).map(([k, r]) =>
         `<option value="${k}" ${k === (o.cr || 'off') ? 'selected' : ''}>${tr(r.pt, r.en)}</option>`).join('')}</select></label>` : ''}
       <label class="field">${tr('Qualidade', 'Quality')}<select class="inp" data-o="q">${QN.map((n, k) => `<option value="${k}" ${k === o.q ? 'selected' : ''}>${tr(...n)}</option>`).join('')}</select></label>
-      <label class="field">${t('level')}<select class="inp" data-o="lv">${LEVELS.map((l) => `<option value="${l}" ${o.lv === l ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+      <label class="field">${t('level')}<select class="inp" data-o="lv">${LEVELS.map((l) => `<option value="${l}" ${o.lv === l ? 'selected' : ''}>${l > 50 ? `${lvName(l)} (${tr('5ª habilidade', '5th skill')})` : l}</option>`).join('')}</select></label>
       <label class="check"><input type="checkbox" data-o="sk" ${o.sk ? 'checked' : ''}> ${tr('Habilidades', 'Skills')}</label>
       <label class="check"><input type="checkbox" data-o="en" ${o.en ? 'checked' : ''}> ${tr('Encantamentos', 'Enchantments')}</label>
       <label class="check"><input type="checkbox" data-o="sf" ${o.sf ? 'checked' : ''}> ${tr('Forjado nas Estrelas', 'Starforged')}</label>
@@ -620,11 +627,11 @@
           <span class="small muted">T${g.x.it.tier} · ${esc(b.c.slots[k].map((x) => x.name).join(' / '))}</span></span></a></td>
           <td>${g.el ? `<a class="cell-item" href="#/item/${g.el.e.uid}"><span class="hm-rune lg">${img(g.el.e.uid)}<em>${elIcon(g.el.el)}</em></span><span>${esc(g.el.e.name)} <span class="small muted">+${g.el.val}</span>${g.elTies && g.elTies.length ? `<br><span class="small muted">${tr('empate exato com', 'exact tie with')} ${g.elTies.map((e) => esc(e.e.name)).join(', ')}</span>` : ''}</span></a>` : '—'}</td>
           <td>${g.sp ? `<a class="cell-item" href="#/item/${g.sp.e.uid}">${img(g.sp.e.uid)}<span>${esc(g.sp.e.name)}</span></a>` : '—'}</td></tr>` : '')).join('');
-        const seen = new Set();
+        const seen = new Set(), fifth = fifthOf(b);
         const skillRows = b.active.filter((a) => { const k = a.f.family; if (a.spirit && seen.has(k)) return false; seen.add(k); return true; }).map((a) => {
           const n = a.spirit ? b.active.filter((x) => x.f.family === a.f.family).length : 1;
           const doubled = a.tt.quest && o.tower;
-          return `<div class="row">${img(a.f.icon)}<div class="grow"><b>${esc(a.tt.name || a.f.name)}</b>${n > 1 ? ` <span class="badge">×${n}</span>` : ''}${doubled ? ` <span class="badge">${tr('dobrado na Tumba', 'doubled in Tomb')}</span>` : ''}
+          return `<div class="row">${img(a.f.icon)}<div class="grow"><b>${esc(a.tt.name || a.f.name)}</b>${n > 1 ? ` <span class="badge">×${n}</span>` : ''}${doubled ? ` <span class="badge">${tr('dobrado na Tumba', 'doubled in Tomb')}</span>` : ''}${!a.spirit && fifth && a.f.family === fifth ? ' ' + PARAGON_TAG() : ''}
           <span class="muted small">${a.spirit ? tr('espírito', 'spirit') : a.f.kind === 'innate' ? tr('inata', 'innate') : a.f.kind === 'mastery' ? tr('maestria', 'mastery') : tr('herói', 'hero')}${a.tt.tier ? ' · T' + a.tt.tier : ''}${a.tt.req ? ` · ${nf(a.tt.req)} ${tr('de elemento', 'element')}` : ''}${a.self ? ' · ' + tr('só no próprio item', 'this item only') : ''}</span>
           <div class="small">${esc((a.tt.effects || []).join(' · '))}</div></div></div>`;
         }).join('');
@@ -633,13 +640,14 @@
           ${BETA()}
           ${controls(o)}
           <div class="hm-detail">${card(b, rankOf(b), o)}
-            <div>${ST.sec(tr('Habilidades', 'Skills'), skillRows ? `<div class="list">${skillRows}</div>` : `<p class="muted">${t('none')}</p>`)}
+            <div>${ST.sec(tr('Habilidades', 'Skills'), skillRows ? `<div class="list">${skillRows}</div>` : `<p class="muted">${t('none')}</p>`,
+                fifth ? tr('A 5ª habilidade só existe com a Alma Parangon: o herói precisa estar no nível 50 e já promovido com a Alma de Titã; ao usar a Alma Parangon ele volta ao nível 1 e o 5º espaço libera quando chega de novo ao nível 50 (Parangon 50). O espaço tem as mesmas chances de raridade do 4º. Sem a Alma Parangon, escolha o nível 50 acima para ver o build com 4 habilidades.', 'The 5th skill only exists with the Paragon Soul: the hero must be level 50 and already promoted with a Titan Soul; after using the Paragon Soul it goes back to level 1 and the 5th slot unlocks when it reaches level 50 again (Paragon 50). The slot has the same rarity odds as the 4th. Without the Paragon Soul, pick level 50 above to see the build with 4 skills.') : '')}
               ${ST.sec(tr('Equipamento', 'Gear'), `<div class="table-wrap"><table class="data-table"><thead><tr><th>${t('items')}</th><th>${tr('Elemento', 'Element')}</th><th>${tr('Espírito', 'Spirit')}</th></tr></thead><tbody>${gearRows}</tbody></table></div>`)}
               ${runeCheck(b, P)}
               ${ST.stats([ST.stat(tr('Poder no placar', 'Leaderboard power'), nf(Math.round(b.power))),
                 ST.stat(tr('Poder no perfil do herói', 'Hero profile power'), nf(Math.round(b.profile.power))),
                 ST.stat(tr('ATQ / DEF / PV no perfil', 'ATK / DEF / HP on profile'), `${short(Math.round(b.profile.atk))} / ${short(Math.round(b.profile.def))} / ${short(Math.round(b.profile.hp))}`),
-                ST.stat(tr('Herói sem nada', 'Bare hero'), nf(Math.round(b.heroOnly))), ST.stat(tr('Elemento do herói', 'Hero element'), `${nf(Math.round(b.E))} ${elIcon(b.c.element)}`), ST.stat(t('level'), b.lv)])}
+                ST.stat(tr('Herói sem nada', 'Bare hero'), nf(Math.round(b.heroOnly))), ST.stat(tr('Elemento do herói', 'Hero element'), `${nf(Math.round(b.E))} ${elIcon(b.c.element)}`), ST.stat(t('level'), lvName(b.lv))])}
               <p class="note">${tr('No jogo, o perfil do herói mostra atributos e poder sem o Livro de Coleção; o placar de líderes aplica o melhor bônus da classe (+25%). Por isso o mesmo herói aparece com 1.399.539 no perfil e 1.749.428 no placar (×1,25).',
                 'In the game, the hero profile shows stats and power without the Collection book; the leaderboard applies the best class bonus (+25%). That is why the same hero shows 1,399,539 on the profile and 1,749,428 on the leaderboard (×1.25).')}</p>
               <div class="tags" style="margin-top:12px"><a class="chip" href="${builder}">${ST.ic('swords')} ${tr('Abrir no montador', 'Open in builder')}</a><a class="chip" href="#/classes/${b.c.uid}">${ST.ic('info')} ${esc(b.c.name)}</a>

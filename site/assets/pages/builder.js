@@ -138,7 +138,7 @@
           <select class="inp" data-k="${k}" data-f="ru"><option value="">${tr('Sem runa', 'No rune')}</option>${elems.map((e) => `<option value="${e.e.uid}" ${e.e.uid === p.ru ? 'selected' : ''}>T${e.e.tier} · ${esc(e.e.name)}</option>`).join('')}</select>
           <select class="inp" data-k="${k}" data-f="sp"><option value="">${tr('Sem espírito', 'No spirit')}</option>${spirits.map((s) => `<option value="${s.e.uid}" ${s.e.uid === p.sp ? 'selected' : ''}>${esc(s.e.name)}</option>`).join('')}</select></div></div></div>`;
       }).join('');
-      const skillHTML = Array.from({ length: nSlots }, (_, i) => `<select class="inp" data-sk="${i}"><option value="">— ${tr('Habilidade', 'Skill')} ${i + 1} —</option>${pool.map((f) =>
+      const skillHTML = Array.from({ length: nSlots }, (_, i) => `<select class="inp" data-sk="${i}"><option value="">— ${tr('Habilidade', 'Skill')} ${i + 1}${i === 4 ? ` (${tr('Alma Parangon', 'Paragon Soul')})` : ''} —</option>${pool.map((f) =>
         `<option value="${f.family}" ${chosenF[i] === f.family ? 'selected' : ''}>${esc(f.name)}</option>`).join('')}</select>`).join('');
       const party = (l) => b.profile.power * (l.party || 1);
       const best = zones.map((z) => {

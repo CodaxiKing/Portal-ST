@@ -80,7 +80,7 @@
             <dt>${tr('Contratação', 'Hire')}</dt><dd>${c.hire.gold ? nf(c.hire.gold) + ' <i class="ic ic-coin"></i> ' : ''}${c.hire.gems ? nf(c.hire.gems) + ' <i class="ic ic-gem"></i> ' : ''}${t('level')} ${c.hire.level}</dd>
             <dt>${tr('Promove para', 'Promotes to')}</dt><dd>${link(c.promotesTo)}</dd>
             <dt>${tr('Promovida de', 'Promoted from')}</dt><dd>${link(c.promotedFrom)}</dd>
-            <dt>${tr('Espaços de habilidade', 'Skill slots')}</dt><dd>${c.skillSlots.map((l) => `${t('level')} ${l}`).join(', ') || '—'}</dd>
+            <dt>${tr('Espaços de habilidade', 'Skill slots')}</dt><dd>${c.skillSlots.map((l) => (l > 50 ? `${tr('Parangon', 'Paragon')} ${l - 50} (${tr('Alma Parangon', 'Paragon Soul')})` : `${t('level')} ${l}`)).join(', ') || '—'}</dd>
           </dl></div></div>
         <div class="two-col">
           ${ST.sec(tr('Atributos por nível', 'Stats by level'), levelStatsTable(c.stats))}
