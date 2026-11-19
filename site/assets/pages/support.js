@@ -6,6 +6,11 @@
   const PIX_NAME = 'Diego Tavares de Melo';
   // "Pix copia e cola" (o mesmo conteúdo do QR code em img/brand/pix-qr.svg)
   const PIX_CODE = '00020126580014BR.GOV.BCB.PIX013698f5640f-a226-4b5c-941d-9a36429bd94c5204000053039865802BR5921Diego Tavares de Melo6009SAO PAULO62140510KvDGKHV0QH6304B048';
+  // Doação de fora do Brasil: preencha a url de cada serviço que for usar; os que ficarem vazios não aparecem.
+  const INTL = [
+    { name: 'Ko-fi', url: '' },
+    { name: 'PayPal', url: '' },
+  ];
   ST.addI18n({ pt: { support: 'Apoiar o site' }, en: { support: 'Support the site' } });
 
   // chuva de corações ao entrar na página (uma vez por visita; não roda no modo leve nem com "reduzir movimento")
@@ -29,6 +34,7 @@
   ST.page('apoiar', {
     nav: 'apoiar', title: () => ST.t('support'),
     render(el) {
+      const intl = INTL.filter((x) => /^https:\/\//.test(x.url));
       el.innerHTML = ST.pageHead(ST.t('support'), tr('O Portal ST é gratuito, sem anúncios e feito por um fã. Se ele te ajuda no jogo, uma doação de qualquer valor ajuda a pagar o servidor e o domínio e a manter as atualizações.',
         'Portal ST is free, ad-free and made by a fan. If it helps you in the game, a donation of any amount helps pay for the server and the domain and keeps the updates coming.')) +
         `<div class="sup-grid">
@@ -47,6 +53,9 @@
             <p class="small muted">${tr('Confira o nome do recebedor antes de confirmar:', 'Check the recipient name before confirming:')} <b>${esc(PIX_NAME)}</b>.</p>
           </section>
         </div>
+        ${intl.length ? `<section class="panel sup-intl"><h3>${tr('De fora do Brasil', 'From outside Brazil')}</h3>
+          <p class="small muted">${tr('O Pix só funciona com conta bancária no Brasil. De outros países, use cartão ou PayPal por aqui:', 'Pix only works with a Brazilian bank account. From other countries, use a card or PayPal here:')}</p>
+          <div class="tags">${intl.map((x) => `<a class="btn" href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">${esc(x.name)} ${ST.ic('right')}</a>`).join('')}</div></section>` : ''}
         <p class="note">${tr('A doação é voluntária e não dá nenhuma vantagem no jogo nem acesso a conteúdo extra: o site continua igual para todo mundo. Portal de fãs, sem afiliação com a Kabam.',
           'Donations are voluntary and give no in-game advantage or extra content: the site stays the same for everyone. Fan portal, not affiliated with Kabam.')}</p>`;
       heartRain();

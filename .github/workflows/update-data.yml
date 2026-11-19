@@ -1,5 +1,5 @@
 # Atualiza os dados do jogo sozinho: a cada 6 h confere o build público do Shop Titans na Steam;
-# se mudou, baixa o jogo com o SteamCMD, roda o extrator e faz commit + push na main
+# se mudou, baixa o jogo com o SteamCMD, roda o extrator, roda os testes do site e, se passarem, faz commit + push na main
 # (o Coolify, ou o GitHub Pages, publica a partir desse push).
 #
 # Conta da Steam: tenta "anonymous". Se a Steam recusar, crie em Settings > Secrets and variables > Actions
@@ -76,4 +76,8 @@ jobs:
 
       - name: Mostrar o log se falhar
         if: failure()
-        run: tail -n 80 extractor/update.log || true
+        run: tail -n 120 extractor/update.log || true
+
+      - name: Avisos do log
+        if: success() && steps.check.outputs.run == 'true'
+        run: grep -n "AVISO" extractor/update.log && echo "::warning::Testes do motor falharam após este patch; confira o Hypermax" || true

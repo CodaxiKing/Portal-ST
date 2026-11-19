@@ -16,7 +16,8 @@
   ],
   "shortcuts": [
     { "name": "Itens", "url": "./index.html#/itens" },
-    { "name": "Calculadora", "url": "./index.html#/calculadora" },
-    { "name": "Lista de fabricação", "url": "./index.html#/lista" }
+    { "name": "Hypermax", "url": "./index.html#/hypermax" },
+    { "name": "Montador de herói", "url": "./index.html#/montador" },
+    { "name": "Calendário", "url": "./index.html#/calendario" }
   ]
 }

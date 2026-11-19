@@ -456,7 +456,9 @@ a.chip-item:hover { border-color: var(--accent); }
   .layout { grid-template-columns: 1fr; }
   .menu-btn { display: inline-grid !important; }
   .sidenav { position: fixed; top: 61px; left: 0; bottom: 0; width: 272px; z-index: 30; background: var(--bg); transform: translateX(-102%);
-    transition: transform .5s var(--ease); box-shadow: var(--shadow-lift); height: auto; }
+    transition: transform .5s var(--ease); box-shadow: var(--shadow-lift);
+    /* align-self: start (do layout em grade) deixava o menu com a altura do conteúdo, cobrindo a barra do topo */
+    align-self: auto; height: calc(100dvh - 61px); }
   body.nav-open .sidenav { transform: none; }
   .content { padding: 4px 16px 40px; }
   .two-col { grid-template-columns: 1fr; }
@@ -1000,3 +1002,8 @@ a.cvs-card:hover{transform:translateY(-2px)}.cvs-card.on{border-color:var(--acce
 .sup-qr.pop { animation: qr-pop .7s var(--ease) .15s both; }
 @keyframes qr-pop { 0% { transform: scale(.86); opacity: 0; } 60% { transform: scale(1.03); opacity: 1; } 100% { transform: none; } }
 @media (prefers-reduced-motion: reduce) { .heart-rain { display: none; } .sup-qr.pop { animation: none; } }
+
+/* o mosaico da página inicial flutua para fora da coluna: corta a sobra para não criar rolagem horizontal */
+.content { overflow-x: clip; }
+.sup-intl { max-width: 860px; margin-top: 20px; }
+.sup-intl .btn { text-decoration: none; }

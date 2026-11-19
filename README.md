@@ -112,7 +112,8 @@ cada patch com mudanças gera um resumo no Discord (uma vez por patch).
 ## Atualização automática
 
 **Sem depender de ninguém (GitHub Actions):** `.github/workflows/update-data.yml` confere a cada 6 h o build público do
-Shop Titans na Steam; quando muda, baixa o jogo com o SteamCMD, roda o extrator e faz commit + push na `main`, e o
+Shop Titans na Steam; quando muda, baixa o jogo com o SteamCMD, roda o extrator e os testes do site (`tests/site.test.js`; se falharem, nada é
+publicado) e faz commit + push na `main`, e o
 Coolify (ou o GitHub Pages) publica a partir desse push. Dá para rodar na hora em Actions → "Atualizar dados do jogo" →
 Run workflow. O login tenta a conta `anonymous`; se a Steam recusar, crie os segredos `STEAM_USER` e `STEAM_PASS`
 (Settings → Secrets and variables → Actions) com uma conta só para isso, com o jogo na biblioteca e sem Steam Guard.
