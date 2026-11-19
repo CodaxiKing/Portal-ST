@@ -8,6 +8,24 @@
   const PIX_CODE = '00020126580014BR.GOV.BCB.PIX013698f5640f-a226-4b5c-941d-9a36429bd94c5204000053039865802BR5921Diego Tavares de Melo6009SAO PAULO62140510KvDGKHV0QH6304B048';
   ST.addI18n({ pt: { support: 'Apoiar o site' }, en: { support: 'Support the site' } });
 
+  // chuva de corações ao entrar na página (uma vez por visita; não roda no modo leve nem com "reduzir movimento")
+  function heartRain() {
+    if (ST.lite || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) return;
+    document.querySelectorAll('.heart-rain').forEach((n) => n.remove());
+    const box = document.createElement('div');
+    box.className = 'heart-rain';
+    box.setAttribute('aria-hidden', 'true');
+    const n = innerWidth < 600 ? 26 : 44, rnd = (a, b) => a + Math.random() * (b - a);
+    let html = '';
+    for (let i = 0; i < n; i++) {
+      const size = rnd(14, 34), dur = rnd(2.6, 4.6), delay = rnd(0, 1.8);
+      html += `<i class="hr-${i % 5 === 0 ? 'gold' : i % 3 === 0 ? 'pink' : 'red'}" style="left:${rnd(0, 100).toFixed(1)}%;--s:${size.toFixed(0)}px;--d:${dur.toFixed(2)}s;--w:${delay.toFixed(2)}s;--x:${rnd(-60, 60).toFixed(0)}px;--r:${rnd(-50, 50).toFixed(0)}deg;--o:${rnd(0.55, 1).toFixed(2)}"></i>`;
+    }
+    box.innerHTML = html;
+    document.body.appendChild(box);
+    setTimeout(() => box.remove(), 7000);
+  }
+
   ST.page('apoiar', {
     nav: 'apoiar', title: () => ST.t('support'),
     render(el) {
@@ -31,6 +49,8 @@
         </div>
         <p class="note">${tr('A doação é voluntária e não dá nenhuma vantagem no jogo nem acesso a conteúdo extra: o site continua igual para todo mundo. Portal de fãs, sem afiliação com a Kabam.',
           'Donations are voluntary and give no in-game advantage or extra content: the site stays the same for everyone. Fan portal, not affiliated with Kabam.')}</p>`;
+      heartRain();
+      el.querySelector('.sup-qr').classList.add('pop');
       const msg = el.querySelector('#supMsg');
       el.querySelectorAll('[data-copy]').forEach((b) => b.addEventListener('click', async () => {
         try { await navigator.clipboard.writeText(b.dataset.copy); msg.textContent = tr('Copiado. Agora é só colar no app do banco.', 'Copied. Now paste it into your bank app.'); }
