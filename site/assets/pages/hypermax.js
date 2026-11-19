@@ -563,17 +563,17 @@
         { key: 'monsterHp', label: tr('PV do chefe', 'Boss HP'), num: true, fmt: (r) => short(r.monsterHp) },
         { key: 'dmg', label: tr('Dano', 'Damage'), num: true, fmt: (r) => nf(r.dmg) },
         { key: 'ok', label: tr('Top 4 daqui', 'Top 4 here'), num: true, fmt: (r) => (party >= r.power * r.party ? `<span class="ok">${ST.ic('check')}</span>` : '—'), sort: (r) => r.power }]),
-        tr(`Os 4 melhores do Ranking da Tumba somam ${nf(Math.round(party))} de poder. "Top 4" compara com poder recomendado × tamanho do grupo.`, `The top 4 of the Tomb ranking add up to ${nf(Math.round(party))} power. "Top 4" compares with recommended power × party size.`))}
+        tr(`Os 4 melhores de Heróis da Tumba somam ${nf(Math.round(party))} de poder. "Top 4" compara com poder recomendado × tamanho do grupo.`, `The top 4 in Tomb heroes add up to ${nf(Math.round(party))} power. "Top 4" compares with recommended power × party size.`))}
       ${ST.sec(tr('Maldição da Tumba (chefes)', 'Tomb\'s Curse (bosses)'), ST.table(curseRows, [
         { key: 'dp', label: tr('A partir da profundidade', 'From depth'), num: true },
         { key: 'hp', label: tr('PV', 'HP'), num: true, fmt: (r) => `+${r.hp}%` }, { key: 'def', label: tr('Defesa', 'Defense'), num: true, fmt: (r) => `+${r.def}%` },
         { key: 'atk', label: tr('Ataque', 'Attack'), num: true, fmt: (r) => `+${r.atk}%` }]), tr('Os itens “Maldição da Tumba” reduzem esses bônus em 30%, 50% ou 90%.', 'Tomb\'s Curse items reduce these bonuses by 30%, 50% or 90%.'))}
     </div>
-    ${ST.sec(tr('Modificadores que cortam o crítico', 'Modifiers that cut crit'), `<div class="list">${critMods.map(modRow).join('')}</div>`, tr('Por isso o Ranking da Tumba ignora o crítico por padrão. Lá dá para trocar a regra e simular um modificador específico.', 'That is why the Tomb ranking ignores crit by default. There you can change the rule to simulate a specific modifier.'))}
+    ${ST.sec(tr('Modificadores que cortam o crítico', 'Modifiers that cut crit'), `<div class="list">${critMods.map(modRow).join('')}</div>`, tr('Por isso a página Heróis da Tumba ignora o crítico por padrão. Lá dá para trocar a regra e simular um modificador específico.', 'That is why the Tomb heroes page ignores crit by default. There you can change the rule to simulate a specific modifier.'))}
     <details class="sec"><summary><b>${tr('Outros modificadores dos andares', 'Other floor modifiers')} (${others.length})</b></summary><div class="list" style="margin-top:8px">${others.map(modRow).join('')}</div></details>`;
   }
 
-  // ---------------------------------------------------------------- páginas (Hypermax e Ranking da Tumba usam o mesmo motor)
+  // ---------------------------------------------------------------- páginas (Hypermax e Heróis da Tumba usam o mesmo motor)
   // calcula (ou reaproveita) os builds das 42 classes; devolve null se o usuário saiu da página no meio do cálculo
   async function allBuilds(el, mode, o, classes, P, skills, K) {
       const ck = JSON.stringify([mode, o.cr, o.q, o.lv, o.tr, o.sf, o.col, o.en, o.sk, o.soon, ST.account && ST.account.active() ? JSON.stringify(ST.account.get()) : '']);
@@ -671,7 +671,7 @@
 
   ST.page('hypermax', { nav: 'hypermax', title: () => t('hypermax'), render: hmPage('hyper') });
   ST.addI18n({ pt: { tomb: 'Tumba dos Titãs' }, en: { tomb: 'Tomb of Titans' } });
-  ST.addI18n({ pt: { tombRank: 'Ranking da Tumba' }, en: { tombRank: 'Tomb ranking' } });
+  ST.addI18n({ pt: { tombRank: 'Heróis da Tumba' }, en: { tombRank: 'Tomb heroes' } });
   ST.page('tumba-ranking', { nav: 'tumba-ranking', title: () => t('tombRank'), render: hmPage('tomb') });
   // Tumba dos Titãs: níveis, maldição e modificadores. O ranking de heróis fica em #/tumba-ranking (Comunidade).
   ST.page('tumba', {
