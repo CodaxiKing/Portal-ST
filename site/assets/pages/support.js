@@ -8,7 +8,7 @@
   const PIX_CODE = '00020126580014BR.GOV.BCB.PIX013698f5640f-a226-4b5c-941d-9a36429bd94c5204000053039865802BR5921Diego Tavares de Melo6009SAO PAULO62140510KvDGKHV0QH6304B048';
   // Doação de fora do Brasil: preencha a url de cada serviço que for usar; os que ficarem vazios não aparecem.
   const INTL = [
-    { name: 'Ko-fi', url: '' },
+    { name: 'Ko-fi', url: 'https://ko-fi.com/diegotavares55483' },
     { name: 'PayPal', url: '' },
   ];
   ST.addI18n({ pt: { support: 'Apoiar o site' }, en: { support: 'Support the site' } });
