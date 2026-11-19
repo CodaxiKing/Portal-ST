@@ -406,7 +406,7 @@
   const elIcon = (el) => img('icon_global_element_' + el, 'hm-elic');
   const statBox = (k, v) => `<div class="hm-sb"><span>${k}</span><b>${v}</b></div>`;
   const statsGrid = (b) => `<div class="hm-sgrid">${statBox(t('hp').toUpperCase(), nf(Math.round(b.hp)))}${statBox(t('atk').toUpperCase(), nf(Math.round(b.atk)))}
-    ${statBox(t('def').toUpperCase(), nf(Math.round(b.def)))}${statBox(tr('ESCUDO', 'M.SHIELD'), nf(Math.round(b.shield)))}
+    ${statBox(t('def').toUpperCase(), nf(Math.round(b.def)))}${statBox(tr('ESCUDO', 'SHIELD'), nf(Math.round(b.shield)))}
     ${statBox(tr('EVA', 'EVA'), Math.round(b.eva * 100) + '%')}${statBox(tr('CRÍT', 'CRIT'), Math.round(Math.min(b.crit, 1) * 100) + '%')}
     ${statBox(tr('DANO CRÍT', 'CRIT DMG'), '×' + dec(b.cm, 2))}${statBox(tr('AMEAÇA', 'THREAT'), nf(b.aggro))}</div>`;
   const skillRow = (b) => { const fifth = fifthOf(b); return `<div class="hm-skills">${b.active.filter((a) => !a.spirit).map((a, k) => {

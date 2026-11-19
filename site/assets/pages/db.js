@@ -275,7 +275,7 @@
       if (tab === 'tree') {
         body = st.trees.map((tr_) => `<h2 class="group-title">${esc(tr_.name)}</h2>${tr_.desc ? `<p class="muted">${esc(tr_.desc)}</p>` : ''}
           <div class="tiles">${tr_.nodes.map((n) => `<div class="tile" style="align-items:flex-start"><div class="thumb">${img(n.icon)}</div><div class="tile-body">
-            <div class="tile-title">${esc(n.title)} ${n.epic ? '<span class="badge">Épico</span>' : ''}</div><div class="tile-sub">${esc(n.desc || '')}</div>
+            <div class="tile-title">${esc(n.title)} ${n.epic ? `<span class="badge">${tr('Épico', 'Epic')}</span>` : ''}</div><div class="tile-sub">${esc(n.desc || '')}</div>
             <div class="small" style="margin-top:6px">${n.ranks.map((r) => `<span class="badge">${esc(r.value || '')}</span>`).join(' ')}</div>
             ${n.ranks.some((r) => r.empowered) ? `<div class="small muted" style="margin-top:4px">${tr('Fortalecido', 'Empowered')}: ${n.ranks.map((r) => esc(r.empowered || '')).join(' / ')}</div>` : ''}
             ${n.ranks.some((r) => r.gold || r.gems) ? `<div class="small muted">${tr('Custo', 'Cost')}: ${n.ranks.map((r) => [r.gold && short(r.gold) + ' <i class="ic ic-coin"></i>', r.gems && nf(r.gems) + ' <i class="ic ic-gem"></i>'].filter(Boolean).join(' ') || '—').join(' / ')}</div>` : ''}
@@ -320,6 +320,17 @@
     async render(el) {
       const [co, st] = await ST.need('collection', 'skilltree');
       await ST.itemsIndex();
+      const CARD_Q = { common: ['Comum', 'Common'], rare: ['Rara', 'Rare'], mythic: ['Mítica', 'Mythic'] };
+      // recompensas do livro: item, ouro, gemas, projeto (bp) ou bônus permanente ("fusionSpeed-0.05", "legendChance+0.05")
+      const BOOK_MOD = { fusionSpeed: ['Tempo de fusão', 'Fusion time'], legendChance: ['Chance de Lendário', 'Legendary chance'] };
+      const bookReward = (r) => {
+        if (r.type === 'item') return ST.itemChip(r.id, ` × ${esc(r.value)}`);
+        if (r.type === 'bp') return `${tr('Projeto', 'Blueprint')}: ${ST.itemChip(r.value)}`;
+        if (r.type === 'gold' || r.type === 'gems') return `${nf(+r.value)} <i class="ic ic-${r.type === 'gold' ? 'coin' : 'gem'}"></i>`;
+        const m = /^([A-Za-z]+)([+-])([\d.]+)$/.exec(r.type);
+        if (m) return `${esc(BOOK_MOD[m[1]] ? tr(...BOOK_MOD[m[1]]) : m[1])} ${m[2] === '-' ? '−' : '+'}${Math.round(+m[3] * 100)}%`;
+        return `${r.value ? nf(+r.value) + ' ' : ''}${esc(r.type)}`;
+      };
       const bonus = {};
       st.cards.forEach((c) => (bonus[c.family] = bonus[c.family] || []).push(c));
       el.innerHTML = ST.pageHead(t('collection'), tr('Cartas colecionáveis, bônus que concedem e recompensas do livro.', 'Collectible cards, the bonuses they grant and book rewards.'), `<div class="form-row">${searchBox('kq')}</div>`) +
@@ -327,11 +338,11 @@
           Object.values(s.cards.reduce((m, c) => ((m[c.family] = m[c.family] || []).push(c), m), {})).map((cards) => {
             const c = cards[0], b = bonus[c.family] || [];
             return `<div class="tile" style="align-items:flex-start" data-s="${esc(c.name)}"><div class="thumb">${img(ST.firstIcon('cc_' + c.family, 'icon_global_' + c.family, c.family + '_head', 'icon_global_class_' + c.family + '_128'))}</div>
-              <div class="tile-body"><div class="tile-title">${esc(c.name)}</div><div class="tile-sub">${cards.map((x) => `${esc(x.quality)} (${x.score})`).join(' · ')}</div>
+              <div class="tile-body"><div class="tile-title">${esc(c.name)}</div><div class="tile-sub">${cards.map((x) => `${esc(CARD_Q[x.quality] ? tr(...CARD_Q[x.quality]) : x.quality)} (${x.score})`).join(' · ')}</div>
               ${b.map((x) => `<div class="small" style="margin-top:4px">• ${esc(x.text)}</div>`).join('')}</div></div>`;
           }).join('')}</div>`).join('') +
         ST.sec(tr('Recompensas do livro', 'Book rewards'), ST.table(co.rewards, [{ key: 'points', label: tr('Pontos', 'Points'), num: true },
-          { key: 'type', label: tr('Recompensa', 'Reward'), fmt: (r) => (r.type === 'item' ? ST.itemChip(r.id, ` × ${esc(r.value)}`) : `${nf(+r.value)} ${r.type === 'gold' ? '<i class="ic ic-coin"></i>' : r.type === 'gems' ? '<i class="ic ic-gem"></i>' : esc(r.type)}`) }]));
+          { key: 'type', label: tr('Recompensa', 'Reward'), fmt: (r) => bookReward(r) }]));
       bindSearch(el, 'kq', '.tile', (n) => n.dataset.s);
     },
   });
