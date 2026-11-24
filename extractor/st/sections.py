@@ -157,7 +157,9 @@ def build_skills(tables, T):
                            # números usados pelo Hypermax: % (0.6 = +60%), valores fixos (*Abs), elemento exigido, tipos de item
                            "mods": mods, "req": num(s.get("elements")), "classes": split(s.get("classes")),
                            "itemTypes": split(s.get("itemTypes")), "secStat": bool(s.get("affectSecStat")),
-                           "self": bool(s.get("affectItselfOnly")), "quest": s.get("questRestriction") or None})
+                           "self": bool(s.get("affectItselfOnly")), "quest": s.get("questRestriction") or None,
+                           # regras de acúmulo vindas do jogo (ex.: espírito que não soma entre itens), se existirem
+                           "stackRule": {k: v for k, v in s.items() if re.search(r"stack|uniq|exclusive|limit|once|max", k, re.I) and v not in (None, "", 0, "0", False)} or None})
     out = []
     for f in fams.values():
         f["tiers"].sort(key=lambda x: x["tier"] or 0)
