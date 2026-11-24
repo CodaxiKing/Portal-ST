@@ -18,6 +18,8 @@
   const lvName = (lv) => (lv > 50 ? `${tr('Parangon', 'Paragon')} ${lv - 50}` : String(lv));
   ST.hmLvName = lvName;
   // família da habilidade que ocupa o 5º espaço (só existe com a Alma Parangon), ou null
+  // espíritos cujo efeito não acumula entre itens (família base, sem "_plus")
+  const NO_STACK = new Set(['i_titan']);
   const fifthOf = (b) => ((b.c.skillSlots || []).length >= 5 && b.chosen.length >= 5 ? b.chosen[4].family : null);
   const PARAGON_TAG = () => `<span class="badge par">${ST.icon('paragonsoul') ? `<img src="${ST.icon('paragonsoul')}" alt="">` : ''}${tr('5º espaço · Alma Parangon', '5th slot · Paragon Soul')}</span>`;
 
@@ -116,12 +118,24 @@
     chosen.forEach((f) => { const tt = tierOf(f); if (tt) active.push({ f, tt }); });
     // espíritos: efeito "só no próprio item" (affectItselfOnly) vai para o item; os demais valem uma vez por espírito
     const seenSp = new Set(), selfPct = gear.map(() => 0);
+    // espíritos que NÃO acumulam (conferido no jogo: o Espírito de Titã vale uma vez só, com ou sem o "+"):
+    // vale só o melhor do grupo; os outros itens com ele ficam sem efeito
+    const groupOf = (fam) => { const base = fam.replace(/_plus$/, ''); return NO_STACK.has(base) ? base : null; };
+    const keepIdx = new Map();
+    gear.forEach((g, idx) => {
+      if (!g || !g.sp || !g.sp.sk) return;
+      const grp = groupOf(g.sp.sk.f.family); if (!grp) return;
+      const plus = /_plus$/.test(g.sp.sk.f.family), cur = keepIdx.get(grp);
+      if (cur == null || (plus && !/_plus$/.test(gear[cur].sp.sk.f.family))) keepIdx.set(grp, idx);
+    });
     gear.forEach((g, idx) => {
       if (!g || !g.sp || !g.sp.sk) return;
       const tt = g.sp.sk.tt, qm = tt.quest && ctx.tower ? ctx.questMult : 1; // efeito dobrado na Torre/Tumba
       // habilidade restrita a uma missão (ex.: Malevolência Nascida da Tumba) não entra no poder geral do herói
       if (tt.quest && !ctx.tower) { active.push({ f: g.sp.sk.f, tt, spirit: true, off: true }); return; }
       if (tt.self) { selfPct[idx] += ((tt.mods || {}).item || 0) * qm; active.push({ f: g.sp.sk.f, tt, spirit: true, self: true }); return; }
+      const grp = groupOf(g.sp.sk.f.family);
+      if (grp && keepIdx.get(grp) !== idx) { active.push({ f: g.sp.sk.f, tt, spirit: true, off: true, dup: true }); return; }
       // espíritos iguais acumulam: cada item com o espírito soma a habilidade dele (confirmado no jogo: 6× Leviatã = +18% de crítico)
       seenSp.add(g.sp.sk.f.family);
       active.push({ f: g.sp.sk.f, tt, spirit: true, qm });
@@ -643,9 +657,10 @@
           <td>${g.sp ? `<a class="cell-item" href="#/item/${g.sp.e.uid}">${img(g.sp.e.uid)}<span>${esc(g.sp.e.name)}</span></a>` : '—'}</td></tr>` : '')).join('');
         const seen = new Set(), fifth = fifthOf(b);
         const skillRows = b.active.filter((a) => { const k = a.f.family; if (a.spirit && seen.has(k)) return false; seen.add(k); return true; }).map((a) => {
-          const n = a.spirit ? b.active.filter((x) => x.f.family === a.f.family).length : 1;
+          const n = a.spirit ? b.active.filter((x) => x.f.family === a.f.family && !x.dup).length : 1;
+          const dups = a.spirit ? b.active.filter((x) => x.f.family === a.f.family && x.dup).length : 0;
           const doubled = a.tt.quest && o.tower;
-          return `<div class="row">${img(a.f.icon)}<div class="grow"><b>${esc(a.tt.name || a.f.name)}</b>${n > 1 ? ` <span class="badge">×${n}</span>` : ''}${doubled ? ` <span class="badge">${tr('dobrado na Tumba', 'doubled in Tomb')}</span>` : ''}${!a.spirit && fifth && a.f.family === fifth ? ' ' + PARAGON_TAG() : ''}
+          return `<div class="row">${img(a.f.icon)}<div class="grow"><b>${esc(a.tt.name || a.f.name)}</b>${n > 1 ? ` <span class="badge">×${n}</span>` : ''}${dups ? ` <span class="badge" title="${tr('Este espírito não acumula: só um item conta', 'This spirit does not stack: only one item counts')}">${tr('não acumula', 'does not stack')}</span>` : ''}${doubled ? ` <span class="badge">${tr('dobrado na Tumba', 'doubled in Tomb')}</span>` : ''}${!a.spirit && fifth && a.f.family === fifth ? ' ' + PARAGON_TAG() : ''}
           <span class="muted small">${a.spirit ? tr('espírito', 'spirit') : a.f.kind === 'innate' ? tr('inata', 'innate') : a.f.kind === 'mastery' ? tr('maestria', 'mastery') : tr('herói', 'hero')}${a.tt.tier ? ' · T' + a.tt.tier : ''}${a.tt.req ? ` · ${nf(a.tt.req)} ${tr('de elemento', 'element')}` : ''}${a.self ? ' · ' + tr('só no próprio item', 'this item only') : ''}</span>
           <div class="small">${esc((a.tt.effects || []).join(' · '))}</div></div></div>`;
         }).join('');
