@@ -370,7 +370,7 @@
       document.getElementById('verPill').title = m.gameVersion;
     }
     document.getElementById('foot').innerHTML = `${ST.t('footer')} · ${ST.t('version')}: ${ST.esc(m.gameVersion || '?')} · ${
-      m.generatedAt ? new Date(m.generatedAt).toLocaleString(locale) : ''} · ${ST.t('fan')} · <a href="#/apoiar">${ST.tr('Apoiar o site', 'Support the site')}</a> · <button class="linkish" id="liteBtn" type="button">${
+      m.generatedAt ? new Date(m.generatedAt).toLocaleString(locale) : ''} · ${ST.t('fan')} · ${ST.tr('Desenvolvido por', 'Developed by')} <b class="dev-by">Drácula</b> · <a href="#/apoiar">${ST.tr('Apoiar o site', 'Support the site')}</a> · <button class="linkish" id="liteBtn" type="button">${
       ST.tr('Modo leve', 'Lite mode')}: ${ST.lite ? ST.tr('ligado', 'on') : ST.tr('desligado', 'off')}</button>`;
     const sp = document.querySelector('#supportBtn .sp-txt');
     if (sp) { sp.textContent = ST.tr('Apoiar', 'Support'); sp.parentElement.title = ST.tr('Apoiar o site', 'Support the site'); }
