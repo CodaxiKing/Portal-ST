@@ -1,5 +1,6 @@
 """Exporta sprites dos AssetBundles para WebP."""
 import os
+import re
 
 import UnityPy
 from UnityPy.export import SpriteHelper
@@ -10,16 +11,18 @@ BUNDLES = ["ui", "ui_shop_furnitures", "ui_card_champions", "ui_card_heroes", "u
            "ui_card_premiumworkers", "ui_card_resourceworkers", "ui_card_cityfolks"]
 
 
-def export_icons(game, wanted, dest, size=128, force=False):
+def export_icons(game, wanted, dest, size=128, force=False, patterns=None):
+    """patterns: expressões regulares; sprites cujo nome casa também são exportados (ex.: ícones de moeda)."""
     os.makedirs(dest, exist_ok=True)
     have = {f[:-5] for f in os.listdir(dest) if f.endswith(".webp")}
     todo = set(wanted) if force else set(wanted) - have
-    if not todo:
+    pat = re.compile("|".join(patterns)) if patterns else None
+    if not todo and not pat:
         log("ícones: nada novo para exportar")
         return have
     log(f"ícones: {len(todo)} para exportar")
     for bundle in BUNDLES:
-        if not todo:
+        if not todo and not pat:
             break
         path = os.path.join(game, "ShopTitan_Data", "StreamingAssets", bundle)
         if not os.path.exists(path):
@@ -41,7 +44,7 @@ def export_icons(game, wanted, dest, size=128, force=False):
                 nm = o.peek_name()
             except Exception:
                 continue
-            if nm not in todo:
+            if nm not in todo and not (pat and pat.search(nm) and (force or nm not in have)):
                 continue
             try:
                 sp = o.read()

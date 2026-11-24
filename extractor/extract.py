@@ -104,7 +104,8 @@ def main():
         themes = {d.get("theme") for d in tables.get("caravanDays", {}).values()} | {p for p in tables.get("caravanWantedItemPools", {})}
         art = {f"img_caravanBG_{t}" for t in themes if t} | {f"img_caravan_minigame_banner_{t}" for t in themes if t} | {"img_tutorial_caravan_1", "img_tutorial_caravan_2", "img_tutorial_caravan_3"}
         export_icons(a.game, art, ICONS, 720, a.force_icons)
-        export_icons(a.game, wanted, ICONS, a.icon_size, a.force_icons)
+        # ícones de moeda do jogo (ouro, gemas…) para os valores do site; os nomes variam, então vão por padrão
+        export_icons(a.game, wanted, ICONS, a.icon_size, a.force_icons, patterns=[r"^(icon|img)_[a-z0-9_]*(gem|gold|coin|currency)[a-z0-9_]*$"])
     have = sorted(f[:-5] for f in os.listdir(ICONS) if f.endswith(".webp")) if os.path.isdir(ICONS) else []
     write_js(os.path.join(DATA, "icons.js"), "icons", have)
     write_js(os.path.join(DATA, "meta.js"), "meta", {

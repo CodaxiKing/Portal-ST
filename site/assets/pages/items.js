@@ -44,12 +44,13 @@
   try { state.view = localStorage.getItem('st_view') || 'grid'; } catch (e) {}
 
   const statsMini = (i) => {
-    const s = i.stats, out = [`<span class="gold">${short(i.value)} <i class="ic ic-coin"></i></span>`];
-    if (s.atk) out.push(`<span class="s-atk">${t('atk')} ${nf(s.atk)}</span>`);
-    if (s.def) out.push(`<span class="s-def">${t('def')} ${nf(s.def)}</span>`);
-    if (s.hp) out.push(`<span class="s-hp">${t('hp')} ${nf(s.hp)}</span>`);
-    if (s.eva) out.push(`<span class="s-eva">${tr('ESQ', 'EVA')} ${pct(s.eva)}</span>`);
-    if (s.crit) out.push(`<span class="s-crit">${tr('CRÍT', 'CRIT')} ${pct(s.crit)}</span>`);
+    const s = i.stats, out = [`<span class="gold"><i class="ic ic-coin"></i>${short(i.value)}</span>`];
+    const st = (k, label, v) => `<span class="s-${k}" title="${esc(label)}"><i class="ic ic-st-${k}"></i>${v}</span>`;
+    if (s.atk) out.push(st('atk', t('atk'), nf(s.atk)));
+    if (s.def) out.push(st('def', t('def'), nf(s.def)));
+    if (s.hp) out.push(st('hp', t('hp'), nf(s.hp)));
+    if (s.eva) out.push(st('eva', tr('Esquiva', 'Evasion'), pct(s.eva)));
+    if (s.crit) out.push(st('crit', tr('Crítico', 'Crit'), pct(s.crit)));
     return out.join('');
   };
   const cardHTML = (i, d) => `<a class="card" href="#/item/${i.uid}">
