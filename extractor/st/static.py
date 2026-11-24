@@ -145,8 +145,16 @@ def _hm_section(b, U, lang):
             f'<p><a class="btn" href="{rel}index.html?lang={lang}#/{b["link"]}">{U["hm_open"]}</a></p>')
 
 
+def _first_art(*names):
+    """Primeira imagem que existe em site/img/items (alguns ícones do jogo não seguem o nome do código)."""
+    folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "site", "img", "items")
+    return next((n for n in names if n and os.path.exists(os.path.join(folder, n + ".webp"))), None)
+
+
 def simple_page(lang, kind, uid, title, sub, desc_key, desc_extra, art, sections, route, base, hm_desc=""):
     U = UI[lang]
+    if isinstance(art, (list, tuple)):
+        art = _first_art(*art)
     rel = "../../../"
     secs = "".join(f'<section class="sec"><h2>{h(t)}</h2>{b}</section>' for t, b in sections if b)
     body = f"""<article class="static-card">
@@ -212,7 +220,7 @@ def build_pages(site, by_lang, base):
                            for k in ("atk", "def", "hp") if isinstance(st.get(k), dict))
             _write(os.path.join(root, "champion", c["uid"] + ".html"), simple_page(
                 lang, "champion", c["uid"], c["name"], " · ".join(x for x in (c.get("className"), c.get("elementName")) if x),
-                "desc_champ", (c.get("quote") or "").strip('"'), c.get("icon") or c.get("card"),
+                "desc_champ", (c.get("quote") or "").strip('"'), (c.get("icon"), c.get("card")),
                 [(U["stats"], f'<div class="stat-grid">{rows}</div>' if rows else "")], f"campeoes/{c['uid']}", base))
             urls.append(f"p/{lang}/champion/{c['uid']}.html")
         for z in D["quests"]:
@@ -221,7 +229,7 @@ def build_pages(site, by_lang, base):
                            f'{" · " + U["boss"] if l.get("boss") else ""}</div><div class="r">{h(", ".join(c["name"] for c in l.get("comps") or []))}</div></div>'
                            for i, l in enumerate(lv))
             _write(os.path.join(root, "zone", z["id"] + ".html"), simple_page(
-                lang, "zone", z["id"], z["name"], f'{U["boss"]}: {z.get("boss") or "—"}', "desc_zone", z.get("desc") or "", z.get("icon"),
+                lang, "zone", z["id"], z["name"], f'{U["boss"]}: {z.get("boss") or "—"}', "desc_zone", z.get("desc") or "", (z.get("icon"), f"icon_quest_{z['id']}"),
                 [(U["levels"], f'<div class="list">{rows}</div>')], f"missoes/{z['id']}", base))
             urls.append(f"p/{lang}/zone/{z['id']}.html")
     # sitemap e robots (precisam de URL absoluta)
