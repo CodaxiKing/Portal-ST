@@ -298,7 +298,7 @@
     ['rewardsNav', [['passes', 'passes'], ['recompensas', 'evRewards'], ['quadro', 'bounties'], ['loja', 'store'], ['expansoes', 'expansions'], ['sorte', 'luck']]],
     ['eventsNav', [['calendario', 'calendar'], ['cidadeouro', 'goldcity'], ['capricho', 'caprice'], ['comunidade-eventos', 'commEvents'], ['caravana', 'caravan'], ['invasao', 'airship'], ['tumba', 'tomb']]],
     ['communityNav', [['hypermax', 'hypermax'], ['tumba-ranking', 'tombRank'], ['venda', 'sellRank'], ['lancamentos', 'releases']]],
-    ['tools', [['simulador', 'simulator'], ['qualidade', 'qualityCalc'], ['lucro', 'profit'], ['onde', 'whereToGet'],
+    ['tools', [['simulador', 'simulator'], ['qualidade', 'qualityCalc'], ['fusao', 'fusionCalc'], ['lucro', 'profit'], ['onde', 'whereToGet'],
       ['montador', 'builder'], ['grupos', 'partyByArea'], ['plano', 'craftPlan'], ['melhorias', 'upgradeCalc'], ['planejador', 'talentPlanner'], ['custos', 'upgradeCosts']]],
   ];
   ST.NAV = NAV;
