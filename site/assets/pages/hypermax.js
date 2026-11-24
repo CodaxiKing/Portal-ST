@@ -20,6 +20,8 @@
   // família da habilidade que ocupa o 5º espaço (só existe com a Alma Parangon), ou null
   // espíritos cujo efeito não acumula entre itens (família base, sem "_plus")
   const NO_STACK = new Set(['i_titan']);
+  // tipos de item que dobram o bônus do espírito encantado neles (efeito do tipo no jogo: "Espíritos encantados com Ídolos têm seus bônus dobrados")
+  const SPIRIT_X2 = new Set(['xi']);
   const fifthOf = (b) => ((b.c.skillSlots || []).length >= 5 && b.chosen.length >= 5 ? b.chosen[4].family : null);
   const PARAGON_TAG = () => `<span class="badge par">${ST.icon('paragonsoul') ? `<img src="${ST.icon('paragonsoul')}" alt="">` : ''}${tr('5º espaço · Alma Parangon', '5th slot · Paragon Soul')}</span>`;
 
@@ -125,20 +127,23 @@
     gear.forEach((g, idx) => {
       if (!g || !g.sp || !g.sp.sk) return;
       const grp = groupOf(g.sp.sk.f.family); if (!grp) return;
-      const plus = /_plus$/.test(g.sp.sk.f.family), cur = keepIdx.get(grp);
-      if (cur == null || (plus && !/_plus$/.test(gear[cur].sp.sk.f.family))) keepIdx.set(grp, idx);
+      // vale o que rende mais: soma dos efeitos × 2 se estiver num Ídolo
+      const val = (k) => Object.values(gear[k].sp.sk.tt.mods || {}).reduce((x, v) => x + Math.abs(v), 0) * (SPIRIT_X2.has(gear[k].x.it.type) ? 2 : 1);
+      const cur = keepIdx.get(grp);
+      if (cur == null || val(idx) > val(cur)) keepIdx.set(grp, idx);
     });
     gear.forEach((g, idx) => {
       if (!g || !g.sp || !g.sp.sk) return;
-      const tt = g.sp.sk.tt, qm = tt.quest && ctx.tower ? ctx.questMult : 1; // efeito dobrado na Torre/Tumba
+      const tt = g.sp.sk.tt, idol = SPIRIT_X2.has(g.x.it.type) ? 2 : 1;
+      const qm = (tt.quest && ctx.tower ? ctx.questMult : 1) * idol; // dobrado na Torre/Tumba e/ou no Ídolo
       // habilidade restrita a uma missão (ex.: Malevolência Nascida da Tumba) não entra no poder geral do herói
       if (tt.quest && !ctx.tower) { active.push({ f: g.sp.sk.f, tt, spirit: true, off: true }); return; }
-      if (tt.self) { selfPct[idx] += ((tt.mods || {}).item || 0) * qm; active.push({ f: g.sp.sk.f, tt, spirit: true, self: true }); return; }
+      if (tt.self) { selfPct[idx] += ((tt.mods || {}).item || 0) * qm; active.push({ f: g.sp.sk.f, tt, spirit: true, self: true, idol: idol > 1 }); return; }
       const grp = groupOf(g.sp.sk.f.family);
       if (grp && keepIdx.get(grp) !== idx) { active.push({ f: g.sp.sk.f, tt, spirit: true, off: true, dup: true }); return; }
       // espíritos iguais acumulam: cada item com o espírito soma a habilidade dele (confirmado no jogo: 6× Leviatã = +18% de crítico)
       seenSp.add(g.sp.sk.f.family);
-      active.push({ f: g.sp.sk.f, tt, spirit: true, qm });
+      active.push({ f: g.sp.sk.f, tt, spirit: true, qm, idol: idol > 1 });
     });
     // 3) somatórios
     const pct = { atk: 0, def: 0, hp: 0, shieldHp: 0 }, abs = { atk: 0, def: 0, hp: 0 };
@@ -660,7 +665,7 @@
           const n = a.spirit ? b.active.filter((x) => x.f.family === a.f.family && !x.dup).length : 1;
           const dups = a.spirit ? b.active.filter((x) => x.f.family === a.f.family && x.dup).length : 0;
           const doubled = a.tt.quest && o.tower;
-          return `<div class="row">${img(a.f.icon)}<div class="grow"><b>${esc(a.tt.name || a.f.name)}</b>${n > 1 ? ` <span class="badge">×${n}</span>` : ''}${dups ? ` <span class="badge" title="${tr('Este espírito não acumula: só um item conta', 'This spirit does not stack: only one item counts')}">${tr('não acumula', 'does not stack')}</span>` : ''}${doubled ? ` <span class="badge">${tr('dobrado na Tumba', 'doubled in Tomb')}</span>` : ''}${!a.spirit && fifth && a.f.family === fifth ? ' ' + PARAGON_TAG() : ''}
+          return `<div class="row">${img(a.f.icon)}<div class="grow"><b>${esc(a.tt.name || a.f.name)}</b>${n > 1 ? ` <span class="badge">×${n}</span>` : ''}${dups ? ` <span class="badge" title="${tr('Este espírito não acumula: só um item conta', 'This spirit does not stack: only one item counts')}">${tr('não acumula', 'does not stack')}</span>` : ''}${doubled ? ` <span class="badge">${tr('dobrado na Tumba', 'doubled in Tomb')}</span>` : ''}${a.spirit && b.active.some((x) => x.f.family === a.f.family && x.idol) ? ` <span class="badge" title="${tr('Espíritos encantados em Ídolos têm o bônus dobrado', 'Spirits enchanted on Idols have their bonus doubled')}">${tr('×2 no Ídolo', '×2 on Idol')}</span>` : ''}${!a.spirit && fifth && a.f.family === fifth ? ' ' + PARAGON_TAG() : ''}
           <span class="muted small">${a.spirit ? tr('espírito', 'spirit') : a.f.kind === 'innate' ? tr('inata', 'innate') : a.f.kind === 'mastery' ? tr('maestria', 'mastery') : tr('herói', 'hero')}${a.tt.tier ? ' · T' + a.tt.tier : ''}${a.tt.req ? ` · ${nf(a.tt.req)} ${tr('de elemento', 'element')}` : ''}${a.self ? ' · ' + tr('só no próprio item', 'this item only') : ''}</span>
           <div class="small">${esc((a.tt.effects || []).join(' · '))}</div></div></div>`;
         }).join('');
