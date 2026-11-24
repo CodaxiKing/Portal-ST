@@ -1080,7 +1080,8 @@ a.cvs-card:hover{transform:translateY(-2px)}.cvs-card.on{border-color:var(--acce
 @media (max-width: 420px) { .hs-ed-f { grid-template-columns: 1fr; } .hs-gear { gap: 6px; } }
 
 /* ícones do jogo para ouro e gemas (no lugar dos desenhados) e ícones dos atributos */
-.ic.ic-coin { background: url("../img/brand/coin.webp") center / contain no-repeat; -webkit-mask: none; mask: none; width: 1.15em; height: 1.15em; vertical-align: -.2em; }
+.ic.ic-coin, .ic.ic-gem { background: url("../img/items/icon_global_gold.webp") center / contain no-repeat; -webkit-mask: none; mask: none; width: 1.15em; height: 1.15em; vertical-align: -.2em; }
+.ic.ic-gem { background-image: url("../img/items/icon_global_gem.webp"); }
 .ic-st-hp { --m: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27black%27%3E%3Cpath%20d%3D%27M12%2020.6%204.3%2013a5%205%200%200%201%207.1-7.1l.6.6.6-.6A5%205%200%200%201%2019.7%2013z%27/%3E%3C/svg%3E"); }
 .ic-st-atk { --m: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27black%27%3E%3Cpath%20d%3D%27M14.5%203H21v6.5L10%2020.5%206.5%2017%203%2020.5%201.5%2019%205%2015.5%203.5%2014l11-11z%27/%3E%3C/svg%3E"); }
 .ic-st-def { --m: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27black%27%3E%3Cpath%20d%3D%27M12%202.5%2020%206v6.2c0%204.4-3.4%207.7-8%209.3-4.6-1.6-8-4.9-8-9.3V6z%27/%3E%3C/svg%3E"); }
