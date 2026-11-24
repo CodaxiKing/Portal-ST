@@ -95,7 +95,12 @@ def item_page(lang, it, items, base):
     rel = "../../../"
     name = lambda i: (by.get(i) or {}).get("name") or (refs.get(i) or {}).get("name") or i
     link = lambda i: f'<a href="{h(i)}.html">{h(name(i))}</a>' if i in by else h(name(i))
-    imgsrc = lambda i: f'{rel}img/items/{h(i)}.webp'
+    # recursos sem ícone com o próprio nome (ex.: stardust) usam o ícone de recurso do jogo, se existir
+    def imgsrc(i):
+        for n in (i, f"icon_global_resource_{i}", f"icon_global_{i}"):
+            if os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "site", "img", "items", n + ".webp")):
+                return f'{rel}img/items/{h(n)}.webp'
+        return f'{rel}img/items/{h(i)}.webp'
     recipe = "".join(f'<div class="row"><img src="{imgsrc(r["id"])}" alt="" loading="lazy" onerror="this.remove()"><div class="grow">{h(name(r["id"]))}</div><div class="r">× {_num(r["qty"], lang)}</div></div>' for r in it["resources"])
     recipe += "".join(f'<div class="row"><img src="{imgsrc(c["id"])}" alt="" loading="lazy" onerror="this.remove()"><div class="grow">{link(c["id"])}</div><div class="r">× {_num(c["qty"], lang)}</div></div>' for c in it["components"])
     ms = "".join(f'<div class="row"><span class="req">{m["req"]}</span><div class="grow">{h(m["text"])}</div></div>' for m in it["milestones"])

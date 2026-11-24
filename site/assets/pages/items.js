@@ -225,7 +225,7 @@
     const refRow = (id, right, extra = '') => {
       const isItem = by.has(id);
       return `<${isItem ? `a href="#/item/${id}"` : 'div'} class="row ${isItem ? 'link' : ''}">
-        ${icon(id) ? `<img src="${icon(id)}" alt="" loading="lazy">` : ''}
+        ${(() => { const n = ST.firstIcon(id, 'icon_global_resource_' + id, 'icon_global_' + id); return n ? `<img src="${icon(n)}" alt="" loading="lazy">` : ''; })()}
         <div class="grow">${esc(ref(d, id))}${extra}</div><div class="r">${right}</div></${isItem ? 'a' : 'div'}>`;
     };
     const upgradeList = (arr, left) => (arr.length ? `<div class="list">${arr.map((u) => {
