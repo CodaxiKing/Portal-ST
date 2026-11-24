@@ -1,1 +1,1 @@
-(window.ST=window.ST||{}).meta={"generatedAt":"2026-11-24T14:16:34+00:00","gameVersion":"26.11.2 (build 26625881)","langs":["pt","en","es","fr","de","it","ru","uk","tk","ja","ko","zh","zh_tr"],"baseUrl":""};
+(window.ST=window.ST||{}).meta={"generatedAt":"2026-11-24T14:26:44+00:00","gameVersion":"26.11.2 (build 26625881)","langs":["pt","en","es","fr","de","it","ru","uk","tk","ja","ko","zh","zh_tr"],"baseUrl":""};
