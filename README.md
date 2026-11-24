@@ -30,6 +30,8 @@ Também no banco de dados: **Histórias** dos campeões (diálogos) e **Skins** 
   Cidade Perdida de Ouro, Torre dos Titãs, Invasão Dracônica e Caravana ficam em "Eventos recorrentes" (sem data nos arquivos).
 
 **Comunidade:**
+- **Hypermax dos campeões** (`#/campeoes-hm`): melhor Familiar (pet) e Canção da Aura de cada campeão (os únicos
+  itens que campeões equipam), atributos por nível e melhorias de rank somadas; mostra a habilidade de líder do rank.
 - **Heróis da Tumba** (`#/tumba-ranking`): ranking de heróis para a Tumba dos Titãs, sem crítico (os monstros anulam) e com o
   espírito da Tumba dobrado; mesmo motor do Hypermax.
 - **Lançamentos**: itens e móveis com data de lançamento, incluindo os que ainda vão sair.

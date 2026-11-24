@@ -46,7 +46,7 @@
         ${ST.sec(tr('Melhorias com fichas', 'Token upgrades'), ST.table(c.upgrades, [
           { key: 'rank', label: '#', num: true }, { key: 'tokens', label: tr('Fichas', 'Tokens'), num: true, fmt: (r) => nf(r.tokens) },
           { key: 'text', label: tr('Efeito', 'Effect') }]))}
-        ${ST.sec(tr('Pode equipar', 'Can equip'), ST.tags(c.equip.map((e) => `<a class="pill-link" href="#/itens?type=${e.code}">${ST.tag(esc(e.name))}</a>`)))}`;
+        ${ST.sec(tr('Tipos de item do campeão', 'Champion item types'), ST.tags(c.equip.map((e) => `<a class="pill-link" href="#/itens?type=${e.code}">${ST.tag(esc(e.name))}</a>`)))}`;
     },
   });
 
