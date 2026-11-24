@@ -303,7 +303,7 @@
   ];
   ST.NAV = NAV;
   // ícone do jogo ao lado de cada grupo do menu
-  const NAV_ICON = { db: 'shortsword', rewardsNav: 'chest_goldcity', eventsNav: 'caravanbanner', communityNav: 'cc_sundragon', tools: 'custom_handheld_wallacehammer' };
+  const NAV_ICON = { db: 'shortsword', rewardsNav: 'chest_goldcity', eventsNav: 'caravanbanner', communityNav: 'icon_event_reward_dialog', tools: 'custom_handheld_wallacehammer' };
   ST.openNavGroup = (gi) => {
     document.querySelectorAll('.nav-group').forEach((g) => {
       const on = +g.dataset.g === gi;

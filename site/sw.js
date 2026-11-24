@@ -1,7 +1,7 @@
 /* Service worker do Portal Shop Titans: funciona offline depois da primeira visita.
    - interface (html/css/js): rede primeiro, cache como reserva
    - dados, ícones e imagens: cache primeiro (os arquivos de dados têm ?v=<data da extração>) */
-const CACHE = 'st-v38';
+const CACHE = 'st-v39';
 const SHELL = ['./', './index.html', './assets/style.css', './assets/st-pure.js', './assets/hm-worker.js', './assets/core.js', './assets/i18n.js', './assets/search.js', './assets/pages/home.js',
   './assets/pages/items.js', './assets/pages/notes.js', './assets/pages/db.js', './assets/pages/tools.js', './assets/pages/tools2.js', './assets/pages/hypermax.js', './assets/pages/builder.js', './assets/pages/tools3.js', './assets/pages/events.js', './assets/pages/calendar.js', './assets/pages/events2.js', './assets/pages/extras.js', './assets/pages/account.js', './assets/pages/support.js', './assets/pages/sell.js', './manifest.webmanifest',
   './icons/favicon-32.png', './icons/icon-192.png', './icons/icon-512.png', './img/brand/logo.webp', './img/brand/logo-sm.webp'];
