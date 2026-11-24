@@ -4,6 +4,17 @@
 (() => {
   const { t, tr, esc, nf, img, short, dec } = ST;
   const QN = [['Normal', 'Common'], ['Superior', 'Uncommon'], ['Magistral', 'Flawless'], ['Épico', 'Epic'], ['Lendário', 'Legendary']];
+  // ficha no estilo do jogo: espaço em edição e aba aberta continuam iguais entre uma mudança e outra
+  const UI = { slot: 0, tab: 'info', cls: '' };
+  // ícones dos atributos (SVG simples, na cor de cada atributo)
+  const SVG = {
+    hp: '<path d="M12 20.6 4.3 13a5 5 0 0 1 7.1-7.1l.6.6.6-.6A5 5 0 0 1 19.7 13z"/>',
+    atk: '<path d="M14.5 3H21v6.5L10 20.5 6.5 17 3 20.5 1.5 19 5 15.5 3.5 14l11-11z"/>',
+    def: '<path d="M12 2.5 20 6v6.2c0 4.4-3.4 7.7-8 9.3-4.6-1.6-8-4.9-8-9.3V6z"/>',
+    eva: '<path d="M3 8h11a3 3 0 1 0-3-3M3 12h15a3 3 0 1 1-3 3M3 16h8"/>',
+    crit: '<path d="m12 2 2.6 6.3L21 9l-4.9 4.3L17.6 20 12 16.6 6.4 20l1.5-6.7L3 9l6.4-.7z"/>',
+  };
+  const sIc = (k) => `<svg viewBox="0 0 24 24" class="hs-sic ${k}" ${k === 'eva' ? 'fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"' : 'fill="currentColor"'}>${SVG[k]}</svg>`;
 
   /* ---------------------------------------------------------------- imagem para compartilhar (canvas) */
   const loadImg = (src) => new Promise((res) => { if (!src) return res(null); const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = src; });
@@ -127,19 +138,55 @@
         if (chosenF.length) q.set('sk', chosenF.join(','));
         return location.href.split('#')[0] + '#/build?' + q.toString(); // ficha pública (tem botão para editar)
       };
-      const slotHTML = c.slots.map((sl, k) => {
-        const codes = sl.map((x) => x.code);
+      if (UI.cls !== c.uid) { UI.cls = c.uid; UI.slot = 0; }
+      UI.slot = Math.min(UI.slot, c.slots.length - 1);
+      const slotName = (k) => c.slots[k].map((x) => x.name).join(' / ');
+      // editor do espaço escolhido: item, qualidade, runa e espírito
+      const slotEditor = (k) => {
+        const sl = c.slots[k], codes = sl.map((x) => x.code), p = picks[k];
         const opts = P.items.filter((x) => x.codes.some((cd) => codes.includes(cd))).sort((a, b2) => b2.it.tier - a.it.tier || a.it.name.localeCompare(b2.it.name));
-        const p = picks[k];
-        return `<div class="bd-slot"><div class="bd-ic">${p.uid ? img(p.uid) : '<span class="ph"></span>'}</div><div class="bd-f">
-          <select class="inp" data-k="${k}" data-f="uid"><option value="">— ${esc(sl.map((x) => x.name).join(' / '))} —</option>${opts.map((x) =>
-            `<option value="${x.it.uid}" ${x.it.uid === p.uid ? 'selected' : ''}>T${x.it.tier} · ${esc(x.it.name)}</option>`).join('')}</select>
-          <div class="bd-row"><select class="inp" data-k="${k}" data-f="q">${QN.map((n, qi) => `<option value="${qi}" ${qi === p.q ? 'selected' : ''}>${tr(...n)}</option>`).join('')}</select>
-          <select class="inp" data-k="${k}" data-f="ru"><option value="">${tr('Sem runa', 'No rune')}</option>${elems.map((e) => `<option value="${e.e.uid}" ${e.e.uid === p.ru ? 'selected' : ''}>T${e.e.tier} · ${esc(e.e.name)}</option>`).join('')}</select>
-          <select class="inp" data-k="${k}" data-f="sp"><option value="">${tr('Sem espírito', 'No spirit')}</option>${spirits.map((s) => `<option value="${s.e.uid}" ${s.e.uid === p.sp ? 'selected' : ''}>${esc(s.e.name)}</option>`).join('')}</select></div></div></div>`;
+        return `<div class="hs-ed"><div class="hs-ed-h"><b>${esc(slotName(k))}</b><span class="small muted">${tr('Espaço', 'Slot')} ${k + 1}/${c.slots.length}</span></div>
+          <div class="hs-ed-f"><label class="field">${tr('Item', 'Item')}<select class="inp" data-k="${k}" data-f="uid"><option value="">— ${tr('Vazio', 'Empty')} —</option>${opts.map((x) =>
+            `<option value="${x.it.uid}" ${x.it.uid === p.uid ? 'selected' : ''}>T${x.it.tier} · ${esc(x.it.name)}</option>`).join('')}</select></label>
+          <label class="field">${t('quality')}<select class="inp" data-k="${k}" data-f="q">${QN.map((n, qi) => `<option value="${qi}" ${qi === p.q ? 'selected' : ''}>${tr(...n)}</option>`).join('')}</select></label>
+          <label class="field">${tr('Runa de elemento', 'Element rune')}<select class="inp" data-k="${k}" data-f="ru"><option value="">${tr('Sem runa', 'No rune')}</option>${elems.map((e) => `<option value="${e.e.uid}" ${e.e.uid === p.ru ? 'selected' : ''}>T${e.e.tier} · ${esc(e.e.name)}</option>`).join('')}</select></label>
+          <label class="field">${tr('Espírito', 'Spirit')}<select class="inp" data-k="${k}" data-f="sp"><option value="">${tr('Sem espírito', 'No spirit')}</option>${spirits.map((x) => `<option value="${x.e.uid}" ${x.e.uid === p.sp ? 'selected' : ''}>${esc(x.e.name)}</option>`).join('')}</select></label></div></div>`;
+      };
+      const gearGrid = c.slots.map((sl, k) => `<button type="button" class="hs-slot ${k === UI.slot ? 'on' : ''}" data-slot="${k}" title="${esc(slotName(k))}">
+          ${b.gear[k] ? ST.hmUI.gear(b.gear[k], o) : `<span class="hm-it empty"><span class="hs-slot-n">${esc(sl[0].name)}</span></span>`}</button>`).join('');
+      const fifth = ST.hmUI.fifthOf ? ST.hmUI.fifthOf(b) : null;
+      const actOf = (fam) => b.active.find((a) => !a.spirit && a.f.family === fam);
+      const skillHTML = Array.from({ length: nSlots }, (_, i) => {
+        const a = chosenF[i] && actOf(chosenF[i]);
+        return `<div class="hs-skl ${i === 4 ? 'par' : ''}"><span class="hs-skl-ic">${a ? img(a.f.icon) : `<b>${i + 1}</b>`}${a && a.tt.tier ? `<i>${a.tt.tier}</i>` : ''}</span>
+          <div class="hs-skl-b"><select class="inp" data-sk="${i}"><option value="">— ${tr('Habilidade', 'Skill')} ${i + 1}${i === 4 ? ` (${tr('Alma Parangon', 'Paragon Soul')})` : ''} —</option>${pool.map((f) =>
+            `<option value="${f.family}" ${chosenF[i] === f.family ? 'selected' : ''}>${esc(f.name)}</option>`).join('')}</select>
+          ${a ? `<div class="small muted">${esc((a.tt.effects || []).join(' · '))}</div>` : ''}</div></div>`;
       }).join('');
-      const skillHTML = Array.from({ length: nSlots }, (_, i) => `<select class="inp" data-sk="${i}"><option value="">— ${tr('Habilidade', 'Skill')} ${i + 1}${i === 4 ? ` (${tr('Alma Parangon', 'Paragon Soul')})` : ''} —</option>${pool.map((f) =>
-        `<option value="${f.family}" ${chosenF[i] === f.family ? 'selected' : ''}>${esc(f.name)}</option>`).join('')}</select>`).join('');
+      const innA = c.innate && b.active.find((a) => a.f.kind === 'innate');
+      const statRow = (k, label, v, cls) => `<div class="hs-st ${cls || k}">${k === 'el' ? ST.hmUI.elIcon(c.element) : sIc(k)}<span>${label}</span><b>${v}</b></div>`;
+      const sheet = `<div class="hs">
+          <div class="hs-art"><span class="hs-art-bg" style="background-image:url('${ST.icon(c.card || ('cc_' + c.uid)) || ''}')"></span>${img(c.card || ('cc_' + c.uid))}<span class="hs-lv">${lv > 50 ? `P${lv - 50}` : lv}</span>
+            <div class="hs-art-sk">${ST.hmUI.skills(b)}</div></div>
+          <div class="hs-card">
+            <div class="hs-top"><span class="hs-cls">${img(c.icon)}<em>${lv > 50 ? `P${lv - 50}` : lv}</em></span><div><b>${esc(c.name)}</b><span class="small muted">${esc(c.typeName || '')}</span></div></div>
+            <div class="hs-tabs" role="tablist"><button type="button" data-tab="info" class="${UI.tab === 'info' ? 'on' : ''}">${tr('Info', 'Info')}</button><button type="button" data-tab="skills" class="${UI.tab === 'skills' ? 'on' : ''}">${tr('Habilidades', 'Skills')}</button></div>
+            <div class="hs-body" data-pane="info" ${UI.tab === 'info' ? '' : 'hidden'}>
+              <div class="hs-left">
+                <div class="hs-pw">${ST.ic('star')}<b>${nf(Math.round(b.profile.power))}</b></div>
+                <div class="small muted hs-pw2">${tr('Placar', 'Leaderboard')}: ${nf(Math.round(b.power))}</div>
+                ${statRow('hp', t('hp'), nf(Math.round(b.profile.hp)))}${statRow('atk', t('atk'), nf(Math.round(b.profile.atk)))}${statRow('def', t('def'), nf(Math.round(b.profile.def)))}
+                ${statRow('eva', tr('Esquiva', 'Evasion'), Math.round(b.eva * 100) + '%')}${statRow('crit', tr('Crítico', 'Crit'), Math.round(Math.min(b.crit, 1) * 100) + '%')}
+                ${statRow('el', tr('Elemento', 'Element'), nf(Math.round(b.E)))}
+              </div>
+              <div class="hs-gear">${gearGrid}</div>
+            </div>
+            <div class="hs-body sk" data-pane="skills" ${UI.tab === 'skills' ? '' : 'hidden'}>
+              ${innA ? `<div class="hs-skl inn"><span class="hs-skl-ic">${img(innA.f.icon)}${innA.tt.tier ? `<i>${innA.tt.tier}</i>` : ''}</span><div class="hs-skl-b"><b>${esc(innA.tt.name || innA.f.name)}</b> <span class="small muted">${tr('inata', 'innate')}</span><div class="small muted">${esc((innA.tt.effects || []).join(' · '))}</div></div></div>` : ''}
+              ${skillHTML || `<p class="muted small">${tr('Nenhum espaço de habilidade neste nível.', 'No skill slots at this level.')}</p>`}
+            </div>
+          </div>
+        </div>`;
       const party = (l) => b.profile.power * (l.party || 1);
       const best = zones.map((z) => {
         const ok = z.levels.filter((l) => l.power && l.power <= party(l));
@@ -158,13 +205,8 @@
           <button class="chip" id="clear">${tr('Limpar', 'Clear')}</button>
           <button class="chip" id="copy">${tr('Copiar link do build', 'Copy build link')}</button>
           <button class="chip" id="img">${tr('Compartilhar imagem', 'Share image')}</button><span class="small muted" id="msg"></span></div>
-        <div class="bd-grid">
-          <div>${ST.sec(tr('Equipamento', 'Gear'), `<div class="bd-slots">${slotHTML}</div>`)}
-            ${ST.sec(tr('Habilidades', 'Skills'), `<div class="bd-skills">${skillHTML || `<p class="muted small">${tr('Nenhum espaço de habilidade neste nível.', 'No skill slots at this level.')}</p>`}</div>`,
-              c.innate ? `${tr('Inata', 'Innate')}: ${esc(c.innate.names && c.innate.names[0] || '')}` : '')}</div>
-          <div>${ST.hmUI.card(b, '—', { ...o, href: '#/classes/' + c.uid })}
-            ${ST.stats([ST.stat(tr('Poder no placar', 'Leaderboard power'), nf(Math.round(b.power))), ST.stat(tr('Poder no perfil', 'Profile power'), nf(Math.round(b.profile.power)))])}</div>
-        </div>
+        ${sheet}
+        ${slotEditor(UI.slot)}
         ${b.gear.some(Boolean) ? ST.sec(tr('Cálculo dos atributos', 'Stat calculation'), ST.hmUI.calc(b, o, P)) : ''}
         ${ST.sec(tr('Missões ao alcance', 'Quests within reach'), ST.table(best, [
           { key: 'z', label: tr('Área', 'Area'), sort: (r) => r.z.name, fmt: (r) => `<a href="#/missoes/${r.z.id}">${esc(r.z.name)}</a>` },
@@ -179,11 +221,23 @@
         location.hash = '#/montador?' + q.toString();
       };
       el.querySelector('#cls').addEventListener('change', (e) => { location.hash = '#/montador?c=' + e.target.value; });
+      el.querySelectorAll('[data-slot]').forEach((n) => n.addEventListener('click', () => {
+        UI.slot = +n.dataset.slot;
+        el.querySelectorAll('[data-slot]').forEach((x) => x.classList.toggle('on', x === n));
+        const ed = el.querySelector('.hs-ed'); ed.outerHTML = slotEditor(UI.slot);
+        bindSlotFields(); el.querySelector('.hs-ed').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }));
+      el.querySelectorAll('[data-tab]').forEach((n) => n.addEventListener('click', () => {
+        UI.tab = n.dataset.tab;
+        el.querySelectorAll('[data-tab]').forEach((x) => x.classList.toggle('on', x === n));
+        el.querySelectorAll('[data-pane]').forEach((x) => { x.hidden = x.dataset.pane !== UI.tab; });
+      }));
       el.querySelector('#lv').addEventListener('change', () => go());
       el.querySelectorAll('[data-o]').forEach((n) => n.addEventListener('change', () => go()));
-      el.querySelectorAll('[data-f]').forEach((n) => n.addEventListener('change', () => {
+      const bindSlotFields = () => el.querySelectorAll('.hs-ed [data-f]').forEach((n) => n.addEventListener('change', () => {
         const p = picks[+n.dataset.k]; p[n.dataset.f] = n.dataset.f === 'q' ? +n.value : n.value; go();
       }));
+      bindSlotFields();
       el.querySelectorAll('[data-sk]').forEach((n) => n.addEventListener('change', () => { chosenF[+n.dataset.sk] = n.value; go(); }));
       el.querySelector('#clear').addEventListener('click', () => { location.hash = `#/montador?c=${c.uid}&lv=${lv}`; });
       el.querySelector('#hyper').addEventListener('click', () => { // melhor build do motor para esta classe

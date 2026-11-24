@@ -519,7 +519,8 @@
   }
 
   ST.hmDebug = { evaluate, optimize, prepare, powerOf, rebuild, toChoice, makeCtx, finish };
-  ST.hmUI = { card: (b, rank, o) => card(b, rank, o), calc: (b, o, P) => calcSection(b, o, P), elIcon: (el) => elIcon(el), statsGrid: (b) => statsGrid(b) };
+  ST.hmUI = { card: (b, rank, o) => card(b, rank, o), calc: (b, o, P) => calcSection(b, o, P), elIcon: (el) => elIcon(el), statsGrid: (b) => statsGrid(b),
+    gear: (g, o) => gearCell(g, o), skills: (b) => skillRow(b), fifthOf: (b) => fifthOf(b) };
 
   /* Calcula todas as classes. Com servidor (http), roda num Web Worker e a página não trava; abrindo o arquivo
      direto (file://) ou sem suporte, calcula aqui mesmo. onProgress(feitas, total) atualiza a barra. */
